@@ -1,20 +1,25 @@
 {
-  "scope": "Initial project files; manifest excludes itself, raw assets, Git metadata and caches",
+  "scope": "All tracked project files, including the bundled test ZIP; excludes this manifest and ignored work outputs",
   "files": [
     {
+      "path": ".gitattributes",
+      "size_bytes": 130,
+      "sha256": "33b08a846ed9629089ec06e5de679c2a8bf33672321c6aa4f85995590c0be8ed"
+    },
+    {
       "path": ".github/workflows/ci.yml",
-      "size_bytes": 389,
-      "sha256": "afba781ff2179daf261e61a899f5a89d97979331b69ca2e0d53a617e93f440b6"
+      "size_bytes": 1135,
+      "sha256": "11f67521820334e2aef6fc76e91d80f3d61fe6e207521f46bd557547c13b8f88"
     },
     {
       "path": ".gitignore",
-      "size_bytes": 169,
-      "sha256": "9327a24e267b5e854079ec70dd2b49cac6b7e3289605815d30affb5c2a227afb"
+      "size_bytes": 263,
+      "sha256": "03f1c1b3b7ac8652de6445202d566d9437bfa7dae674e1bd6b88b9a2ae2ace3c"
     },
     {
       "path": "AGENTS.md",
-      "size_bytes": 1483,
-      "sha256": "428943c4ddb147fff4780f0429ac89d9cd76a1c55d97d9de7b5d7015aab7dcca"
+      "size_bytes": 2405,
+      "sha256": "6870219758a2a9b152610c93702bf51a5fde21df732ef7d182ea47771e35e29d"
     },
     {
       "path": "LICENSE.md",
@@ -23,8 +28,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 3780,
-      "sha256": "d55d921a15ab22868aceb6dbe2b950737c5354c8b18d4d197644c743835e53c1"
+      "size_bytes": 3114,
+      "sha256": "38ff771e8a665a817522ee3ac7f9b8cb624df1627183507bf3a066dc31dd0c66"
     },
     {
       "path": "cadkin/__init__.py",
@@ -43,18 +48,18 @@
     },
     {
       "path": "configs/three_servo_lift.source.json",
-      "size_bytes": 840,
-      "sha256": "87871cb9330fff2bd9419d012904d7b93bdadceabb658837517d99b23b94eb46"
+      "size_bytes": 956,
+      "sha256": "c623636e991e319c45f340a672aebb99ea803761be737f6e8b4dce39bc67a356"
     },
     {
       "path": "docs/ASSET_AUDIT.md",
-      "size_bytes": 2362,
-      "sha256": "cdba9d6d7c42e0a84fffb64433eef3650be4bf37ae21ce5223e0008f3bf90c4c"
+      "size_bytes": 2447,
+      "sha256": "2134c38c67f73b24ecf2e42a3446130868975b66f93c539b18013579e48aca5c"
     },
     {
       "path": "docs/BACKLOG.md",
-      "size_bytes": 2134,
-      "sha256": "843ea3989362681b69ee67dcfa93a7093e4aa254bc0b33307adc554e2f0431b8"
+      "size_bytes": 659,
+      "sha256": "4a0a3ca381bf9ae6a49aa0a76b5de2421b302e5279c2fe0b5a21db338c3c8729"
     },
     {
       "path": "docs/DATA_CONTRACT.md",
@@ -63,23 +68,43 @@
     },
     {
       "path": "docs/DEVELOPMENT_PLAN.md",
-      "size_bytes": 9056,
-      "sha256": "28528ab13e0d37c4ea8ec25381f251299d35f9b9567a63bb4cb5992684388833"
+      "size_bytes": 2353,
+      "sha256": "f3a9bc1029e3b1c9368937b16e7072d86757e2d3a32ee84adeba727164c2ea2e"
+    },
+    {
+      "path": "docs/OPENCODE_START.md",
+      "size_bytes": 2394,
+      "sha256": "114ac05a66fa61ea5b7ad33570cdede603d1bd64c5852733ded1dcb6568b3f4b"
     },
     {
       "path": "docs/REPOSITORY_STATUS.md",
-      "size_bytes": 791,
-      "sha256": "5be20076e0dbc8ed221d079d08bc9f7765b75ce879025e7e646da73f601ec222"
+      "size_bytes": 817,
+      "sha256": "e9fc813b7a20e4d6cd70b6a7fd452912cca9aa4605ebea824b903c41905be66c"
+    },
+    {
+      "path": "docs/ROADMAP.md",
+      "size_bytes": 9071,
+      "sha256": "9c084e84efedf11801157f8062ff3f4d209ebae850ac6145e2d85d6c4d713b44"
     },
     {
       "path": "docs/SOURCES.md",
-      "size_bytes": 3215,
-      "sha256": "fafe48707efe3b50124dfa433e14d3e461fd136ca9a1aa449a8dc02099ebfc00"
+      "size_bytes": 3290,
+      "sha256": "6cbac21c2386b679bee299fc094d5362fce7bc3dc1af6a88581aae03978489a1"
     },
     {
       "path": "docs/VALIDATION.md",
-      "size_bytes": 710,
-      "sha256": "86a44fb93cc760cdf3249226d295c8da7d014e85628a51f584cda516642bc92a"
+      "size_bytes": 1067,
+      "sha256": "d910e1f3490c6457d77c3ae891833f12077ac6032b59fcf40475adf2138a1a4b"
+    },
+    {
+      "path": "examples/three_servo_lift/README.md",
+      "size_bytes": 1418,
+      "sha256": "9ef9ea5646f917c975ba0f9159fd1da92e8ab7a507c571f35c7d1581bd9b08b9"
+    },
+    {
+      "path": "examples/three_servo_lift/three_servo_lift.zip",
+      "size_bytes": 1095163,
+      "sha256": "52b487fd8d48807d4352d71d2fe609d004d9a0602ba9b7d898e85ffd5417a64b"
     },
     {
       "path": "pyproject.toml",

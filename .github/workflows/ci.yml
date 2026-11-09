@@ -14,3 +14,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m unittest discover -s tests -v
+      - name: Verify bundled test model
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          import zipfile
+          spec = json.loads(Path('configs/three_servo_lift.source.json').read_text(encoding='utf-8'))
+          asset = Path(spec['local_archive'])
+          assert asset.stat().st_size == spec['size_bytes'], 'Unexpected asset size'
+          assert hashlib.sha256(asset.read_bytes()).hexdigest() == spec['sha256'], 'Asset hash mismatch'
+          with zipfile.ZipFile(asset) as archive:
+              assert archive.testzip() is None, 'ZIP CRC check failed'
+              assert spec['step_member'] in archive.namelist(), 'STEP member missing'
+          PY

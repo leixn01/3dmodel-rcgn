@@ -1,0 +1,2 @@
+# Preserve the bundled source archive byte-for-byte across platforms.
+/examples/three_servo_lift/three_servo_lift.zip -text -diff

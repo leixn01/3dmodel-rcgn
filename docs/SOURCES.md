@@ -11,7 +11,7 @@
 - [指定模型页面](https://huggingface.co/datasets/CzcBZSH/3d-model/blob/main/%E4%B8%89%E7%8B%AC%E7%AB%8B%E4%BC%BA%E6%9C%8D%E5%8D%87%E9%99%8D%E6%9C%BA.zip)
 - 固定源 revision 与 SHA-256 见配置。
 - 实际下载并读取 ZIP 和 STEP 文本；JPG 已查看。
-- 没有将其许可推定为可任意再分发，因此 Git 只保存来源和派生文字统计。
+- 按项目所有者的明确要求，将指定原 ZIP 逐字节纳入 examples/three_servo_lift/；来源和校验值保持不变，模型独立许可状态仍为未核实。
 
 ## sw2robot
 

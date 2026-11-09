@@ -23,5 +23,7 @@
       "size": 95271,
       "compressed_size": 93670
     }
-  ]
+  ],
+  "local_archive": "examples/three_servo_lift/three_servo_lift.zip",
+  "step_member": "temp/3X Lift Assembly.STEP"
 }
