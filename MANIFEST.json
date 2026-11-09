@@ -28,8 +28,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 3114,
-      "sha256": "38ff771e8a665a817522ee3ac7f9b8cb624df1627183507bf3a066dc31dd0c66"
+      "size_bytes": 1219,
+      "sha256": "2f3f8b4fed109fbe82ea122a5c2ab695f42aa5d03ad1f5eb848a8b9a79b7f9bc"
     },
     {
       "path": "cadkin/__init__.py",
