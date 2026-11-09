@@ -1,0 +1,100 @@
+{
+  "scope": "Initial project files; manifest excludes itself, raw assets, Git metadata and caches",
+  "files": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "size_bytes": 389,
+      "sha256": "afba781ff2179daf261e61a899f5a89d97979331b69ca2e0d53a617e93f440b6"
+    },
+    {
+      "path": ".gitignore",
+      "size_bytes": 169,
+      "sha256": "9327a24e267b5e854079ec70dd2b49cac6b7e3289605815d30affb5c2a227afb"
+    },
+    {
+      "path": "AGENTS.md",
+      "size_bytes": 1483,
+      "sha256": "428943c4ddb147fff4780f0429ac89d9cd76a1c55d97d9de7b5d7015aab7dcca"
+    },
+    {
+      "path": "LICENSE.md",
+      "size_bytes": 447,
+      "sha256": "c7dd7aa74e8b97dd92c946bb6a046ec128ab40e556b375b60bc8ba5c8c3fb8f6"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 3780,
+      "sha256": "d55d921a15ab22868aceb6dbe2b950737c5354c8b18d4d197644c743835e53c1"
+    },
+    {
+      "path": "cadkin/__init__.py",
+      "size_bytes": 98,
+      "sha256": "6b7ff614b4cee4518945292bfc5f40f4f25a229160d78791bdf0baa06a4200c0"
+    },
+    {
+      "path": "cadkin/__main__.py",
+      "size_bytes": 1389,
+      "sha256": "e697df6b8cc30337ed69eaea3ae2bfce26314cbaad354152f9cf6992b69c707a"
+    },
+    {
+      "path": "cadkin/intake.py",
+      "size_bytes": 6004,
+      "sha256": "c2bab60d42e2cdd61c9224cd7cb9361ca64126d681d93f397173a354924c1e5e"
+    },
+    {
+      "path": "configs/three_servo_lift.source.json",
+      "size_bytes": 840,
+      "sha256": "87871cb9330fff2bd9419d012904d7b93bdadceabb658837517d99b23b94eb46"
+    },
+    {
+      "path": "docs/ASSET_AUDIT.md",
+      "size_bytes": 2362,
+      "sha256": "cdba9d6d7c42e0a84fffb64433eef3650be4bf37ae21ce5223e0008f3bf90c4c"
+    },
+    {
+      "path": "docs/BACKLOG.md",
+      "size_bytes": 2134,
+      "sha256": "843ea3989362681b69ee67dcfa93a7093e4aa254bc0b33307adc554e2f0431b8"
+    },
+    {
+      "path": "docs/DATA_CONTRACT.md",
+      "size_bytes": 2421,
+      "sha256": "5445dd3e69d32c3beb565d889ed8d172dc7eb2d09ac1b7b017957dced526e397"
+    },
+    {
+      "path": "docs/DEVELOPMENT_PLAN.md",
+      "size_bytes": 9056,
+      "sha256": "28528ab13e0d37c4ea8ec25381f251299d35f9b9567a63bb4cb5992684388833"
+    },
+    {
+      "path": "docs/REPOSITORY_STATUS.md",
+      "size_bytes": 791,
+      "sha256": "5be20076e0dbc8ed221d079d08bc9f7765b75ce879025e7e646da73f601ec222"
+    },
+    {
+      "path": "docs/SOURCES.md",
+      "size_bytes": 3215,
+      "sha256": "fafe48707efe3b50124dfa433e14d3e461fd136ca9a1aa449a8dc02099ebfc00"
+    },
+    {
+      "path": "docs/VALIDATION.md",
+      "size_bytes": 710,
+      "sha256": "86a44fb93cc760cdf3249226d295c8da7d014e85628a51f584cda516642bc92a"
+    },
+    {
+      "path": "pyproject.toml",
+      "size_bytes": 370,
+      "sha256": "40be94320453723f225fe4e2c8686db24eb739bc0aa3d8a33e1b33b6bc0438c2"
+    },
+    {
+      "path": "reports/three_servo_lift.intake.json",
+      "size_bytes": 8213,
+      "sha256": "1f6c3c9d7407749985ab1828535682d4a6dbdd34476a322d96fe927553e03b28"
+    },
+    {
+      "path": "tests/test_intake.py",
+      "size_bytes": 3176,
+      "sha256": "e1c86deb0a1dd8afd6f3edcde948e9bc424fbb6e68ced605bfc572559bd2e8e7"
+    }
+  ]
+}

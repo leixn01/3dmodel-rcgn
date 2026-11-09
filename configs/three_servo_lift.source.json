@@ -1,0 +1,27 @@
+{
+  "asset_id": "three_servo_lift",
+  "repository": "CzcBZSH/3d-model",
+  "revision": "10a7c112226e9caeeab5b12c4d6c3a80cc66b436",
+  "file_name": "三独立伺服升降机.zip",
+  "download_url": "https://huggingface.co/datasets/CzcBZSH/3d-model/resolve/10a7c112226e9caeeab5b12c4d6c3a80cc66b436/%E4%B8%89%E7%8B%AC%E7%AB%8B%E4%BC%BA%E6%9C%8D%E5%8D%87%E9%99%8D%E6%9C%BA.zip",
+  "sha256": "52b487fd8d48807d4352d71d2fe609d004d9a0602ba9b7d898e85ffd5417a64b",
+  "size_bytes": 1095163,
+  "license_status": "not_verified",
+  "expected_members": [
+    {
+      "path": "temp/",
+      "size": 0,
+      "compressed_size": 0
+    },
+    {
+      "path": "temp/3X Lift Assembly.STEP",
+      "size": 7777725,
+      "compressed_size": 1001139
+    },
+    {
+      "path": "temp/Bosch SSS 08.JPG",
+      "size": 95271,
+      "compressed_size": 93670
+    }
+  ]
+}

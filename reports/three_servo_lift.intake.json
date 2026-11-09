@@ -1,0 +1,280 @@
+{
+  "archive_name": "model.zip",
+  "members": [
+    {
+      "path": "temp/",
+      "size_bytes": 0
+    },
+    {
+      "path": "temp/3X Lift Assembly.STEP",
+      "size_bytes": 7777725
+    },
+    {
+      "path": "temp/Bosch SSS 08.JPG",
+      "size_bytes": 95271
+    }
+  ],
+  "step_files": [
+    {
+      "member": "temp/3X Lift Assembly.STEP",
+      "inspection_level": "step_text_inventory_only",
+      "sha256": "1728a394abc27e58b84e32c1d3102125be808ea83dbba5194508f6fbda706f48",
+      "size_bytes": 7777725,
+      "schemas": [
+        "AUTOMOTIVE_DESIGN"
+      ],
+      "simple_entity_counts": {
+        "ADVANCED_BREP_SHAPE_REPRESENTATION": 35,
+        "ADVANCED_FACE": 2738,
+        "APPLICATION_CONTEXT": 92,
+        "APPLICATION_PROTOCOL_DEFINITION": 92,
+        "AXIS2_PLACEMENT_3D": 5769,
+        "BREP_WITH_VOIDS": 2,
+        "B_SPLINE_CURVE_WITH_KNOTS": 234,
+        "CARTESIAN_POINT": 16651,
+        "CIRCLE": 2958,
+        "CLOSED_SHELL": 46,
+        "COLOUR_RGB": 793,
+        "CONICAL_SURFACE": 415,
+        "CONTEXT_DEPENDENT_SHAPE_REPRESENTATION": 80,
+        "CYLINDRICAL_SURFACE": 1249,
+        "DIRECTION": 15141,
+        "EDGE_CURVE": 6850,
+        "EDGE_LOOP": 3547,
+        "FACE_BOUND": 809,
+        "FACE_OUTER_BOUND": 2738,
+        "FILL_AREA_STYLE": 793,
+        "FILL_AREA_STYLE_COLOUR": 793,
+        "ITEM_DEFINED_TRANSFORMATION": 80,
+        "LINE": 3603,
+        "MANIFOLD_SOLID_BREP": 37,
+        "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 793,
+        "NEXT_ASSEMBLY_USAGE_OCCURRENCE": 80,
+        "ORIENTED_CLOSED_SHELL": 7,
+        "ORIENTED_EDGE": 13700,
+        "PLANE": 990,
+        "PRESENTATION_LAYER_ASSIGNMENT": 793,
+        "PRESENTATION_STYLE_ASSIGNMENT": 793,
+        "PRODUCT": 46,
+        "PRODUCT_CONTEXT": 46,
+        "PRODUCT_DEFINITION": 46,
+        "PRODUCT_DEFINITION_CONTEXT": 46,
+        "PRODUCT_DEFINITION_FORMATION_WITH_SPECIFIED_SOURCE": 46,
+        "PRODUCT_DEFINITION_SHAPE": 126,
+        "PRODUCT_RELATED_PRODUCT_CATEGORY": 46,
+        "SHAPE_DEFINITION_REPRESENTATION": 46,
+        "SHAPE_REPRESENTATION": 46,
+        "SHAPE_REPRESENTATION_RELATIONSHIP": 35,
+        "SPHERICAL_SURFACE": 26,
+        "STYLED_ITEM": 793,
+        "SURFACE_SIDE_STYLE": 793,
+        "SURFACE_STYLE_FILL_AREA": 793,
+        "SURFACE_STYLE_USAGE": 793,
+        "TOROIDAL_SURFACE": 38,
+        "UNCERTAINTY_MEASURE_WITH_UNIT": 839,
+        "VECTOR": 3603,
+        "VERTEX_POINT": 4453
+      },
+      "product_definitions": [
+        {
+          "entity_id": "#47801",
+          "name": "3X Lift Assembly"
+        },
+        {
+          "entity_id": "#47803",
+          "name": "Carrier Load Lift Bearing Rail Connection Plate"
+        },
+        {
+          "entity_id": "#47806",
+          "name": "NJ07_NJ07"
+        },
+        {
+          "entity_id": "#47808",
+          "name": "NJ07_NJ-Case_07"
+        },
+        {
+          "entity_id": "#47811",
+          "name": "NJ07_NJ-Rod_07"
+        },
+        {
+          "entity_id": "#47813",
+          "name": "NJ07_NJ-Body_07"
+        },
+        {
+          "entity_id": "#47816",
+          "name": "Carrier Load Lift Slide Connection Plate"
+        },
+        {
+          "entity_id": "#47818",
+          "name": "20mm BB"
+        },
+        {
+          "entity_id": "#47821",
+          "name": "HG20_34320001"
+        },
+        {
+          "entity_id": "#47823",
+          "name": "HG20_PlugScrew"
+        },
+        {
+          "entity_id": "#47826",
+          "name": "Bolt_HG20"
+        },
+        {
+          "entity_id": "#47827",
+          "name": "920018A1"
+        },
+        {
+          "entity_id": "#47830",
+          "name": "Block_HGH20CAZ0C"
+        },
+        {
+          "entity_id": "#47832",
+          "name": "Rail_HGR20R06601_30_0"
+        },
+        {
+          "entity_id": "#47835",
+          "name": "Carrier Load Lift Slide Assembly"
+        },
+        {
+          "entity_id": "#47837",
+          "name": "Bracket-MC-BK06-170-00-NSK_Bracket-MC-BK06-170-00-NSK"
+        },
+        {
+          "entity_id": "#47839",
+          "name": "sGMAH-04A_F4C"
+        },
+        {
+          "entity_id": "#47841",
+          "name": "SGMAH-04A_F4C_1"
+        },
+        {
+          "entity_id": "#47844",
+          "name": "SGMAH-04A_F4C_2"
+        },
+        {
+          "entity_id": "#47846",
+          "name": "SGMAH-04A_F4C_3"
+        },
+        {
+          "entity_id": "#47848",
+          "name": "ZERO MAX-SC030R - 8 mm x 14 mm_Bore Size d1_8 mm_Bore Size d2_14 mm_"
+        },
+        {
+          "entity_id": "#47849",
+          "name": "ZERO MAX-SC030R - 8 mm x 14 mm_SC030RAB"
+        },
+        {
+          "entity_id": "#47851",
+          "name": "Monocarrier-MCM06050H10K00-NSK_Monocarrier-MCM06050H10K00-NSK"
+        },
+        {
+          "entity_id": "#47853",
+          "name": "Bearing-MCM06050H10K00-NSK_Bearing-MCM06050H10K00-NSK"
+        },
+        {
+          "entity_id": "#47855",
+          "name": "Slider-MCM06050H10K00-NSK_Slider-MCM06050H10K00-NSK"
+        },
+        {
+          "entity_id": "#47857",
+          "name": "Greasing-Nipple-MCM06050H10K00-NSK_Greasing-Nipple-MCM06050H10K00-NSK"
+        },
+        {
+          "entity_id": "#47859",
+          "name": "Metal-Plate-MCM06050H10K00-NSK_Metal-Plate-MCM06050H10K00-NSK"
+        },
+        {
+          "entity_id": "#47861",
+          "name": "Lubrication-Unit-MCM06050H10K00-NSK_Lubrication-Unit-MCM06050H10K00-NSK"
+        },
+        {
+          "entity_id": "#47863",
+          "name": "End-Seal-MCM06050H10K00-NSK_End-Seal-MCM06050H10K00-NSK"
+        },
+        {
+          "entity_id": "#47865",
+          "name": "End-Cap-MCM06050H10K00-NSK_End-Cap-MCM06050H10K00-NSK"
+        },
+        {
+          "entity_id": "#47867",
+          "name": "Slider-MCM06050H10K00-NSK_Slider-MCM06050H10K00-NSK"
+        },
+        {
+          "entity_id": "#47868",
+          "name": "Lock-Nut-WBK10L-01-NSK_Lock-Nut-WBK10L-01-NSK"
+        },
+        {
+          "entity_id": "#47871",
+          "name": "Stop-Screw-WBK-M4x4-NSK_Stop-Screw-WBK-M4x4-NSK"
+        },
+        {
+          "entity_id": "#47872",
+          "name": "Lock-Nut-WBK10L-01-NSK_Lock-Nut-WBK10L-01-NSK"
+        },
+        {
+          "entity_id": "#47874",
+          "name": "Screw-MCM06050H10K00-NSK_Screw-MCM06050H-NSK"
+        },
+        {
+          "entity_id": "#47875",
+          "name": "Front-House-MCM06050H10K00-NSK_Front-House-MCM06-NSK"
+        },
+        {
+          "entity_id": "#47877",
+          "name": "End-House-MCM06050H10K00-NSK_End-House-MCM06-NSK"
+        },
+        {
+          "entity_id": "#47879",
+          "name": "Rail-MCM06050H10K00-NSK_Rail-MCM06050H10K00-NSK"
+        },
+        {
+          "entity_id": "#47881",
+          "name": "3X Lift Mounting Plate"
+        },
+        {
+          "entity_id": "#47883",
+          "name": "Carrier Load Lift Assembly"
+        },
+        {
+          "entity_id": "#47885",
+          "name": "Carrier Lift Assembly"
+        },
+        {
+          "entity_id": "#47886",
+          "name": "Carrier Load Lift Right Gussett"
+        },
+        {
+          "entity_id": "#47889",
+          "name": "Lift Slide Mounting Plate"
+        },
+        {
+          "entity_id": "#47891",
+          "name": "Lift Rear Mounting Plate"
+        },
+        {
+          "entity_id": "#47892",
+          "name": "Carrier Load Lift Left Gussett"
+        },
+        {
+          "entity_id": "#47894",
+          "name": "Lift Plate"
+        }
+      ],
+      "si_unit_declarations": [
+        "SI_UNIT ( $, .RADIAN. )",
+        "SI_UNIT ( $, .STERADIAN. )",
+        "SI_UNIT ( .MILLI., .METRE. )"
+      ],
+      "kinematic_simple_entity_types": [],
+      "limitations": [
+        "No B-Rep loading, geometric validity or transform verification performed.",
+        "PRODUCT and NAUO record counts are not expanded assembly occurrence counts.",
+        "Simple entity counts exclude complex entity components.",
+        "STEP encoded product strings are retained; only doubled apostrophes are decoded.",
+        "No native SolidWorks mates, rigid groups, joints or limits inferred.",
+        "An empty kinematic-type list is a text-scan result, not a full semantic proof."
+      ]
+    }
+  ]
+}
