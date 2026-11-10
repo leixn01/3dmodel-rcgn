@@ -18,4 +18,14 @@
 - README 与 OpenCode 起步任务只覆盖模型打开、连接和组件树读取。
 - 最新远端 CI 状态以仓库 Actions 为准。
 
-当前执行环境没有进行 Windows PowerShell、SolidWorks 或 OpenCode 的桌面端实跑。上述检查不代表 SolidWorks 连接和组件导出已完成；该功能将在用户的目标电脑实现与验证。
+## OpenCode skill 与工具分层
+
+2026-11-10，Python 3.12.14。
+
+- 三个 SKILL.md 的 YAML 元数据、命名与目录对应关系校验通过；本地 Markdown 引用均可解析。
+- 工具移到 `cadkin/tools/intake.py` 后，原有 5 个单元测试通过，包发现包含 `cadkin.tools`。
+- 用仓库内真实测试 ZIP 对比移动前实现与当前 CLI，JSON 输出完全一致。
+- 单独按 `cad-intake` 流程执行只读检查成功；ZIP 大小、SHA-256、成员清单及 CRC 核验通过。
+- 分层说明与三个 SolidWorks 工具契约已完成；尚未实现 COM 适配器或 MCP 服务，没有启用不存在服务的配置。
+
+当前执行环境没有进行 Windows PowerShell、SolidWorks 或 OpenCode 客户端的实跑。文件布局按官方规则静态核对，不代表已验证客户端自动发现；上述离线检查也不代表 SolidWorks 连接和组件导出已完成。这些将在用户的目标电脑实现与验证。

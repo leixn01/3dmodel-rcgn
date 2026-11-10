@@ -4,7 +4,7 @@ from pathlib import Path
 from urllib.error import URLError
 import zipfile
 
-from .intake import fetch_asset, inspect_path
+from .tools.intake import fetch_asset, inspect_path
 
 
 def main():

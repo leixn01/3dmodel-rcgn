@@ -1,26 +1,29 @@
-# 项目开发说明
+# 项目约定
 
-## 当前环境与任务
+## 环境与范围
 
-- 用户将在另一台已安装 SolidWorks 的 Windows 电脑上使用 OpenCode。不要重复要求用户安装 SolidWorks，也不要把当前运行环境自动认定为那台电脑。
-- 正式仓库是 leixn01/3dmodel-rcgn。直接维护仓库，不另发仓库 ZIP。
-- 先读 README.md、docs/DEVELOPMENT_PLAN.md 和 docs/OPENCODE_START.md。docs/ROADMAP.md 是后续参考，不是本轮全部任务。
-- 当前只做一件事：在目标电脑连接正在运行的 SolidWorks，读取当前活动文档基本信息及组件树，导出 JSON 并核对。不自动扩展到运动副识别、刚体分组、仿真或 PLC 联调。
-- 测试样例已经在 examples/three_servo_lift/three_servo_lift.zip。先使用仓库内文件，不再要求用户另行下载或上传同一模型。
+- 正式仓库为 `leixn01/3dmodel-rcgn`；直接维护仓库，不另发仓库 ZIP。
+- 用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode。先确认实际运行环境，不把当前环境自动认定为那台电脑。
+- 先读 README；开发时读 `docs/DEVELOPMENT_PLAN.md`。远期 `docs/ROADMAP.md` 不代表本轮任务范围。
+- 样例已在 `examples/three_servo_lift/three_servo_lift.zip`，优先使用仓库文件；原 ZIP 保持不变，工作副本和结果放 `outputs/`。
 
-## 实现与验证
+## 按需加载
 
-- 先检查 Windows、本地运行方式、可用 Python/COM 环境和 SolidWorks 版本，再选择最小实现。若需要依赖，明确新增内容与安装命令；不要先安装一整套 CAD/仿真依赖。
-- 用户可手动打开 STEP。脚本优先只读连接已有 SolidWorks 实例，不关闭软件、不修改或覆盖模型、不静默创建空会话来伪装成功。
-- 分别处理无活动文档、零件文档、装配文档和 API 读取失败；读取失败不能填成零组件。
-- 保留组件出现路径、父子关系、实例名称、抑制/解析状态。空文件路径或轻化组件要显式记录，不静默漏件。
-- 输出放 outputs/，不得把 STEP 文本中的 PRODUCT/NAUO 数量当作 SolidWorks 的组件实例统计。
-- 开发后运行相关检查，区分离线单元测试、COM 实测和人工视图核对。没有 SolidWorks 实测就如实记录。
-- 现有测试命令：python -m unittest discover -s tests -v。
+Skill 使用 OpenCode 默认位置 `.opencode/skills/<name>/SKILL.md`，不要把所有 skill 正文塞进全局规则或 instructions。
 
-## 数据与后续约束
+| 任务 | Skill |
+| --- | --- |
+| STEP/ZIP 来源与文本体检 | `cad-intake` |
+| SolidWorks 会话、活动文档与连接诊断 | `solidworks-connect` |
+| 装配组件实例树与清单 | `assembly-inventory` |
 
-- 用户已明确要求将指定测试模型放进仓库：允许提交上述单一测试 ZIP、来源和校验值。其他 CAD/PLC/电气工程、outputs/、账号配置和密钥不提交。
-- 保持原始 ZIP 不变，解压到 outputs/；修改副本与原始输入分开。
-- STEP 可在 SolidWorks 打开；原设计 Mate 是否保留要检查，不能由文件格式直接下结论。
-- 后续识别时区分 CAD 实例、刚体和运动副；未知行程、限位、轴线及信号不得补造。先完成当前小任务，再推进下一步。
+Skill 只负责流程。工具代码放 `cadkin/tools/`；后续 COM 适配器放 `cadkin/adapters/`，MCP 入口放 `cadkin/mcp_server.py`。依赖关系与实现状态见 `docs/ARCHITECTURE.md`，接口约定见 `docs/TOOL_CONTRACTS.md`。SolidWorks 工具尚未实现，不能假称调用成功；仅在任务要求开发/修复时补齐能力。
+
+## 数据与执行
+
+- 第一版只读访问已有 SolidWorks 会话，不自动开空实例、切换文档、保存、关闭或修改模型。
+- 保留组件实例与父子关系；无文档、零件输入、抑制/轻化、部分失败分别表示。读取失败不能填成零组件。
+- STEP 可在 SolidWorks 打开；导入文档类型及原 Mate 是否保留要实测。PRODUCT/NAUO 数量不是展开后的实例数量；未知运动参数不补造。
+- 允许提交指定测试 ZIP 及来源校验值；其他工程文件、运行输出、账号信息和密钥不提交。
+- 修改工具后运行 `python -m unittest discover -s tests -v`，区分离线测试、真实 COM 调用和人工核对。未实测就明确记录。
+- 文件增删或修改后同步 `MANIFEST.json`；排除清单自身及忽略的工作输出。

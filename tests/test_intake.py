@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from cadkin.intake import fetch_asset, inspect_path, inspect_step
+from cadkin.tools.intake import fetch_asset, inspect_path, inspect_step
 
 STEP = b"""ISO-10303-21;
 HEADER; FILE_SCHEMA(('AUTOMOTIVE_DESIGN')); ENDSEC;
@@ -48,7 +48,7 @@ class IntakeTests(unittest.TestCase):
             path = Path(root) / "test.zip"
             with zipfile.ZipFile(path, "w") as archive:
                 archive.writestr("a.step", STEP)
-            with patch("cadkin.intake.MAX_BYTES", 10), self.assertRaises(ValueError):
+            with patch("cadkin.tools.intake.MAX_BYTES", 10), self.assertRaises(ValueError):
                 inspect_path(path)
 
     def test_download_checksum_and_existing_output_protection(self):
@@ -58,7 +58,7 @@ class IntakeTests(unittest.TestCase):
             spec = {"download_url": "https://example.org/model.zip",
                     "sha256": hashlib.sha256(STEP).hexdigest(), "size_bytes": len(STEP)}
             config.write_text(json.dumps(spec), encoding="utf-8")
-            with patch("cadkin.intake.urlopen", return_value=io.BytesIO(STEP)):
+            with patch("cadkin.tools.intake.urlopen", return_value=io.BytesIO(STEP)):
                 fetch_asset(config, target)
             self.assertEqual(target.read_bytes(), STEP)
             with self.assertRaises(ValueError):
@@ -66,7 +66,7 @@ class IntakeTests(unittest.TestCase):
             target.unlink()
             spec["sha256"] = "0" * 64
             config.write_text(json.dumps(spec), encoding="utf-8")
-            with patch("cadkin.intake.urlopen", return_value=io.BytesIO(STEP)), self.assertRaises(ValueError):
+            with patch("cadkin.tools.intake.urlopen", return_value=io.BytesIO(STEP)), self.assertRaises(ValueError):
                 fetch_asset(config, target)
             self.assertFalse(target.exists())
             self.assertEqual([p.name for p in root.iterdir()], ["source.json"])

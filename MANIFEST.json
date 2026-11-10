@@ -17,9 +17,24 @@
       "sha256": "03f1c1b3b7ac8652de6445202d566d9437bfa7dae674e1bd6b88b9a2ae2ace3c"
     },
     {
+      "path": ".opencode/skills/assembly-inventory/SKILL.md",
+      "size_bytes": 1720,
+      "sha256": "80d1bdc6f45fed3281e85e9ddfe9724cf09c8774e243b2e7491438800c2a1a4c"
+    },
+    {
+      "path": ".opencode/skills/cad-intake/SKILL.md",
+      "size_bytes": 1403,
+      "sha256": "2bca18b0b5f828ca837ae9d1cf8299723fa992bc8127074d5e3d6e72a7a791a9"
+    },
+    {
+      "path": ".opencode/skills/solidworks-connect/SKILL.md",
+      "size_bytes": 1490,
+      "sha256": "cd96ff80417b4fd316e02e920538e220baf59a6d51da301455569fd45a712767"
+    },
+    {
       "path": "AGENTS.md",
-      "size_bytes": 2405,
-      "sha256": "6870219758a2a9b152610c93702bf51a5fde21df732ef7d182ea47771e35e29d"
+      "size_bytes": 2105,
+      "sha256": "32f4bc8f7f104891aef04caf215c1cb9ef7c95273b3ac375d0ae8d71eb111b0f"
     },
     {
       "path": "LICENSE.md",
@@ -28,8 +43,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 1219,
-      "sha256": "2f3f8b4fed109fbe82ea122a5c2ab695f42aa5d03ad1f5eb848a8b9a79b7f9bc"
+      "size_bytes": 1310,
+      "sha256": "72191244e0f238929143c7e3bff821647b51fde66256822bc8ca4272d5eaffae"
     },
     {
       "path": "cadkin/__init__.py",
@@ -38,18 +53,28 @@
     },
     {
       "path": "cadkin/__main__.py",
-      "size_bytes": 1389,
-      "sha256": "e697df6b8cc30337ed69eaea3ae2bfce26314cbaad354152f9cf6992b69c707a"
+      "size_bytes": 1395,
+      "sha256": "013484382904deedac6f80cbf3c79c90f4ca7943a8997e331892e1408defcb8b"
     },
     {
-      "path": "cadkin/intake.py",
-      "size_bytes": 6004,
-      "sha256": "c2bab60d42e2cdd61c9224cd7cb9361ca64126d681d93f397173a354924c1e5e"
+      "path": "cadkin/tools/__init__.py",
+      "size_bytes": 81,
+      "sha256": "5350f1cf2ed77d9d06714063c999fba9f08c8c3ae6af26217c1a55e3f48e6a46"
+    },
+    {
+      "path": "cadkin/tools/intake.py",
+      "size_bytes": 6006,
+      "sha256": "a2eccce84b302e77386f2cfb38d8733aae7978b24df6a66931c8f35c0215e2a0"
     },
     {
       "path": "configs/three_servo_lift.source.json",
       "size_bytes": 956,
       "sha256": "c623636e991e319c45f340a672aebb99ea803761be737f6e8b4dce39bc67a356"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "size_bytes": 5080,
+      "sha256": "b1dfaf398e6620522922b70ce350a8f46beeca42600f1384f63fb0d21185477f"
     },
     {
       "path": "docs/ASSET_AUDIT.md",
@@ -58,8 +83,8 @@
     },
     {
       "path": "docs/BACKLOG.md",
-      "size_bytes": 659,
-      "sha256": "4a0a3ca381bf9ae6a49aa0a76b5de2421b302e5279c2fe0b5a21db338c3c8729"
+      "size_bytes": 824,
+      "sha256": "e929b2017a9515ce7decc572cbf1b864dff2bc525ec002bc16a176727bf1bcb9"
     },
     {
       "path": "docs/DATA_CONTRACT.md",
@@ -68,18 +93,18 @@
     },
     {
       "path": "docs/DEVELOPMENT_PLAN.md",
-      "size_bytes": 2353,
-      "sha256": "f3a9bc1029e3b1c9368937b16e7072d86757e2d3a32ee84adeba727164c2ea2e"
+      "size_bytes": 2400,
+      "sha256": "1ac27cbd2aa25d2e4c7e7256b61bda912bb17e9c63156acd6d495cb75e599d42"
     },
     {
       "path": "docs/OPENCODE_START.md",
-      "size_bytes": 2394,
-      "sha256": "114ac05a66fa61ea5b7ad33570cdede603d1bd64c5852733ded1dcb6568b3f4b"
+      "size_bytes": 3070,
+      "sha256": "a1023198e70592f6f8aa551e55daee460450819aec05d5f96c65edb6eb4feaf0"
     },
     {
       "path": "docs/REPOSITORY_STATUS.md",
-      "size_bytes": 817,
-      "sha256": "e9fc813b7a20e4d6cd70b6a7fd452912cca9aa4605ebea824b903c41905be66c"
+      "size_bytes": 988,
+      "sha256": "d6abe988ca2bc0f1345a86c2f83311c8c9339f571d7966da755a3a8255d9702e"
     },
     {
       "path": "docs/ROADMAP.md",
@@ -92,9 +117,14 @@
       "sha256": "6cbac21c2386b679bee299fc094d5362fce7bc3dc1af6a88581aae03978489a1"
     },
     {
+      "path": "docs/TOOL_CONTRACTS.md",
+      "size_bytes": 3930,
+      "sha256": "b655211c042e95fb7d8402d1690b907c75f8a8ae12a2e1c156ab138c274ef4f9"
+    },
+    {
       "path": "docs/VALIDATION.md",
-      "size_bytes": 1067,
-      "sha256": "d910e1f3490c6457d77c3ae891833f12077ac6032b59fcf40475adf2138a1a4b"
+      "size_bytes": 1811,
+      "sha256": "49a7554f57c65287b4b85174d82441faa466a28e05a51eccc3baed2e5bfce40f"
     },
     {
       "path": "examples/three_servo_lift/README.md",
@@ -118,8 +148,8 @@
     },
     {
       "path": "tests/test_intake.py",
-      "size_bytes": 3176,
-      "sha256": "e1c86deb0a1dd8afd6f3edcde948e9bc424fbb6e68ced605bfc572559bd2e8e7"
+      "size_bytes": 3200,
+      "sha256": "5dd5be4cf9d3c670ba1f64fabab55f6171753b735b589134cd47579e753fe0ea"
     }
   ]
 }

@@ -1,4 +1,4 @@
-"""Conservative STEP text inventory, not a CAD parser or motion solver."""
+"""Reusable STEP intake tools; independent of skills, MCP and SolidWorks."""
 
 from collections import Counter
 import hashlib
