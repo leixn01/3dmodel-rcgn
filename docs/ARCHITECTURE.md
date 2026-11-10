@@ -6,7 +6,8 @@
 | 工具 | `cadkin/tools/solidworks.py` | 固定工具目录、参数 Schema、统一错误 |
 | MCP | `cadkin/mcp_server.py` | 官方 SDK 的 stdio 协议、工具注册与结构化返回 |
 | CLI | `cadkin/__main__.py` | 调用同一工具层、将 JSON 保存到新文件 |
-| COM 适配 | `cadkin/adapters/solidworks.py`、`display.py` | 会话/文档/组件 API；显示操作独立模块，通过同一 STA 执行 |
+| COM 适配 | `cadkin/adapters/solidworks.py`、`display.py`、`spatial.py` | 会话/文档/组件 API；显示与空间读取独立模块，通过同一 STA 执行 |
+| 空间计算 | `cadkin/geometry.py` | 无 COM 依赖的矩阵、单位与近似包围盒转换 |
 | STA 调度 | `cadkin/adapters/sta.py` | 单线程串行调用、超时及取消后的状态处理 |
 | 开源兼容片段 | `cadkin/_vendor/sw_mcp.py` | 从固定 SW_MCP 版本提取并修改的 COM 成员访问逻辑 |
 
@@ -31,13 +32,14 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 | `cad-intake` | 离线 STEP/ZIP 体检 |
 | `solidworks-connect` | 会话与活动文档检查、连接诊断 |
 | `assembly-inventory` | 装配组件树、部分结果核对与清单导出 |
+| `component-spatial` | 单实例/整机空间信息、单位与近似边界说明、JSON 导出 |
 | `solidworks-document` | 明确请求的打开/导入、重建操作 |
 | `solidworks-view` | 标准视图和缩放 |
 | `solidworks-display` | 基准面等类别显示过滤与总开关 |
 | `component-visibility` | 单个装配实例显隐与隐藏父级核对 |
 | `component-selection` | 按完整实例路径选择或清空选择 |
 
-后续几何提取、配合提取、运动关系推断继续独立增加。
+已有空间读取与显示操作相互独立；后续详细几何、配合提取、运动关系推断继续独立增加。
 
 ## 验证边界
 

@@ -15,11 +15,29 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = (await session.list_tools()).tools
-                    self.assertEqual(len(tools), 13)
+                    self.assertEqual(len(tools), 15)
                     self.assertFalse(any('script' in tool.name or 'save' in tool.name for tool in tools))
                     doc = await session.call_tool('sw_active_document')
                     self.assertFalse(doc.isError)
                     token = doc.structuredContent['data']['document_token']
+                    spatial = await session.call_tool('sw_spatial_inventory', {'expected_document_token': token})
+                    self.assertFalse(spatial.isError)
+                    self.assertTrue(spatial.structuredContent['data']['complete'])
+                    self.assertEqual(spatial.structuredContent['data']['component_count'], 4)
+                    single = await session.call_tool('sw_component_spatial', {
+                        'expected_document_token': token, 'occurrence_path': 'slide-1/block-1'})
+                    self.assertFalse(single.isError)
+                    self.assertEqual(single.structuredContent['data']['component'],
+                                     spatial.structuredContent['data']['components'][3])
+                    limited = await session.call_tool('sw_spatial_inventory', {
+                        'expected_document_token': token, 'max_components': 1})
+                    self.assertFalse(limited.isError)
+                    self.assertEqual(limited.structuredContent['status'], 'partial')
+                    self.assertTrue(limited.structuredContent['data']['truncated'])
+                    missing = await session.call_tool('sw_component_spatial', {
+                        'expected_document_token': token, 'occurrence_path': 'does-not-exist'})
+                    self.assertTrue(missing.isError)
+                    self.assertEqual(missing.structuredContent['errors'][0]['code'], 'COMPONENT_NOT_FOUND')
                     display = await session.call_tool('sw_get_display_state')
                     self.assertTrue(display.structuredContent['data']['visibility']['planes'])
                     hidden = await session.call_tool('sw_set_display_visibility', {

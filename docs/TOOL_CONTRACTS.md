@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.2.0。以下 13 个工具已实现并注册；已做离线和 stdio 协议测试。用户反馈已确认打开模型可用，其他工具尚未完成实机验收。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.3.0。以下 15 个工具已实现并注册；已做离线和 stdio 协议测试。用户反馈已确认打开模型可用，其他工具尚未完成实机验收。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -17,6 +17,8 @@
 | `sw_zoom_to_fit` | `expected_document_token` | 适合窗口，不请求切换当前方向；需核对画面 |
 | `sw_get_component_visibility` | `expected_document_token`、`occurrence_path` | 读取指定实例自身显示状态、隐藏父路径及父级影响 |
 | `sw_set_component_visibility` | `expected_document_token`、`occurrence_path`、`visible` | 设置指定实例显示状态并回读，不抑制、解析、移动或保存 |
+| `sw_component_spatial` | `expected_document_token`、`occurrence_path` | 只读单实例的根/父变换、原点与近似包围盒，不选择或解析组件 |
+| `sw_spatial_inventory` | `expected_document_token`，可选 `max_components`、`max_depth` | 只读装配空间清单，保留缺失与部分数据，不修改模型 |
 
 `view` 支持 front/back/left/right/top/bottom/isometric/trimetric/dimetric。接口用枚举值访问视图，不依赖中英文界面的视图名称。
 
@@ -56,6 +58,33 @@
 
 显示操作可能改变文档内存状态，工具均不保存。调用期间不要改变配置或显示状态；文档 token 不是几何或显示状态版本号。组件显隐不处理多实体零件中的独立实体。
 
+## 空间工具（0.3.0）
+
+两者仅支持装配。`sw_component_spatial` 从组件树取得完整 `occurrence_path`；返回 `data.component`。`sw_spatial_inventory` 返回 `data.components`；默认 `max_components=500`、`max_depth=64`，范围分别为 1–5000、1–128。单实例查询为确认目标唯一性，最多遍历 20000 个节点、128 层；不能确定唯一目标时拒绝猜测。
+
+公共元数据包括 `spatial_schema_version=1`、文档/配置/token、UTC 采集时间、SolidWorks revision、单位、矩阵约定、`snapshot_atomic=false`、实际读取数量、成功数量、`complete` 和 `truncated`。根装配不计入组件数量，子装配和未解析节点计入；同文件实例分别记录。单件查询的 `component_count` 为 1。实例路径不承诺跨重命名/修订稳定；token 不是几何版本号。
+
+每个空间节点继承组件树字段，并增加：
+
+| 字段 | 含义 |
+| --- | --- |
+| `transform.raw_array` | SolidWorks 原始 16 元素 Transform2.ArrayData，未改写 |
+| `transform.to_root` / `to_parent` | 4×4 列向量矩阵：组件→整机根 / 组件→父组件，含缩放，平移单位 m |
+| `transform.origin_root_m` / `_mm` | 组件原点在整机坐标中的位置，非包围盒中心/质心 |
+| `transform.origin_parent_m` / `_mm` | 组件原点在父组件坐标中的位置；顶层与整机位置相同 |
+| `bounding_box` | GetBox(false,false) 原始 6 元素 `raw_array_m`，整机轴对齐的 min/max/size/center，分别带 `_m` / `_mm`；`approximate=true` |
+| `spatial_status` / `spatial_errors` | ok / partial / unavailable，以及字段级错误；缺失字段保留 null |
+
+**坐标约定：** Transform2 已相对当前根装配，包括嵌套组件；不要再叠加父变换得到根坐标。原始数组前 9 项按行存轴方向，9–11 项是平移，12 项是缩放。规范矩阵将轴矩阵转置并乘缩放，平移不乘缩放。`to_parent_child = inverse(to_root_parent) @ to_root_child`；反向验证 `to_root_parent @ to_parent_child = to_root_child`。未包含临时 presentation transform，因此爆炸/展示位姿不能直接当作模型坐标。
+
+**边界含义：** GetBox 返回近似包围盒，排除参考平面和草图；坐标按根装配解释，不再用组件变换二次转换。尺寸沿整机坐标轴，旋转时会改变；中心仅为盒中心。它不保证最小紧包围，不可用作精密尺寸、质心、行程或碰撞证据，重建后可能变化。显示隐藏不等于抑制，隐藏但已解析组件仍可读取。
+
+只读取已解析实例，不自动解除抑制、轻化或加载缺失组件，不改变选择/显隐、重建或保存。`TRANSFORM_UNAVAILABLE` / `BOUNDING_BOX_UNAVAILABLE` 表示 API 无数据，`INVALID_TRANSFORM` / `INVALID_BOUNDING_BOX` 表示数组非有限、格式不符或变换无效；不补单位矩阵或零尺寸。子件根变换可用但父变换缺失时，局部矩阵为 null 并返回 `PARENT_TRANSFORM_UNAVAILABLE`，根变换与包围盒仍保留。
+
+数量/深度限制返回 `partial`、`truncated=true`；其他读取失败也可产生 `partial`，检查 `errors`，不能只看 MCP `isError`。单实例查询仍保留全树遍历错误，目标字段可用不意味着整树完整。完整树中缺失目标返回 `COMPONENT_NOT_FOUND`；重复名称返回 `AMBIGUOUS_COMPONENT`；无法确认完整层级/唯一名称返回 `COMPONENT_LOOKUP_INCOMPLETE`。切换文档或配置返回 `DOCUMENT_CHANGED`，丢弃本次不一致结果。
+
+MCP 返回真实 JSON，不直接写文件；由客户端文件工具保存完整返回，或使用同实现 CLI 的 `--output`。读取期间不要编辑模型或切换文档/配置，长调用受共同超时规则限制。逐项验收见 [0.3.0 清单](MCP_ACCEPTANCE.md#030组件空间信息)。
+
 ## 执行范围与失败处理
 
 - 仅通过 `GetActiveObject` 连接已有 SolidWorks；不自动启动软件。当前只支持一个 SolidWorks 进程，多实例返回 `MULTIPLE_SESSIONS`。
@@ -84,3 +113,9 @@
 - [LoadFile4](https://help.solidworks.com/2015/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ISldWorks~LoadFile4.html)
 - [IComponent2.Select4（三参数）](https://help.solidworks.com/2020/english/api/sldworksapi/solidworks.interop.sldworks~solidworks.interop.sldworks.icomponent2~select4.html)
 - [重建激活枚举](https://help.solidworks.com/2024/English/api/swconst/SOLIDWORKS.Interop.swconst~SOLIDWORKS.Interop.swconst.swRebuildOnActivation_e.html)
+
+- [Transform2：相对根装配](https://help.solidworks.com/2018/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IComponent2~Transform2.html)
+- [IMathTransform：16 元素布局](https://help.solidworks.com/2023/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMathTransform.html)
+- [MultiplyTransform：先旋转、缩放，再平移](https://help.solidworks.com/2017/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMathPoint~MultiplyTransform.html)
+- [GetBox：近似边界与限制](https://help.solidworks.com/2019/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IComponent2~GetBox.html)
+- [按组件汇总装配包围盒的官方示例](https://help.solidworks.com/2023/english/api/sldworksapi/Get_Assembly_Bounding_Box_using_Components_Example_VB.htm)

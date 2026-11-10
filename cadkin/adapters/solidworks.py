@@ -10,12 +10,13 @@ import sys
 from cadkin._vendor.sw_mcp import NAMED_VIEWS, call, value
 from cadkin.errors import ToolFailure, success
 from cadkin.adapters.display import DisplayOperations
+from cadkin.adapters.spatial import SpatialOperations
 
 DOC_TYPES = {1: "part", 2: "assembly", 3: "drawing"}
 NATIVE_TYPES = {".sldprt": 1, ".sldasm": 2, ".slddrw": 3}
 
 
-class SolidWorksAdapter(DisplayOperations):
+class SolidWorksAdapter(DisplayOperations, SpatialOperations):
     def __init__(self, root=None, app=None, runtime=None):
         self.root = Path(root or Path.cwd()).resolve()
         self.app = app

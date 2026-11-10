@@ -1,6 +1,11 @@
 """Small COM-shaped fakes for unit/transport tests, never production fallback."""
 from types import SimpleNamespace
 
+
+def pose(x=0, y=0, z=0, quarter_turn=False, scale=1):
+    axes = [0, 1, 0, -1, 0, 0, 0, 0, 1] if quarter_turn else [1, 0, 0, 0, 1, 0, 0, 0, 1]
+    return SimpleNamespace(ArrayData=axes + [x, y, z, scale, 0, 0, 0])
+
 # Arbitrary test-only IDs: production must load names from the installed typelib.
 TEST_CONSTANTS = {name: 1000 + index for index, name in enumerate((
     'swDisplayPlanes', 'swDisplayAxes', 'swDisplayTemporaryAxes', 'swDisplaySketches',
@@ -49,6 +54,14 @@ class Component:
         self._visible = 1
         self.visibility_writes = []
         self.ignore_visibility_writes = False
+        self.Transform2 = pose()
+        self.box = [0, 0, 0, 0.1, 0.2, 0.3]
+        self.box_calls = []
+
+    def GetBox(self, include_reference_planes, include_sketches):
+        assert (include_reference_planes, include_sketches) == (False, False)
+        self.box_calls.append((include_reference_planes, include_sketches))
+        return self.box
 
     @property
     def Visible(self): return self._visible
@@ -108,6 +121,11 @@ class Document:
         if children is None:
             children = [Component('rail-1'), Component('rail-2'),
                         Component('slide-1', [Component('slide-1/block-1')])]
+            children[1].Transform2 = pose(x=0.5)
+            children[1].box = [0.5, 0, 0, 0.6, 0.2, 0.3]
+            children[2].Transform2 = pose(1, 2, 0, quarter_turn=True)
+            children[2].children[0].Transform2 = pose(1, 2.2, 0, quarter_turn=True)
+            children[2].children[0].box = [0.9, 2.1, 0, 1.1, 2.3, 0.2]
         self.root = Component('root', children)
         self.ConfigurationManager = SimpleNamespace(ActiveConfiguration=SimpleNamespace(
             Name='Default', GetRootComponent3=lambda resolve: None if resolve else self.root))

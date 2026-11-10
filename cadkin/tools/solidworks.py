@@ -48,6 +48,14 @@ TOOLS = [
     spec("sw_set_component_visibility", "Show/hide one assembly occurrence by full occurrence_path and verify readback. Does not suppress, resolve, move, delete or save. Showing a child with hidden parents is rejected until the intended parents are explicitly shown.",
          {"expected_document_token": TOKEN, "occurrence_path": {"type": "string", "minLength": 1},
           "visible": {"type": "boolean"}}, ["expected_document_token", "occurrence_path", "visible"], False),
+    spec("sw_component_spatial", "Read one assembly occurrence's root/parent transforms, origin and approximate root-axis bounding box in meters and millimeters. Use full occurrence_path. Keeps unavailable fields null; no move, resolve, select, rebuild or save. Origin is not center of mass; box size is not precision part dimensions.",
+         {"expected_document_token": TOKEN, "occurrence_path": {"type": "string", "minLength": 1}},
+         ["expected_document_token", "occurrence_path"]),
+    spec("sw_spatial_inventory", "Read a bounded assembly spatial inventory with instance hierarchy, transforms and approximate bounding boxes. Repeated files remain separate. Partial/truncated/unresolved results are explicit; no auto-resolve or model modification. Save actual returned JSON with file tools, or use CLI --output.",
+         {"expected_document_token": TOKEN,
+          "max_components": {"type": "integer", "minimum": 1, "maximum": 5000, "default": 500},
+          "max_depth": {"type": "integer", "minimum": 1, "maximum": 128, "default": 64}},
+         ["expected_document_token"]),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 

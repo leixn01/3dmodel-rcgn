@@ -17,7 +17,7 @@
 
 实例 ID 在固定源版本内由资产标识＋完整出现路径稳定生成；不能只用文件名、显示名或遍历下标。跨 CAD 修订的身份迁移单独记录映射，不承诺 STEP 实体编号跨导出稳定。
 
-内部规范单位建议 m/rad/s，入口保留毫米等原单位与明确换算。变换约定为列向量，`p_parent = T_parent_child @ p_child`；组合、逆变换、轴向符号必须测试。当前资产报告尚未生成这些变换。
+内部规范单位建议 m/rad/s，入口保留毫米等原单位与明确换算。变换约定为列向量，`p_parent = T_parent_child @ p_child`；组合、逆变换、轴向符号必须测试。MCP 0.3.0 已返回 `to_parent` / `to_root`、米与毫米坐标，以及近似包围盒，详见 [已实现接口](TOOL_CONTRACTS.md)。该空间 schema 不是本草案的完整实现：尚未生成资产关联的稳定实例 ID、刚体或运动约束；`document_token` 也不是几何版本号。
 
 以下参数分开保存：geometric_feasible_range、mechanical_hard_limits、controller_soft_limits、process_target_positions。碰撞扫掠仅为几何可行性证据；程序位置与超时不能自动成为机械行程与运动时间。
 

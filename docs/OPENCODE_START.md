@@ -11,7 +11,7 @@ py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[solidworks]"
 ```
 
-已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 13 个工具。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32 及 SDK 依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 15 个工具。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32 及 SDK 依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
 
 ## 连接与实际操作
 
@@ -22,7 +22,8 @@ py -3 -m venv .venv
 ```text
 加载 solidworks-connect，检查 SolidWorks 会话。
 加载 solidworks-document，打开 examples/three_servo_lift/3X Lift Assembly.STEP。
-报告实际文档类型；如果是装配，加载 assembly-inventory，保存组件树到 outputs/solidworks_inventory.json。
+报告实际文档类型；如果是装配，加载 assembly-inventory，读取组件树。
+加载 component-spatial，读取整机空间清单，保存原始 JSON 到 outputs 下的新文件；报告 complete、truncated 和 errors。
 加载 solidworks-display，隐藏当前模型的基准面并回读核对。
 然后加载 solidworks-view，保持当前视角缩放适合窗口。
 ```
@@ -52,17 +53,18 @@ Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不�
 | `connected: false` / `NOT_RUNNING` | 手动启动 SolidWorks；服务不会自动创建空实例 |
 | `CONNECT_FAILED` | 确认同一 Windows 用户、相同权限级别，结束启动弹窗；不要把云端服务当作本机连接 |
 | `MULTIPLE_SESSIONS` | 当前版本需要保留一个目标 SolidWorks 进程；不要自动关闭用户工程 |
-| 缺少新增显示工具 | 更新仓库并安装依赖，退出并重新启动 OpenCode；核对 MCP 工具目录应为 13 个 |
+| 缺少新增工具 | 更新仓库并安装依赖，退出并重新启动 OpenCode；核对 MCP 工具目录应为 15 个 |
 | `DISPLAY_CONSTANTS_UNAVAILABLE` | 检查报错中的类型库原因；需要当前 SolidWorks 安装目录的 swconst.tlb，不靠猜测常量替代 |
 | `DISPLAY_BLOCKED` / `PARENT_HIDDEN` | 总开关或父装配仍隐藏；根据用户要求处理，不擅自显示其他对象 |
 | `DISPLAY_MISMATCH` | 设置后回读不一致，保留错误并核对窗口，不能报成功 |
 | `NO_ACTIVE_DOCUMENT` | 用打开工具或手动打开模型 |
 | `DOCUMENT_CHANGED` | 重新读取活动文档和 token，确认目标后再操作 |
 | `TIMEOUT` / `OUTCOME_UNKNOWN` | 检查 SolidWorks 弹窗和操作结果，结束阻塞后重启 MCP；不可直接重试可能已执行的操作 |
+| 空间字段为 null / `partial` | 检查字段级错误和实例状态；不补零；正常已解析实例读不到数据时保留原始返回反馈 |
 | 组件树为 `partial` | 检查 errors，记录未解析节点或上限；如需解析组件，由用户明确操作后重读 |
 
 诊断命令：`.\.venv\Scripts\python.exe -m cadkin sw sw_session_status`。结果输出到终端，不会开启 MCP 协议会话。运行产物留在 `outputs/`。
 
-用户已确认打开模型可用；其余功能及新增显示工具待实机验证。请按 [13 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
+用户已确认打开模型可用；其余功能及新增空间工具待实机验证。请按 [15 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
 
 官方说明：[Skills](https://opencode.ai/docs/skills/)、[MCP](https://opencode.ai/docs/mcp-servers/)、[V1/V2 兼容](https://opencode.ai/docs/migrate-v1/)。
