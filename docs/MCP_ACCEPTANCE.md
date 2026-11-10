@@ -1,14 +1,32 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 15 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 16 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
-1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks]`，启动一个 SolidWorks 实例并完成启动弹窗。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含下面 15 个工具。客户端可能给工具名添加服务器前缀。
+1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks]`，退出并重启 OpenCode。无需提前启动 SolidWorks，先完成下面 0.4.0 的启动检查，再做模型操作。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含下面 16 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
-用户反馈（2026-11-10）：已确认打开模型可用；其余原有 7 个工具未验证。反馈未附具体 SolidWorks 版本与原始调用记录。0.2.0 新增 5 个、0.3.0 新增 2 个工具也待实机验证，不能据此标为全部通过。
+用户反馈（2026-11-10）：已确认打开模型可用；其余原有 7 个工具未验证。反馈未附具体 SolidWorks 版本与原始调用记录。0.2.0 新增 5 个、0.3.0 新增 2 个、0.4.0 新增 1 个工具也待实机验证，不能据此标为全部通过。
+
+## 0.4.0：自动启动 SolidWorks
+
+新增第 16 个工具 `sw_start_application`，默认参数 `{}`，可选 `wait_seconds=120`。仅维护 Windows；CI 只保留 Windows / Python 3.10、3.12。启动操作与打开模型分开，按下面顺序核对：
+
+| 场景 | 操作 | 通过标准 |
+| --- | --- | --- |
+| 冷启动 | 软件原本未运行时，先调用 `sw_session_status`，再调用 `sw_start_application`；不要为制造场景关闭有未保存内容的工程。 | 状态查询返回 connected=false 且不启动；启动返回 started=true、startup_completed/visible/user_control=true，窗口真实出现，任务管理器只有一个目标 SLDWORKS.exe，PID 与返回一致。 |
+| 打开模型 | 在同一会话调用 `sw_open_document` 打开仓库 STEP，再读取活动文档及组件树。 | 模型显示，目标文档正确；实际导入类型如实记录，没有要求用户先手动启动。 |
+| 重复调用/已有会话 | 记下 PID、文档、选择及 dirty，连续再调用两次启动工具。也可在原本已运行的会话直接测试。 | started=false、reused_existing=true，PID 不变且无新增实例；当前文档、选择、dirty 不因启动工具变化。应用窗口可能被显示。 |
+| 退出客户端 | 在上述成功启动后退出 OpenCode，检查 SolidWorks；再进入 OpenCode 查询。 | SolidWorks 和当前模型仍保留，再次连接返回同一 PID；未执行关闭或保存。 |
+| 启动阻塞 | 若实际遇到许可/恢复/插件弹窗，保存原始错误和窗口现象。 | 未完成不得记成功；STARTUP_PENDING 处理弹窗后复用已有进程；TIMEOUT/OUTCOME_UNKNOWN 先检查现场并重启 MCP，不反复新建。未遇到则此项记未测试。 |
+
+保存到 `outputs/acceptance-0.4-<时间>/`：提交 SHA、Windows/Python/OpenCode/SolidWorks 版本、每次参数与原始返回、PID 和人工窗口结论。不要通过自动关闭现有工程来制造冷启动场景；有未保存模型时先验证复用，冷启动项目留待合适时机。
+
+可直接交给 OpenCode：
+
+> 按 docs/MCP_ACCEPTANCE.md 的 0.4.0 清单验证启动功能。如果 SolidWorks 尚未运行，使用 sw_start_application 启动；已有会话就复用。打开仓库的测试 STEP，记录 PID 和活动文档，然后再调用启动工具确认不会重复开进程。把原始结果保存到 outputs 的新目录，列出需要我核对的窗口和退出客户端后的保留状态。不要关闭或保存我的其他工程。
 
 ## 原有 8 个工具逐项检查
 
@@ -88,12 +106,12 @@ Copy-Item -LiteralPath 'examples/three_servo_lift/3X Lift Assembly.STEP' -Destin
 
 ## 记录与结论
 
-在 `outputs/` 的新目录保存验收记录、每次实际参数和原始 MCP 返回；视图与选择另附人工窗口核对结果。每项标记“通过 / 失败 / 部分通过 / 阻塞 / 未测试”，写明原因。只有 15 项都满足标准，才能说本版本基础能力实机验收通过。
+在 `outputs/` 的新目录保存验收记录、每次实际参数和原始 MCP 返回；视图与选择另附人工窗口核对结果。每项标记“通过 / 失败 / 部分通过 / 阻塞 / 未测试”，写明原因。只有 16 项都满足标准，才能说本版本基础能力实机验收通过。
 
 可直接告诉 OpenCode：
 
-> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 15 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
+> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 16 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
 
-当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈打开模型可用，剩余功能的目标 SolidWorks 与 OpenCode 客户端实测仍待执行。零件移动、配合编辑、CAD 文件保存/导出及运动关系识别不在当前 15 个工具范围内；空间结果 JSON 可由客户端或 CLI 保存。
+当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈打开模型可用，剩余功能的目标 SolidWorks 与 OpenCode 客户端实测仍待执行。零件移动、配合编辑、CAD 文件保存/导出及运动关系识别不在当前 16 个工具范围内；空间结果 JSON 可由客户端或 CLI 保存。
 
 后续每次功能变更都在此追加对应版本的操作、预期返回、人工核对和失败标准。每条记录注明提交 SHA、工具参数、原始返回文件、窗口核对者与结论；没有证据不沿用上版“通过”。

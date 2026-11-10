@@ -11,18 +11,20 @@ from cadkin._vendor.sw_mcp import NAMED_VIEWS, call, value
 from cadkin.errors import ToolFailure, success
 from cadkin.adapters.display import DisplayOperations
 from cadkin.adapters.spatial import SpatialOperations
+from cadkin.adapters.session import SessionOperations
 
 DOC_TYPES = {1: "part", 2: "assembly", 3: "drawing"}
 NATIVE_TYPES = {".sldprt": 1, ".sldasm": 2, ".slddrw": 3}
 
 
-class SolidWorksAdapter(DisplayOperations, SpatialOperations):
+class SolidWorksAdapter(DisplayOperations, SpatialOperations, SessionOperations):
     def __init__(self, root=None, app=None, runtime=None):
         self.root = Path(root or Path.cwd()).resolve()
         self.app = app
         self.runtime = runtime
         self.process_id = "test" if app is not None else None
         self._owns_com = False
+        self._launch_uncertain = False
         if app is None:
             if sys.platform != "win32":
                 raise ToolFailure("UNSUPPORTED_PLATFORM", "Run this MCP server with Windows Python on the computer running SOLIDWORKS.")
@@ -42,9 +44,7 @@ class SolidWorksAdapter(DisplayOperations, SpatialOperations):
             self.runtime[0].CoUninitialize()
             self._owns_com = False
 
-    def _connect(self):
-        if not self._owns_com:  # Explicit injected adapter, only used by tests.
-            return self.app
+    def _running_processes(self):
         tasklist = Path(os.environ["SystemRoot"]) / "System32" / "tasklist.exe"
         try:
             completed = subprocess.run([str(tasklist), "/FI", "IMAGENAME eq SLDWORKS.exe", "/FO", "CSV", "/NH"],
@@ -53,12 +53,31 @@ class SolidWorksAdapter(DisplayOperations, SpatialOperations):
                          if row and row[0].casefold() == "sldworks.exe"]
         except (OSError, subprocess.SubprocessError) as exc:
             raise ToolFailure("PROCESS_QUERY_FAILED", "Could not enumerate SOLIDWORKS processes; connection was not attempted.") from exc
+        if any(len(row) < 2 or not row[1].isdigit() for row in processes):
+            raise ToolFailure("PROCESS_QUERY_FAILED", "SOLIDWORKS process identifiers could not be read reliably.")
+        return [row[1] for row in processes]
+
+    def _connect(self):
+        if not self._owns_com:  # Explicit injected adapter, only used by tests.
+            return self.app
+        processes = self._running_processes()
         if len(processes) > 1:
             raise ToolFailure("MULTIPLE_SESSIONS", "This version requires one SOLIDWORKS process. Choose the intended session manually.")
         if not processes:
             self.app = None
-            raise ToolFailure("NOT_RUNNING", "Start SOLIDWORKS manually first; this server never launches a new instance.")
-        self.process_id = processes[0][1]
+            self.process_id = None
+            raise ToolFailure("NOT_RUNNING", "SOLIDWORKS is not running. Use sw_start_application to start it, then open the model.")
+        detected_pid = processes[0]
+        # A newly created COM server may not yet be registered in the ROT. Reuse the
+        # retained same-PID reference; never depend on GetActiveObject immediately after launch.
+        if self.app is not None and self.process_id == detected_pid:
+            try:
+                if str(value(self.app, "GetProcessID")) == detected_pid:
+                    return self.app
+            except Exception:
+                pass
+            self.app = None
+        self.process_id = detected_pid
         _, client = self.runtime
         try:
             active = client.GetActiveObject("SldWorks.Application")

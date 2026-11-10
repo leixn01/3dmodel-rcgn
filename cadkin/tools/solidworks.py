@@ -19,6 +19,8 @@ def spec(name, description, properties=None, required=None, read_only=True):
 
 
 TOOLS = [
+    spec("sw_start_application", "Start the registered desktop SOLIDWORKS on Windows when absent, or reuse the single existing process; show the window, retain it after MCP exits, and check StartupProcessCompleted. Use before opening a model when not running. Does not open, save or close documents. Never launch another process after attach failure; inspect licence/recovery dialogs on errors.",
+         {"wait_seconds": {"type": "integer", "minimum": 1, "maximum": 120, "default": 120}}, read_only=False),
     spec("sw_session_status", "Attach to one existing SOLIDWORKS process; return revision and active-document availability. Does not launch SOLIDWORKS."),
     spec("sw_active_document", "Read the actual active document, type, configuration, dirty flag and target token. No active document is an error."),
     spec("sw_component_tree", "Read assembly occurrence hierarchy without resolving components. Retains unreadable nodes and marks partial results; not a motion model.",
@@ -61,7 +63,7 @@ CATALOG = {tool["name"]: tool for tool in TOOLS}
 
 
 class SolidWorksTools:
-    def __init__(self, root=None, factory=None, timeout=60.0):
+    def __init__(self, root=None, factory=None, timeout=180.0):
         if factory is None:
             from cadkin.adapters.solidworks import SolidWorksAdapter
             root = Path(root or Path.cwd()).resolve()

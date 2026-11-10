@@ -15,7 +15,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = (await session.list_tools()).tools
-                    self.assertEqual(len(tools), 15)
+                    self.assertEqual(len(tools), 16)
                     self.assertFalse(any('script' in tool.name or 'save' in tool.name for tool in tools))
                     doc = await session.call_tool('sw_active_document')
                     self.assertFalse(doc.isError)
@@ -61,6 +61,33 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                     self.assertTrue(bad.isError)
                     bad = await session.call_tool('not_a_tool')
                     self.assertTrue(bad.isError)
+
+    async def test_cold_start_then_open_and_reuse_over_real_stdio(self):
+        from anyio import fail_after
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+        parameters = StdioServerParameters(command=sys.executable, args=['-m', 'tests.mcp_fixture', '--cold-start'])
+        with fail_after(20):
+            async with stdio_client(parameters) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    before = await session.call_tool('sw_session_status')
+                    self.assertFalse(before.structuredContent['data']['connected'])
+                    started = await session.call_tool('sw_start_application')
+                    self.assertFalse(started.isError, started)
+                    self.assertTrue(started.structuredContent['data']['started'])
+                    self.assertTrue(started.structuredContent['data']['startup_completed'])
+                    self.assertFalse(started.structuredContent['data']['has_active_document'])
+                    opened = await session.call_tool('sw_open_document', {'path': 'examples/three_servo_lift/3X Lift Assembly.STEP'})
+                    self.assertFalse(opened.isError, opened)
+                    again = await session.call_tool('sw_start_application')
+                    self.assertFalse(again.isError)
+                    self.assertFalse(again.structuredContent['data']['started'])
+                    self.assertEqual(again.structuredContent['data']['process_id'], started.structuredContent['data']['process_id'])
+                    doc = await session.call_tool('sw_active_document')
+                    self.assertEqual(doc.structuredContent['data'], opened.structuredContent['data']['document'])
+                    inventory = await session.call_tool('sw_spatial_inventory', {'expected_document_token': doc.structuredContent['data']['document_token']})
+                    self.assertTrue(inventory.structuredContent['data']['complete'])
 
     @unittest.skipIf(sys.platform == 'win32', 'Non-Windows failure-path test')
     async def test_production_server_reports_platform_error_without_mock_fallback(self):

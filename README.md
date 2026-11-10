@@ -1,6 +1,6 @@
 # 3DModel-RCGN
 
-工业数模自动拆解项目。提供测试 STEP、离线体检和 15 个 SolidWorks MCP 工具：文档/组件树、视图、选择、重建、显隐，以及组件位置、变换和近似包围盒。用户已确认打开模型可用；其余操作待实机验证。
+工业数模自动拆解项目。提供测试 STEP、离线体检和 16 个 SolidWorks MCP 工具：软件启动、文档/组件树、视图、选择、重建、显隐，以及组件位置、变换和近似包围盒。用户已确认打开模型可用；其余操作待实机验证。
 
 ## 在 Windows 上使用
 
@@ -11,7 +11,7 @@ py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[solidworks]"
 ```
 
-需要 Python 3.10+；STEP 已直接放在 examples 下，无需解压。启动一个 SolidWorks 实例，再在仓库根目录运行：
+仅面向 Windows + 桌面版 SolidWorks，Python 3.10+。无需提前启动 SolidWorks；STEP 已在 examples 下，无需解压。在仓库根目录运行：
 
 ```powershell
 opencode mcp list
@@ -20,11 +20,12 @@ opencode
 
 项目 `opencode.json` 已配置本地 MCP。升级后退出并重新启动 OpenCode，让 MCP 加载新工具。告诉 Agent：
 
-> 检查 SolidWorks 连接；打开 examples/three_servo_lift/3X Lift Assembly.STEP。若导入为装配，读取组件空间清单，将原始 JSON 保存到 outputs 下的新文件，并说明不完整项。
+> 如果 SolidWorks 未运行就启动它，已有会话则复用；打开 examples/three_servo_lift/3X Lift Assembly.STEP。若导入为装配，读取组件空间清单，将原始 JSON 保存到 outputs 下的新文件，并说明不完整项。
 
 ## 直接检查
 
 ```powershell
+.\.venv\Scripts\python.exe -m cadkin sw sw_start_application
 .\.venv\Scripts\python.exe -m cadkin sw sw_session_status
 .\.venv\Scripts\python.exe -m cadkin sw sw_component_tree --output outputs/solidworks_inventory.json
 python -m cadkin inspect "examples/three_servo_lift/3X Lift Assembly.STEP"

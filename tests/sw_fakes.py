@@ -168,6 +168,11 @@ class Document:
 
 class App:
     RevisionNumber = 'test-only'
+    StartupProcessCompleted = True
+    Visible = True
+    UserControl = True
+
+    def GetProcessID(self): return 1234
 
     def GetExecutablePath(self):
         return 'C:/SOLIDWORKS/sldworks.exe'
@@ -211,3 +216,36 @@ def runtime():
                                 REGKIND_NONE=2, LoadTypeLibEx=load_library)
     client = SimpleNamespace(VARIANT=lambda kind, val: SimpleNamespace(value=val))
     return pythoncom, client
+
+
+class SessionHarness:
+    """Explicit test-only COM activation/OS process inventory; no real launch."""
+    def __init__(self, running=False):
+        from unittest.mock import Mock
+        from cadkin.adapters.solidworks import SolidWorksAdapter
+        self.app = App(None)
+        self.running = running
+        pythoncom, client = runtime()
+        pythoncom.CLSCTX_LOCAL_SERVER = 4
+        pythoncom.IID_IDispatch = 'test-IDispatch'
+        pythoncom.CoCreateInstance = Mock(side_effect=self.create)
+        pythoncom.PumpWaitingMessages = Mock()
+        pythoncom.CoUninitialize = Mock()
+        client.dynamic = SimpleNamespace(Dispatch=lambda dispatch: dispatch)
+        client.GetActiveObject = Mock(side_effect=self.attach)
+        self.adapter = SolidWorksAdapter(app=self.app, runtime=(pythoncom, client))
+        self.adapter._resolve_application_clsid = Mock(return_value='test-SolidWorks-CLSID')
+        self.adapter.app = None
+        self.adapter.process_id = None
+        self.adapter._owns_com = True
+        self.adapter._running_processes = Mock(side_effect=lambda: ['1234'] if self.running else [])
+        self.pythoncom, self.client = pythoncom, client
+
+    def create(self, clsid, outer, context, iid):
+        assert (clsid, outer, context, iid) == ('test-SolidWorks-CLSID', None, 4, 'test-IDispatch')
+        self.running = True
+        return self.app
+
+    def attach(self, progid):
+        assert progid == 'SldWorks.Application' and self.running
+        return SimpleNamespace(_oleobj_=self.app)

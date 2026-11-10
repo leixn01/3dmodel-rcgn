@@ -6,14 +6,14 @@
 | 工具 | `cadkin/tools/solidworks.py` | 固定工具目录、参数 Schema、统一错误 |
 | MCP | `cadkin/mcp_server.py` | 官方 SDK 的 stdio 协议、工具注册与结构化返回 |
 | CLI | `cadkin/__main__.py` | 调用同一工具层、将 JSON 保存到新文件 |
-| COM 适配 | `cadkin/adapters/solidworks.py`、`display.py`、`spatial.py` | 会话/文档/组件 API；显示与空间读取独立模块，通过同一 STA 执行 |
+| COM 适配 | `cadkin/adapters/solidworks.py`、`display.py`、`spatial.py`、`session.py` | 会话/文档/组件 API；显示、空间读取和显式启动独立模块，通过同一 STA 执行 |
 | 空间计算 | `cadkin/geometry.py` | 无 COM 依赖的矩阵、单位与近似包围盒转换 |
 | STA 调度 | `cadkin/adapters/sta.py` | 单线程串行调用、超时及取消后的状态处理 |
 | 开源兼容片段 | `cadkin/_vendor/sw_mcp.py` | 从固定 SW_MCP 版本提取并修改的 COM 成员访问逻辑 |
 
 Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程内调用 COM 适配器。CLI 也走同一工具层。输入体检 `cadkin/tools/intake.py` 保持独立，无 Windows/MCP 依赖。
 
-当前采用 Python + pywin32 + 官方 MCP Python SDK 1.29.0。本地 stdio 服务由 OpenCode 启动，无需开放网络端口或注册 SolidWorks 插件。MCP/COM 进程必须运行在安装 SolidWorks 的 Windows 电脑上。
+当前采用 Python + pywin32 + 官方 MCP Python SDK 1.29.0。本地 stdio 服务由 OpenCode 启动，无需开放网络端口或注册 SolidWorks 插件。MCP/COM 进程必须运行在安装 SolidWorks 的 Windows 电脑上；后续只维护 Windows，CI 为 Windows 上的 Python 3.10/3.12。
 
 ## 隔离
 
@@ -30,6 +30,7 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 | Skill | 职责 |
 | --- | --- |
 | `cad-intake` | 离线 STEP/ZIP 体检 |
+| `solidworks-start` | 独立启动/复用会话、可见性及就绪检查，不打开模型 |
 | `solidworks-connect` | 会话与活动文档检查、连接诊断 |
 | `assembly-inventory` | 装配组件树、部分结果核对与清单导出 |
 | `component-spatial` | 单实例/整机空间信息、单位与近似边界说明、JSON 导出 |
@@ -39,7 +40,7 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 | `component-visibility` | 单个装配实例显隐与隐藏父级核对 |
 | `component-selection` | 按完整实例路径选择或清空选择 |
 
-已有空间读取与显示操作相互独立；后续详细几何、配合提取、运动关系推断继续独立增加。
+软件启动、文档操作、空间读取与显示操作相互独立；后续详细几何、配合提取、运动关系推断继续独立增加。
 
 ## 验证边界
 

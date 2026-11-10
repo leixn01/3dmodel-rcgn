@@ -11,7 +11,7 @@ from cadkin.tools.solidworks import SolidWorksTools, TOOLS
 def create_server(service):
     from mcp.server import Server
     from mcp.types import Tool, TextContent, CallToolResult
-    server = Server("3dmodel-rcgn-solidworks", version="0.3.0")
+    server = Server("3dmodel-rcgn-solidworks", version="0.4.0")
 
     @server.list_tools()
     async def list_tools():
@@ -45,7 +45,7 @@ async def serve(root, timeout):
 def main():
     parser = argparse.ArgumentParser(description="SOLIDWORKS MCP over local stdio (Windows COM)")
     parser.add_argument("--root", type=Path, default=Path.cwd(), help="Project root for input paths")
-    parser.add_argument("--timeout", type=float, default=60.0, help="COM call timeout, seconds; timed-out operations are never retried")
+    parser.add_argument("--timeout", type=float, default=180.0, help="COM call timeout, seconds; timed-out operations are never retried")
     args = parser.parse_args()
     if not 0 < args.timeout <= 600:
         parser.error("timeout must be in (0, 600]")

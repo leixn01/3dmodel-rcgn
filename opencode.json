@@ -5,7 +5,7 @@
       "type": "local",
       "command": [".venv/Scripts/python.exe", "-m", "cadkin.mcp_server"],
       "enabled": true,
-      "timeout": 70000
+      "timeout": 190000
     }
   }
 }

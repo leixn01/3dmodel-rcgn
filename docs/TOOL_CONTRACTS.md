@@ -1,9 +1,10 @@
 # SolidWorks 工具接口
 
-版本：0.3.0。以下 15 个工具已实现并注册；已做离线和 stdio 协议测试。用户反馈已确认打开模型可用，其他工具尚未完成实机验收。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.4.0。以下 16 个工具已实现并注册；已做离线和 stdio 协议测试。用户反馈已确认打开模型可用，其他工具尚未完成实机验收。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `sw_start_application` | 可选 `wait_seconds`（1–120，默认 120） | 启动或复用唯一 SolidWorks，会显示窗口并交给用户控制；等待启动完成，不打开文件 |
 | `sw_session_status` | 无 | 连接已有进程，读取版本；未运行返回 `connected: false` |
 | `sw_active_document` | 无 | 文档标题、路径、类型、配置、dirty 状态和 `document_token` |
 | `sw_component_tree` | 可选 `max_components`、`max_depth` | 读取当前装配实例树；不自动解析轻化组件 |
@@ -85,12 +86,24 @@
 
 MCP 返回真实 JSON，不直接写文件；由客户端文件工具保存完整返回，或使用同实现 CLI 的 `--output`。读取期间不要编辑模型或切换文档/配置，长调用受共同超时规则限制。逐项验收见 [0.3.0 清单](MCP_ACCEPTANCE.md#030组件空间信息)。
 
+## 软件启动（0.4.0）
+
+`sw_start_application` 是独立的有副作用工具。通过固定 ProgID `SldWorks.Application` 的 Windows 本地 COM 注册启动桌面版软件；不接受 exe 路径、脚本或远程主机。没有进程时创建一个；已有单个进程时只连接并复用；已有进程连接失败或多进程时明确报错，不通过新建实例绕过。
+
+启动成功返回 `connected=true`、`started`、`reused_existing`、`process_id`、`revision`、`startup_completed=true`、`visible=true`、`user_control=true` 和 `has_active_document`。后者可以为 false，启动不创建空白模型。检查 `ISldWorks.StartupProcessCompleted`（2015+），不把出现进程等同于启动完成；显示窗口后赋予用户控制，使正常成功启动的会话在 CLI/OpenCode 退出后保持运行。使用已有会话时不切换或保存当前文档，可能将原本隐藏的应用显示出来。
+
+新创建的 COM 对象保留在同一 STA；后续调用先核对进程 PID 再复用，不强求刚启动的应用已经注册到运行对象表。启动前后重复核对进程；其他程序同时启动可能导致竞争，此时报告多实例，不擅自结束任一进程。不要从多个客户端同时发启动请求。
+
+`APPLICATION_NOT_REGISTERED` 表示无法解析安装注册；`STARTUP_READ_FAILED` / `STARTUP_STATE_MISMATCH` 表示启动、可见性或控制状态无法确认。`STARTUP_PENDING` 表示等待期内启动尚未完成，检查许可/恢复/插件弹窗后可再次调用启动工具复用已有进程。`START_FAILED` 可能发生在进程已创建之后；不能据此断言软件未启动。激活结果不明且未检测到进程时，下一次启动返回 `START_OUTCOME_UNKNOWN`，要求先检查现场再重启 MCP；不会连续重复激活。阻塞 COM 调用超时仍按通用 `TIMEOUT` / `OUTCOME_UNKNOWN` 处理。
+
+`wait_seconds` 只约束可返回控制权的就绪轮询；COM 激活或属性调用自身阻塞时，外层超时负责向客户端报告结果未知，不能撤销启动。不会自动处理许可、登录或恢复文件弹窗，不保证绕过本机首次启动配置。默认使用系统注册版本，实际版本以返回 revision 为准。
+
 ## 执行范围与失败处理
 
-- 仅通过 `GetActiveObject` 连接已有 SolidWorks；不自动启动软件。当前只支持一个 SolidWorks 进程，多实例返回 `MULTIPLE_SESSIONS`。
+- 只面向 Windows。只读工具连接已有 SolidWorks；只有显式 `sw_start_application` 可以创建会话。当前只支持一个 SolidWorks 进程，多实例返回 `MULTIPLE_SESSIONS`。
 - 所有 COM 创建、调用和释放在同一 STA 工作线程；CLI/MCP 共享工具层。运行时没有模拟成功的后端开关。
 - 同时收到多个调用时返回 `BUSY`，不把操作排队留到稍后执行。客户端应逐个调用。
-- 默认 60 秒超时。超时或取消不能中止已进入 SolidWorks 的 COM 调用；返回未知结果状态并停止接收新操作。先检查窗口/对话框和结果，再重启 MCP，避免重复执行。
+- MCP/CLI 默认 180 秒调用超时，项目 OpenCode 配置为 190000 ms。超时或取消不能中止已进入 SolidWorks 的 COM 调用；返回未知结果状态并停止接收新操作。先检查窗口/对话框和结果，再重启 MCP，避免重复执行。
 - 打开路径默认限制在项目目录；额外输入目录可通过 Windows 环境变量 `CADKIN_ALLOWED_ROOTS` 配置，以分号分隔。这限制的是显式打开路径，不是文件系统沙箱，也不限制 SolidWorks 自行加载装配依赖。
 - STEP 使用 `GetImportFileData` / `LoadFile4(..., "r", ...)`，保留用户导入设置，不强行改成装配。若实机版本/3D Interconnect 导入不兼容，可手动打开 STEP 后继续读取；错误必须如实记录。
 - 第一版没有保存、覆盖、关闭文档、任意 Python/VBA 执行、修改配合或移动组件工具。
@@ -119,3 +132,8 @@ MCP 返回真实 JSON，不直接写文件；由客户端文件工具保存完�
 - [MultiplyTransform：先旋转、缩放，再平移](https://help.solidworks.com/2017/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMathPoint~MultiplyTransform.html)
 - [GetBox：近似边界与限制](https://help.solidworks.com/2019/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IComponent2~GetBox.html)
 - [按组件汇总装配包围盒的官方示例](https://help.solidworks.com/2023/english/api/sldworksapi/Get_Assembly_Bounding_Box_using_Components_Example_VB.htm)
+
+- [UserControl：前台运行并在自动化程序退出后保留软件](https://help.solidworks.com/2024/English/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.ISldWorks~UserControl.html)
+- [StartupProcessCompleted：包括启动插件的就绪状态](https://help.solidworks.com/2025/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ISldWorks~StartupProcessCompleted.html)
+- [pywin32 COM 创建接口](https://github.com/mhammond/pywin32/blob/main/com/win32com/src/PythonCOM.cpp)
+- [pywin32 ProgID→IID 转换用法](https://github.com/mhammond/pywin32/blob/main/com/win32com/client/gencache.py)

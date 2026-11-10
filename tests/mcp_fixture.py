@@ -1,14 +1,16 @@
 """Explicit test-only stdio server. Not installed in the cadkin distribution."""
 import asyncio
+import sys
 from mcp.server.stdio import stdio_server
 from cadkin.adapters.solidworks import SolidWorksAdapter
 from cadkin.mcp_server import create_server
 from cadkin.tools.solidworks import SolidWorksTools
-from tests.sw_fakes import App, Document, runtime
+from tests.sw_fakes import App, Document, SessionHarness, runtime
 
 
 async def main():
-    service = SolidWorksTools(factory=lambda: SolidWorksAdapter(app=App(Document()), runtime=runtime()))
+    factory = (lambda: SessionHarness().adapter) if '--cold-start' in sys.argv else (lambda: SolidWorksAdapter(app=App(Document()), runtime=runtime()))
+    service = SolidWorksTools(factory=factory)
     server = create_server(service)
     try:
         async with stdio_server() as (read, write):
