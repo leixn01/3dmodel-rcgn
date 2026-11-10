@@ -1,31 +1,36 @@
 # 3DModel-RCGN
 
-工业数模自动拆解项目。已有测试模型、离线 STEP 体检工具和三个 OpenCode skill；SolidWorks MCP 工具待开发、实测。
+工业数模自动拆解项目。已提供测试模型、STEP 体检和 SolidWorks 本地 MCP：读取文档/组件树、打开模型、切换视图、选择组件、重建。已通过离线与 MCP 协议测试，SolidWorks 实机待验收。
 
-## 开始使用
+## 在 Windows 上使用
 
-在 Windows PowerShell 中：
+在仓库根目录的 PowerShell 中执行（已有仓库先 `git pull --ff-only`）：
 
 ```powershell
-git clone https://github.com/leixn01/3dmodel-rcgn.git
-cd 3dmodel-rcgn
+py -3 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[solidworks]"
 Expand-Archive -LiteralPath .\examples\three_servo_lift\three_servo_lift.zip -DestinationPath .\outputs\three_servo_lift
+```
+
+需要 Python 3.10+；已解压无需重复解压。启动一个 SolidWorks 实例，再在仓库根目录运行：
+
+```powershell
+opencode mcp list
 opencode
 ```
 
-已有仓库执行 `git pull --ff-only`；已解压的模型无需重复解压。
+项目 `opencode.json` 已配置本地 MCP。告诉 Agent：
 
-- 离线体检：告诉 OpenCode **加载 cad-intake，检查仓库内测试模型**。需要 Python 3.10+。
-- 开始 SolidWorks 开发：先手动打开 `outputs/three_servo_lift/temp/3X Lift Assembly.STEP`，再告诉 OpenCode **加载 solidworks-connect，按 docs/DEVELOPMENT_PLAN.md 完成第一步只读连接与 MCP 接入**。
+> 加载 solidworks-connect，检查连接；然后加载 solidworks-document，打开 outputs/three_servo_lift/temp/3X Lift Assembly.STEP，报告实际文档类型。若为装配，加载 assembly-inventory 导出组件树。
 
-Skill 放在 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现、按需加载；执行代码放在 `cadkin/tools/`。
-
-## 直接运行现有工具
+## 直接检查
 
 ```powershell
+.\.venv\Scripts\python.exe -m cadkin sw sw_session_status
+.\.venv\Scripts\python.exe -m cadkin sw sw_component_tree --output outputs/solidworks_inventory.json
 python -m cadkin inspect examples/three_servo_lift/three_servo_lift.zip
 ```
 
-该命令只做 STEP 文本体检。工作结果放 `outputs/`。
+Skill 在 `.opencode/skills/`，工具在 `cadkin/tools/`，COM 在 `cadkin/adapters/`。当前不含零件移动、配合编辑或自动运动关系识别。
 
-[OpenCode 用法](docs/OPENCODE_START.md) · [分层与 SolidWorks 联动](docs/ARCHITECTURE.md) · [开发计划](docs/DEVELOPMENT_PLAN.md)
+[使用与排错](docs/OPENCODE_START.md) · [工具接口](docs/TOOL_CONTRACTS.md) · [分层](docs/ARCHITECTURE.md) · [开源来源](THIRD_PARTY_NOTICES.md)

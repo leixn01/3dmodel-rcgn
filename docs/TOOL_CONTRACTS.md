@@ -1,40 +1,52 @@
-# 工具接口约定
+# SolidWorks 工具接口
 
-以下 SolidWorks 接口是下一阶段的开发目标，尚未注册为可调用工具。实际能力以代码、Agent 工具列表和目标电脑测试为准。
+版本：0.1.0。以下 8 个工具已实现并注册；已做离线和 stdio 协议测试，尚无本项目的 SolidWorks 实机验收。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
-## 已有离线工具
-
-`cadkin/tools/intake.py` 提供 `inspect_path`、`inspect_step`、`fetch_asset`。CLI 仍为 `python -m cadkin inspect <path>` / `python -m cadkin fetch ...`。现有结果格式不变；指定模型已内置，日常不需要下载命令。
-
-## 首批 SolidWorks 工具
-
-| 工具名（服务内部） | 参数 | 成功结果的核心内容 |
+| 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
-| `sw_session_status` | 无 | 是否找到现有会话、SolidWorks 版本；未运行是明确状态 |
-| `sw_active_document` | 无 | 标题、路径、文档类型、活动配置；无文档与 API 错误分别表示 |
-| `sw_component_tree` | 无 | 本次读取的文档/配置、组件实例列表、统计口径、完整性与读取错误 |
+| `sw_session_status` | 无 | 连接已有进程，读取版本；未运行返回 `connected: false` |
+| `sw_active_document` | 无 | 文档标题、路径、类型、配置、dirty 状态和 `document_token` |
+| `sw_component_tree` | 可选 `max_components`、`max_depth` | 读取当前装配实例树；不自动解析轻化组件 |
+| `sw_open_document` | `path` | 打开 STEP/SLDPRT/SLDASM/SLDDRW，并检查活动文档；不保存或关闭其他文档 |
+| `sw_set_view` | `expected_document_token`，可选 `view`、`fit` | 切换标准视图，默认等轴测并缩放适合窗口 |
+| `sw_select_component` | `expected_document_token`、`occurrence_path` | 替换当前选择为指定实例，读取选择结果核对 |
+| `sw_clear_selection` | `expected_document_token` | 清空选择并核对计数 |
+| `sw_rebuild` | `expected_document_token` | 重建活动模型；可能更新内存中的几何及 dirty 状态，不保存 |
 
-第一版仅处理已有会话的活动文档；多实例不能唯一确定目标时返回错误，不任意选择。每个结果都携带实际读取的文档上下文，Agent 应与任务目标核对。遍历期间使用同一文档/配置快照，检测到切换或失效时报告失败或部分结果，不拼接不同模型的数据。
+`view` 支持 front/back/left/right/top/bottom/isometric/trimetric/dimetric。接口用枚举值访问视图，不依赖中英文界面的视图名称。
 
-工具只返回 JSON 可序列化值，不把原始 COM 对象或堆栈当作业务数据。建议统一包含 `schema_version`、`status`（`ok` / `partial` / `error`）、`data`、`errors`；致命工具错误在 MCP 层也应标记为错误，不能返回普通成功文本。
+先读取文档或组件树，使用返回的 `document_token` 操作。该值关联进程、文档路径/标题及活动配置；目标不匹配返回 `DOCUMENT_CHANGED`，不会操作新目标。它不是不可变几何版本号；模型重建或编辑后重新读取组件清单。工具执行期间不要在界面切换文档、配置或修改模型，COM 读取不是事务快照。
 
-`sw_component_tree` 每个实例至少包含：
+## 结果
 
-- `occurrence_path`：本次文档和配置中的完整实例路径，不宣称跨编辑永久稳定。
-- `parent_occurrence_path`：父实例；根装配单独记录，不将其重复算作子组件。
-- `name`、`file_path`、`referenced_configuration`：实例名称、可用文件路径、引用配置；未知使用 `null` 并记录原因。
-- `suppression_state`、`read_status`：抑制/轻化/解析状态及读取状态；不按名称或文件路径合并重复实例。
+所有工具返回 `schema_version`、`status`（`ok` / `partial` / `error`）、`data` 和 `errors`。MCP 致命工具错误同时设置 `isError: true`；部分结果保留数据并标记 `partial`，不得当作完整验收。
 
-明确报告实例统计是否包含子装配节点、抑制项和未解析项。某分支读取失败时保留节点及错误，返回 `partial`；顶层读取失败时返回 `error`。不得用空列表、零计数或猜测值掩盖错误。只统计本次确实读到的节点，不声称覆盖不可访问的子树。
+组件节点包含 `occurrence_path`（完整 Name2）、父路径、名称、文件路径、引用配置、原始抑制状态枚举、是否抑制及读取状态。重复文件的不同实例分别保留，根装配单独存于 `document`，不计入 `component_count`。`complete: false` 表示遍历不完整；数量只代表实际读取的节点。
 
-首批工具不接收输出路径、不写模型文件；JSON 落盘由 CLI 或 Agent 文件工具负责，写入 `outputs/` 并避免覆盖。后续需要大型结果分页或专用导出工具时再扩展契约。
+抑制/轻化/内部 ID 错误、读取异常、遍历深度或数量上限都会产生明确记录。缺失或重复实例名称使用 `@unreadable/...` 标记，不能用其选择组件。相同名称产生歧义时拒绝选择。
 
-## API 实现注意事项
+`sw_set_view` 的成功表示 API 调用完成；它不会把返回 void 的 API 当作视觉核对证据。`sw_rebuild` 检查重建返回值，不声称已全面检查配合或几何健康度。
 
-1. 连接已经运行的 SolidWorks，读取 `ActiveDoc` 及实际文档类型。不能以“新建了一个空实例”作为连接已有模型成功的证据。
-2. 使用当前活动配置的 `GetRootComponent3(false)` 获取装配遍历入口，再用 `IComponent2.GetChildren` 递归。避免为读取而自动加载额外配置组件；未解析情况如实返回。
-3. 配置根组件主要用作遍历入口，不能假设它支持普通组件的全部属性。根装配信息从文档/配置读取。
-4. 以目标 SolidWorks 版本的 API 为准验证 COM 绑定、属性/方法返回形式及抑制状态枚举。使用进程外可调用接口；不要直接照抄仅供进程内使用的 `IGetChildren` 示例。
-5. 单元测试覆盖无会话、无文档、零件输入、重复实例、轻化/抑制、部分失败；另外必须有 Windows 实测。mock 通过不能代替 COM 验收。
+## 执行范围与失败处理
 
-参考：[GetRootComponent3](https://help.solidworks.com/2019/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IConfiguration~GetRootComponent3.html)、[进程内/外遍历差异](https://help.solidworks.com/2023/english/api/sldworksapi/traverse_assembly_example_cplusplus_com.htm)。这两页用于确认接口语义，开发时还需按本机版本核对。
+- 仅通过 `GetActiveObject` 连接已有 SolidWorks；不自动启动软件。当前只支持一个 SolidWorks 进程，多实例返回 `MULTIPLE_SESSIONS`。
+- 所有 COM 创建、调用和释放在同一 STA 工作线程；CLI/MCP 共享工具层。运行时没有模拟成功的后端开关。
+- 同时收到多个调用时返回 `BUSY`，不把操作排队留到稍后执行。客户端应逐个调用。
+- 默认 60 秒超时。超时或取消不能中止已进入 SolidWorks 的 COM 调用；返回未知结果状态并停止接收新操作。先检查窗口/对话框和结果，再重启 MCP，避免重复执行。
+- 打开路径默认限制在项目目录；额外输入目录可通过 Windows 环境变量 `CADKIN_ALLOWED_ROOTS` 配置，以分号分隔。这限制的是显式打开路径，不是文件系统沙箱，也不限制 SolidWorks 自行加载装配依赖。
+- STEP 使用 `GetImportFileData` / `LoadFile4(..., "r", ...)`，保留用户导入设置，不强行改成装配。若实机版本/3D Interconnect 导入不兼容，可手动打开 STEP 后继续读取；错误必须如实记录。
+- 第一版没有保存、覆盖、关闭文档、任意 Python/VBA 执行、修改配合或移动组件工具。
+
+## CLI
+
+`python -m cadkin sw <工具名> --arguments '<JSON对象>'` 与 MCP 调用相同实现。无参数工具不需要 `--arguments`。可加 `--output outputs/result.json` 保存到新文件；文件已存在则拒绝覆盖。成功/部分结果退出码 0，错误退出码 2；部分结果仍需检查 `status`。
+
+原有 `python -m cadkin inspect <STEP或ZIP>` 保持不变，不依赖 Windows 或 MCP。
+
+## 参考
+
+- [开源代码来源与修改范围](../THIRD_PARTY_NOTICES.md)
+- [GetRootComponent3](https://help.solidworks.com/2019/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IConfiguration~GetRootComponent3.html)
+- [LoadFile4](https://help.solidworks.com/2015/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ISldWorks~LoadFile4.html)
+- [IComponent2.Select4（三参数）](https://help.solidworks.com/2020/english/api/sldworksapi/solidworks.interop.sldworks~solidworks.interop.sldworks.icomponent2~select4.html)
+- [重建激活枚举](https://help.solidworks.com/2024/English/api/swconst/SOLIDWORKS.Interop.swconst~SOLIDWORKS.Interop.swconst.swRebuildOnActivation_e.html)

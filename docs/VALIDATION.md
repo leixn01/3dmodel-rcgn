@@ -18,7 +18,7 @@
 - README 与 OpenCode 起步任务只覆盖模型打开、连接和组件树读取。
 - 最新远端 CI 状态以仓库 Actions 为准。
 
-## OpenCode skill 与工具分层
+## OpenCode skill 与工具分层（目录整理阶段）
 
 2026-11-10，Python 3.12.14。
 
@@ -28,4 +28,16 @@
 - 单独按 `cad-intake` 流程执行只读检查成功；ZIP 大小、SHA-256、成员清单及 CRC 核验通过。
 - 分层说明与三个 SolidWorks 工具契约已完成；尚未实现 COM 适配器或 MCP 服务，没有启用不存在服务的配置。
 
-当前执行环境没有进行 Windows PowerShell、SolidWorks 或 OpenCode 客户端的实跑。文件布局按官方规则静态核对，不代表已验证客户端自动发现；上述离线检查也不代表 SolidWorks 连接和组件导出已完成。这些将在用户的目标电脑实现与验证。
+## MCP 第一版
+
+2026-11-10，Python 3.12.14、官方 MCP Python SDK 1.29.0。
+
+- 已实现 8 个工具、Windows COM 适配器、STA 调度、CLI 与 stdio 服务，提供项目 OpenCode 配置。
+- 22 个测试通过，覆盖原体检、文档/配置变化、组件重复与部分失败、打开/激活、选择回读、重建失败、参数拒绝、已有实例连接路径及超时后的停止执行。
+- 使用真实 MCP 客户端和子进程完成 initialize、tools/list、成功调用及 isError 错误调用；成功 CAD 操作由显式测试替身提供，未调用真实 SolidWorks。
+- 生产服务器在 Linux 下真实返回 UNSUPPORTED_PLATFORM，没有自动切换到模拟成功；独立按连接 skill 检查也得到一致结果。
+- 构建 wheel 成功，确认包含 MCP 入口、工具包以及 Apache-2.0 LICENSE/NOTICE，不包含测试后端。
+- 六个 skill 的元数据、目录及本地链接通过检查。测试模型保留原始文件与校验值。
+- CI 增加 Ubuntu/Windows 和 Python 3.10/3.12 的依赖安装及离线/协议测试；远端运行状态以 Actions 为准。
+
+当前环境没有进行 Windows PowerShell、SolidWorks 或 OpenCode 客户端的实跑。OpenCode 配置及 skill 布局按官方规则核对；协议通过不代表 COM 或客户端联调已通过。真实版本兼容性、STEP 导入和操作结果须按 DEVELOPMENT_PLAN.md 在目标电脑验收。

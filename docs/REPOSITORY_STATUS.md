@@ -1,16 +1,15 @@
 # 仓库状态
 
-更新：2026-11-10。正式仓库：[leixn01/3dmodel-rcgn](https://github.com/leixn01/3dmodel-rcgn)，默认分支 `main`。
+更新：2026-11-10。正式仓库：[leixn01/3dmodel-rcgn](https://github.com/leixn01/3dmodel-rcgn)，默认分支 `main`。Python 包版本 0.1.0。
 
 | 内容 | 状态 |
 | --- | --- |
-| 指定测试模型及来源校验 | 已随普通 Git 克隆提供 |
-| 离线 STEP/ZIP 体检 | 已实现，代码位于 `cadkin/tools/intake.py` |
-| OpenCode skill | 三个独立 SKILL.md，使用默认发现目录 |
-| SolidWorks 分层及接口 | 已设计，见 ARCHITECTURE.md 和 TOOL_CONTRACTS.md |
-| COM 适配器、SolidWorks 工具、MCP 服务 | 待实现 |
-| Windows / SolidWorks / OpenCode 联调 | 待目标电脑实测 |
+| 测试 STEP/ZIP 与来源校验 | 已提供 |
+| 离线输入体检 | 已实现，无 CAD 软件依赖 |
+| 六个 OpenCode skill | 按默认目录拆分 |
+| 8 个 SolidWorks 工具与 CLI | 已实现，离线测试通过 |
+| MCP stdio 与项目配置 | 已实现，协议测试通过 |
+| Windows + SolidWorks COM / OpenCode 客户端 | 待用户电脑实测 |
+| 自动拆解、运动副推断、配合编辑 | 未实现 |
 
-运行环境为用户已安装 SolidWorks 的 Windows 电脑。Python 包名 `3dmodel-rcgn`、导入包 `cadkin`；打开 STEP 不要求安装本项目。工作输出放 `outputs/`。
-
-首个任务是连接和活动文档读取，随后封装 MCP，再增加组件树。实施步骤见 [开发计划](DEVELOPMENT_PLAN.md)，验证记录见 [VALIDATION.md](VALIDATION.md)。
+复用范围见 [第三方说明](../THIRD_PARTY_NOTICES.md)。工具详情见 [接口约定](TOOL_CONTRACTS.md)，下一步见 [实机验收](DEVELOPMENT_PLAN.md)。输出留在 `outputs/`，不提交用户工程与本机配置秘密。

@@ -40,3 +40,11 @@
 | PS/OIP 等运行平台 | 经确认模型的运行与信号反馈 | 适配接口预留；本次不承诺现成无损转换 |
 
 文档能力、源码实现、本机执行、用户工程验收分别记录，不能相互替代。
+
+## MCP 第一版（2026-11-10）
+
+核查并复用 [d-veloping/SW_MCP](https://github.com/d-veloping/SW_MCP) 固定提交 `6ea475b14924f4bc85298fc17bd1f873024e8f6b` 的 COM 成员访问与视图编号片段，修改为失败即返回错误。Apache-2.0 LICENSE/NOTICE 已保留；精确复用与修改范围见 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)。没有引入上游全部工具，也没有把上游实测版本直接认定为本项目实测版本。
+
+同时检查过 AvishakeAdhikary/solidworks-mcp-server 的连接代码与 MIT 声明，其连接策略包含自动新建实例的路径；本项目没有复用该连接实现。最终采用已有会话连接、独立 STA 调度和固定工具目录。
+
+官方 MCP Python SDK 使用维护线 1.29.0，按 [官方 1.x 文档](https://py.sdk.modelcontextprotocol.io/v1/)固定版本，避免无意升级到接口不同的 2.x。OpenCode 项目配置使用官方说明兼容的 V1 格式；工具协议已由真实 MCP 客户端测试，OpenCode 与 SolidWorks 的现场联调仍待完成。

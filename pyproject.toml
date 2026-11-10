@@ -4,13 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "3dmodel-rcgn"
-version = "0.0.1"
+version = "0.1.0"
 description = "Evidence-aware CAD intake for industrial kinematics reconstruction"
 requires-python = ">=3.10"
 dependencies = []
 
+[project.optional-dependencies]
+solidworks = ["mcp==1.29.0", "pywin32>=306; sys_platform == 'win32'"]
+
 [project.scripts]
 cadkin = "cadkin.__main__:main"
+cadkin-solidworks-mcp = "cadkin.mcp_server:main"
 
 [tool.setuptools.packages.find]
 include = ["cadkin*"]
+
+[tool.setuptools.package-data]
+"cadkin._vendor" = ["licenses/*"]
