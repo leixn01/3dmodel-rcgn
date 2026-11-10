@@ -4,7 +4,7 @@
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。
 - 先读 README。当前已有 MCP 第一版，下一步按 `docs/DEVELOPMENT_PLAN.md` 做实机验收；不重新搭建已有功能，不把远期路线图一次性实现。
-- 模型已在 `examples/three_servo_lift/three_servo_lift.zip`；原始输入保持不变，解压副本和结果放 `outputs/`。
+- 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
 

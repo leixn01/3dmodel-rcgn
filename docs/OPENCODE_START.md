@@ -9,10 +9,9 @@ git clone https://github.com/leixn01/3dmodel-rcgn.git
 cd 3dmodel-rcgn
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[solidworks]"
-Expand-Archive -LiteralPath .\examples\three_servo_lift\three_servo_lift.zip -DestinationPath .\outputs\three_servo_lift
 ```
 
-已有仓库先 `git pull --ff-only`；已有模型不重复解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32 及 SDK 依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`；STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32 及 SDK 依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
 
 ## 连接与实际操作
 
@@ -22,7 +21,7 @@ Expand-Archive -LiteralPath .\examples\three_servo_lift\three_servo_lift.zip -De
 
 ```text
 加载 solidworks-connect，检查 SolidWorks 会话。
-加载 solidworks-document，打开 outputs/three_servo_lift/temp/3X Lift Assembly.STEP。
+加载 solidworks-document，打开 examples/three_servo_lift/3X Lift Assembly.STEP。
 报告实际文档类型；如果是装配，加载 assembly-inventory，保存组件树到 outputs/solidworks_inventory.json。
 然后加载 solidworks-view，将模型切到等轴测并缩放适合窗口。
 ```
@@ -58,6 +57,6 @@ Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不�
 
 诊断命令：`.\.venv\Scripts\python.exe -m cadkin sw sw_session_status`。结果输出到终端，不会开启 MCP 协议会话。运行产物留在 `outputs/`。
 
-本项目尚未在目标 SolidWorks 版本实测。请按 [验收步骤](DEVELOPMENT_PLAN.md) 记录首次联调结果。
+本项目尚未在目标 SolidWorks 版本实测。请按 [8 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
 
 官方说明：[Skills](https://opencode.ai/docs/skills/)、[MCP](https://opencode.ai/docs/mcp-servers/)、[V1/V2 兼容](https://opencode.ai/docs/migrate-v1/)。

@@ -25,5 +25,20 @@
     }
   ],
   "local_archive": "examples/three_servo_lift/three_servo_lift.zip",
-  "step_member": "temp/3X Lift Assembly.STEP"
+  "step_member": "temp/3X Lift Assembly.STEP",
+  "local_step": "examples/three_servo_lift/3X Lift Assembly.STEP",
+  "extracted_files": [
+    {
+      "member": "temp/3X Lift Assembly.STEP",
+      "path": "examples/three_servo_lift/3X Lift Assembly.STEP",
+      "size_bytes": 7777725,
+      "sha256": "1728a394abc27e58b84e32c1d3102125be808ea83dbba5194508f6fbda706f48"
+    },
+    {
+      "member": "temp/Bosch SSS 08.JPG",
+      "path": "examples/three_servo_lift/Bosch SSS 08.JPG",
+      "size_bytes": 95271,
+      "sha256": "3dbc3bce21b841faa9829dd4b4596f2677232c35c02a7baa72e8742e34e1c871"
+    }
+  ]
 }

@@ -1,2 +1,6 @@
 # Preserve the bundled source archive byte-for-byte across platforms.
 /examples/three_servo_lift/three_servo_lift.zip -text -diff
+
+# Keep extracted CAD bytes unchanged, including original encoding and line endings.
+"/examples/three_servo_lift/3X Lift Assembly.STEP" -text -diff
+"/examples/three_servo_lift/Bosch SSS 08.JPG" -text -diff

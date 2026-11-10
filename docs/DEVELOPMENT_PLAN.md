@@ -4,6 +4,8 @@
 
 ## 验收顺序
 
+逐项通过标准和可直接交给 OpenCode 的任务见 [MCP 实机验收清单](MCP_ACCEPTANCE.md)。测试 STEP 已直接放在 `examples/three_servo_lift/3X Lift Assembly.STEP`，无需解压。
+
 1. 按 README 安装虚拟环境和依赖。记录 Windows、Python、OpenCode、SolidWorks 版本；只保留一个目标 SolidWorks 进程。
 2. 运行 CLI 会话检查，确认读取到真实进程与版本。通过 OpenCode MCP 再执行同一检查；协议连接成功不能替代 COM 成功。
 3. 手动打开或用 `sw_open_document` 导入测试 STEP。核对文档标题、路径、实际类型、配置和 dirty 状态；若导入为多实体零件，记录事实并检查本机导入方式。

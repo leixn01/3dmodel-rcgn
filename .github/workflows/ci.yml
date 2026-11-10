@@ -31,4 +31,9 @@ jobs:
           with zipfile.ZipFile(asset) as archive:
               assert archive.testzip() is None, 'ZIP CRC check failed'
               assert spec['step_member'] in archive.namelist(), 'STEP member missing'
+              for item in spec['extracted_files']:
+                  data = Path(item['path']).read_bytes()
+                  assert len(data) == item['size_bytes'], item['path']
+                  assert hashlib.sha256(data).hexdigest() == item['sha256'], item['path']
+                  assert data == archive.read(item['member']), 'Extracted file differs from original ZIP'
           PY

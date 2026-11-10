@@ -1,20 +1,20 @@
 {
-  "scope": "All tracked project files, including the bundled test ZIP; excludes this manifest and ignored work outputs",
+  "scope": "All tracked project files, including bundled STEP, reference JPG and source ZIP; excludes this manifest and ignored work outputs",
   "files": [
     {
       "path": ".gitattributes",
-      "size_bytes": 130,
-      "sha256": "33b08a846ed9629089ec06e5de679c2a8bf33672321c6aa4f85995590c0be8ed"
+      "size_bytes": 336,
+      "sha256": "c910f7d68413528108978fd542d528318824bebac69fda6c882c018b3b90c532"
     },
     {
       "path": ".github/workflows/ci.yml",
-      "size_bytes": 1257,
-      "sha256": "f59cf9810add438292469cd1720f00c6dba86ad4aa0a09889378248cda3a5e7d"
+      "size_bytes": 1632,
+      "sha256": "0303b3967137718727d5422e1b8fdc327244e7abaea760e425b851f59cbfabef"
     },
     {
       "path": ".gitignore",
-      "size_bytes": 263,
-      "sha256": "03f1c1b3b7ac8652de6445202d566d9437bfa7dae674e1bd6b88b9a2ae2ace3c"
+      "size_bytes": 312,
+      "sha256": "05d5cb71aa0b9f8c2b2c46ab552950a49d120aaba43d13c341784e5f7c7696ee"
     },
     {
       "path": ".opencode/skills/assembly-inventory/SKILL.md",
@@ -23,8 +23,8 @@
     },
     {
       "path": ".opencode/skills/cad-intake/SKILL.md",
-      "size_bytes": 1403,
-      "sha256": "2bca18b0b5f828ca837ae9d1cf8299723fa992bc8127074d5e3d6e72a7a791a9"
+      "size_bytes": 1448,
+      "sha256": "e6c6f1163a10cc1e8593d3ede9055e7653cf4b18bef399de48ee142838630ccc"
     },
     {
       "path": ".opencode/skills/component-selection/SKILL.md",
@@ -38,8 +38,8 @@
     },
     {
       "path": ".opencode/skills/solidworks-document/SKILL.md",
-      "size_bytes": 1440,
-      "sha256": "9f9a6f1dc40bf1e1cd1067be498571fb25662d8bd271226179d832887e98b0db"
+      "size_bytes": 1443,
+      "sha256": "16cee3e9942511572d6e906ff316014b62f9f3612d534112ab5395b01329cde7"
     },
     {
       "path": ".opencode/skills/solidworks-view/SKILL.md",
@@ -48,8 +48,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size_bytes": 2394,
-      "sha256": "1b006205015d600eb65f902c135cd52410cdcae678e7cedde242798860d3b742"
+      "size_bytes": 2455,
+      "sha256": "73ee702c1b1bdf839cdc3729062fe1076507cfba9b26b5d06a14cebac93e6c52"
     },
     {
       "path": "LICENSE.md",
@@ -58,8 +58,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 1637,
-      "sha256": "a9534b97b06a69acbf6ed65bd42c289d1cd08c9d156373ae608b6e5e61320fa9"
+      "size_bytes": 1584,
+      "sha256": "c4085b4fb932b0c399e75d7e9da131ab3104f284b52a69925bb41bc4fb669e74"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -138,8 +138,8 @@
     },
     {
       "path": "configs/three_servo_lift.source.json",
-      "size_bytes": 956,
-      "sha256": "c623636e991e319c45f340a672aebb99ea803761be737f6e8b4dce39bc67a356"
+      "size_bytes": 1510,
+      "sha256": "5a363e0a690fc36731c0d41c7fb91813b6e622463f742ab65b5e46e19cd10fb9"
     },
     {
       "path": "docs/ARCHITECTURE.md",
@@ -148,8 +148,8 @@
     },
     {
       "path": "docs/ASSET_AUDIT.md",
-      "size_bytes": 2447,
-      "sha256": "2134c38c67f73b24ecf2e42a3446130868975b66f93c539b18013579e48aca5c"
+      "size_bytes": 2498,
+      "sha256": "8d5f59bf2b11efc327b6a04cd2224a08a62ec99a9f1649006f48d7930be20eb7"
     },
     {
       "path": "docs/BACKLOG.md",
@@ -163,13 +163,18 @@
     },
     {
       "path": "docs/DEVELOPMENT_PLAN.md",
-      "size_bytes": 2238,
-      "sha256": "14bf7ed3621ea1fd3116fe3ef4a1fb6d803eb30a922554c1a6f77f306f952df4"
+      "size_bytes": 2440,
+      "sha256": "87640328545145bcc7458204072fa2eb361390c2cdf5f6ade9e1d152690dd7c0"
+    },
+    {
+      "path": "docs/MCP_ACCEPTANCE.md",
+      "size_bytes": 5414,
+      "sha256": "928908b29c995d4bfc4cff510ff3da38ed14b361077f76961bccd9f9d57df04f"
     },
     {
       "path": "docs/OPENCODE_START.md",
-      "size_bytes": 4409,
-      "sha256": "f3d95f857bafc0dfdaeafa6662977f2ab8a9d9ce3babd843319f33f45e21acba"
+      "size_bytes": 4358,
+      "sha256": "b801719bad9dfa2b050da1b613cf71cc1edea7364a09de1109bb32a4b3ada898"
     },
     {
       "path": "docs/REPOSITORY_STATUS.md",
@@ -193,13 +198,23 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "size_bytes": 2943,
-      "sha256": "38d6387e1c8b092653dde31ef0f70f0253e0c21fdea8ca04dc67cb92bce6e70f"
+      "size_bytes": 3782,
+      "sha256": "d17b204f34adb157ab913a1f572b3e144a3c4d34bff5596265b5081590b5db10"
+    },
+    {
+      "path": "examples/three_servo_lift/3X Lift Assembly.STEP",
+      "size_bytes": 7777725,
+      "sha256": "1728a394abc27e58b84e32c1d3102125be808ea83dbba5194508f6fbda706f48"
+    },
+    {
+      "path": "examples/three_servo_lift/Bosch SSS 08.JPG",
+      "size_bytes": 95271,
+      "sha256": "3dbc3bce21b841faa9829dd4b4596f2677232c35c02a7baa72e8742e34e1c871"
     },
     {
       "path": "examples/three_servo_lift/README.md",
-      "size_bytes": 1418,
-      "sha256": "9ef9ea5646f917c975ba0f9159fd1da92e8ab7a507c571f35c7d1581bd9b08b9"
+      "size_bytes": 1347,
+      "sha256": "ebbeffe111cb1282fd8724b5205e09a1db658ca2ab2670bbd499fc1084217915"
     },
     {
       "path": "examples/three_servo_lift/three_servo_lift.zip",

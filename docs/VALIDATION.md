@@ -41,3 +41,13 @@
 - CI 增加 Ubuntu/Windows 和 Python 3.10/3.12 的依赖安装及离线/协议测试；远端运行状态以 Actions 为准。
 
 当前环境没有进行 Windows PowerShell、SolidWorks 或 OpenCode 客户端的实跑。OpenCode 配置及 skill 布局按官方规则核对；协议通过不代表 COM 或客户端联调已通过。真实版本兼容性、STEP 导入和操作结果须按 DEVELOPMENT_PLAN.md 在目标电脑验收。
+
+## 直接提供 STEP 与 MCP 验收清单
+
+2026-11-10，Python 3.12.14。
+
+- `examples/three_servo_lift/` 已直接包含 STEP（7,777,725 bytes）与 JPG（95,271 bytes），与原 ZIP 成员逐字节一致，SHA-256 记录在来源配置中。保留原名和原始编码，Git 禁止对这些文件进行文本转换。
+- 直接 STEP 体检与读取 ZIP 内 STEP 的结果一致；原 22 项测试再次通过，CI 的新增资产完整性检查已在本地通过。
+- 6 个 skill 的元数据与本地 Markdown 引用校验通过。README、使用说明与相关 skill 均使用直接 STEP 路径。
+- 新增 `docs/MCP_ACCEPTANCE.md`，列出 8 个工具的实机通过标准、异常检查与结果记录方式。
+- 本次未执行 SolidWorks 或 OpenCode 客户端实机验收；不能将上述结果视为 COM 操作已经通过。

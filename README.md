@@ -9,10 +9,9 @@
 ```powershell
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[solidworks]"
-Expand-Archive -LiteralPath .\examples\three_servo_lift\three_servo_lift.zip -DestinationPath .\outputs\three_servo_lift
 ```
 
-需要 Python 3.10+；已解压无需重复解压。启动一个 SolidWorks 实例，再在仓库根目录运行：
+需要 Python 3.10+；STEP 已直接放在 examples 下，无需解压。启动一个 SolidWorks 实例，再在仓库根目录运行：
 
 ```powershell
 opencode mcp list
@@ -21,16 +20,16 @@ opencode
 
 项目 `opencode.json` 已配置本地 MCP。告诉 Agent：
 
-> 加载 solidworks-connect，检查连接；然后加载 solidworks-document，打开 outputs/three_servo_lift/temp/3X Lift Assembly.STEP，报告实际文档类型。若为装配，加载 assembly-inventory 导出组件树。
+> 加载 solidworks-connect，检查连接；然后加载 solidworks-document，打开 examples/three_servo_lift/3X Lift Assembly.STEP，报告实际文档类型。若为装配，加载 assembly-inventory 导出组件树。
 
 ## 直接检查
 
 ```powershell
 .\.venv\Scripts\python.exe -m cadkin sw sw_session_status
 .\.venv\Scripts\python.exe -m cadkin sw sw_component_tree --output outputs/solidworks_inventory.json
-python -m cadkin inspect examples/three_servo_lift/three_servo_lift.zip
+python -m cadkin inspect "examples/three_servo_lift/3X Lift Assembly.STEP"
 ```
 
 Skill 在 `.opencode/skills/`，工具在 `cadkin/tools/`，COM 在 `cadkin/adapters/`。当前不含零件移动、配合编辑或自动运动关系识别。
 
-[使用与排错](docs/OPENCODE_START.md) · [工具接口](docs/TOOL_CONTRACTS.md) · [分层](docs/ARCHITECTURE.md) · [开源来源](THIRD_PARTY_NOTICES.md)
+[实机验收清单](docs/MCP_ACCEPTANCE.md) · [使用与排错](docs/OPENCODE_START.md) · [工具接口](docs/TOOL_CONTRACTS.md) · [分层](docs/ARCHITECTURE.md) · [开源来源](THIRD_PARTY_NOTICES.md)

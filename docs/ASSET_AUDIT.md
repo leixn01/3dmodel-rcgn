@@ -29,4 +29,4 @@
 
 参考图可见三组类似竖直升降结构；具体固定基体、移动件归属、额外自由度、方向、零位、限位和传动比仍待分析。图片仅作人工辅助，几何事实以 STEP 及后续测量为准。
 
-机器可读完整统计见 `reports/three_servo_lift.intake.json`；数据源与固定下载地址见 `configs/three_servo_lift.source.json`。指定原 ZIP 已作为 `examples/three_servo_lift/three_servo_lift.zip` 纳入 Git；STEP 与 JPG 保持原样包含在该包内。
+机器可读完整统计见 `reports/three_servo_lift.intake.json`；数据源与固定下载地址见 `configs/three_servo_lift.source.json`。指定原 ZIP 已作为 `examples/three_servo_lift/three_servo_lift.zip` 纳入 Git；STEP 与 JPG 也已按原始字节提取到同目录，可直接使用；文件名保持原名。
