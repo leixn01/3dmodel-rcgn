@@ -10,13 +10,13 @@
 
 ## 2. 以 STEP 数模为输入，先验证 SolidWorks 导入
 
-指定 ZIP 已下载并核验，内含 `3X Lift Assembly.STEP` 和 `Bosch SSS 08.JPG`，不含 SLDASM、SLDPRT、PLC 或电气工程。
+指定原包已下载并核验；当前仓库只保留其中的 `3X Lift Assembly.STEP` 和 `Bosch SSS 08.JPG`，不含 SLDASM、SLDPRT、PLC 或电气工程。
 
 STEP 文件头声明 AP214 / AUTOMOTIVE_DESIGN，导出器为 SolidWorks 2012。**SolidWorks 支持打开和导入 STEP，本样例可以继续沿用 SolidWorks 工作流。** 文本体检看到装配引用、B-Rep 定义及零件名称，但没有识别到运动学简单实体类型。这既不是原生 Mate 提取结果，也不能代替实际导入后的配合检查。
 
 | 输入情况 | 当前路线 | 证据边界 |
 | --- | --- | --- |
-| 本次 STEP 样例 | SolidWorks 导入后检查实例/几何/配合；可用约束走 A，缺口用 B＋C | 当前仅完成文本体检；层级、位姿及配合实际可读性需在导入后核验 |
+| 本次 STEP 样例 | SolidWorks 导入后检查实例/几何/配合；可用约束走 A，缺口用 B＋C | 用户已确认打开模型可用；层级、位姿及配合实际可读性仍待核验 |
 | 后续原生 SolidWorks 装配 | A Mate 提取＋B 模板，C 补缺 | 先审查配合质量；单个 Mate 不直接等于运动副 |
 | 信息仍不足的关系 | 输出未知/冲突，必要时研究 D | JoinABLe 等只作为候选生成研究，不作为第一版依赖 |
 
@@ -81,11 +81,11 @@ STEP 文件头声明 AP214 / AUTOMOTIVE_DESIGN，导出器为 SolidWorks 2012。
 
 ## 8. 目前已做与仍待做
 
-已做：阅读两份交接文档；下载并校验指定 ZIP；检查 STEP 文件头、定义与名称；查看参考图；准备数据源配置、文本体检工具、开发文档与测试。
+已做：阅读两份交接文档；核验测试 STEP 与参考图；完成输入体检、13 个 SolidWorks MCP 工具、8 个功能 skill 及离线/协议测试。用户已确认打开模型可用。
 
-待做：CAD 内核导入、完整实例展开与位姿复核、人工运动基准、实际几何候选、可编辑模型及仿真验证。没有把这次文本统计算作几何/运动识别已完成。
+待做：其余 MCP 功能的实机验收、完整实例展开与位姿复核、人工运动基准、实际几何候选、可编辑模型及仿真验证。没有把这次文本统计算作几何/运动识别已完成。
 
-开发直接在 [leixn01/3dmodel-rcgn](https://github.com/leixn01/3dmodel-rcgn) 维护，默认分支为 `main`。当前发布范围和开发约定见 REPOSITORY_STATUS.md。
+开发直接在 [leixn01/3dmodel-rcgn](https://github.com/leixn01/3dmodel-rcgn) 维护，默认分支为 `main`。当前开发步骤见 [开发计划](DEVELOPMENT_PLAN.md)，执行约定见 [AGENTS.md](../AGENTS.md)。
 
 ## 9. 下一个具体交付
 

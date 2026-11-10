@@ -20,5 +20,4 @@ outputs/
 *.STP
 
 # Explicitly requested, versioned test asset
-!examples/three_servo_lift/three_servo_lift.zip
 !examples/three_servo_lift/3X Lift Assembly.STEP

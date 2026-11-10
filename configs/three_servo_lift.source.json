@@ -7,27 +7,8 @@
   "sha256": "52b487fd8d48807d4352d71d2fe609d004d9a0602ba9b7d898e85ffd5417a64b",
   "size_bytes": 1095163,
   "license_status": "not_verified",
-  "expected_members": [
-    {
-      "path": "temp/",
-      "size": 0,
-      "compressed_size": 0
-    },
-    {
-      "path": "temp/3X Lift Assembly.STEP",
-      "size": 7777725,
-      "compressed_size": 1001139
-    },
-    {
-      "path": "temp/Bosch SSS 08.JPG",
-      "size": 95271,
-      "compressed_size": 93670
-    }
-  ],
-  "local_archive": "examples/three_servo_lift/three_servo_lift.zip",
-  "step_member": "temp/3X Lift Assembly.STEP",
   "local_step": "examples/three_servo_lift/3X Lift Assembly.STEP",
-  "extracted_files": [
+  "bundled_files": [
     {
       "member": "temp/3X Lift Assembly.STEP",
       "path": "examples/three_servo_lift/3X Lift Assembly.STEP",

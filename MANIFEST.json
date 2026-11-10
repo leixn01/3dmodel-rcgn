@@ -1,20 +1,20 @@
 {
-  "scope": "All tracked project files, including bundled STEP, reference JPG and source ZIP; excludes this manifest and ignored work outputs",
+  "scope": "All tracked project files, including bundled STEP and reference JPG; excludes this manifest and ignored work outputs",
   "files": [
     {
       "path": ".gitattributes",
-      "size_bytes": 336,
-      "sha256": "c910f7d68413528108978fd542d528318824bebac69fda6c882c018b3b90c532"
+      "size_bytes": 205,
+      "sha256": "4ab108c4abe2266597321c6cc0147b823b680086a9755c67a095f867fe367e99"
     },
     {
       "path": ".github/workflows/ci.yml",
-      "size_bytes": 1632,
-      "sha256": "0303b3967137718727d5422e1b8fdc327244e7abaea760e425b851f59cbfabef"
+      "size_bytes": 1128,
+      "sha256": "9d5bfda552553cdee546a21d455940e71fd190745cf0fd37762f04f2cddf0401"
     },
     {
       "path": ".gitignore",
-      "size_bytes": 312,
-      "sha256": "05d5cb71aa0b9f8c2b2c46ab552950a49d120aaba43d13c341784e5f7c7696ee"
+      "size_bytes": 264,
+      "sha256": "74908d15d1abe1ec2557615df8bf268d253b218bf7449906c861dfd906917342"
     },
     {
       "path": ".opencode/skills/assembly-inventory/SKILL.md",
@@ -23,8 +23,8 @@
     },
     {
       "path": ".opencode/skills/cad-intake/SKILL.md",
-      "size_bytes": 1448,
-      "sha256": "e6c6f1163a10cc1e8593d3ede9055e7653cf4b18bef399de48ee142838630ccc"
+      "size_bytes": 1535,
+      "sha256": "78226578e12830bc87f8ec3dbf8c4a273dabc2952829817dd9feac4521a5ade2"
     },
     {
       "path": ".opencode/skills/component-selection/SKILL.md",
@@ -68,8 +68,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 1605,
-      "sha256": "a1cd10b9c58dbdfdbeb67f8957f45a47aa3a9b2e4aea11c79fd633fe8be31479"
+      "size_bytes": 1646,
+      "sha256": "033bf42475b4b601d07be5b55d2ad7bba5322b645e4c6813fb73f5054466223c"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -153,23 +153,13 @@
     },
     {
       "path": "configs/three_servo_lift.source.json",
-      "size_bytes": 1510,
-      "sha256": "5a363e0a690fc36731c0d41c7fb91813b6e622463f742ab65b5e46e19cd10fb9"
+      "size_bytes": 1067,
+      "sha256": "197cb9af037af20005c1deb817a57118fe17db01744e457a461b2fd7251d7488"
     },
     {
       "path": "docs/ARCHITECTURE.md",
       "size_bytes": 3730,
       "sha256": "d1f4f6b063923f568d31ecac25ea62d90a1abe841b20db192438ddc90e4255b0"
-    },
-    {
-      "path": "docs/ASSET_AUDIT.md",
-      "size_bytes": 2498,
-      "sha256": "8d5f59bf2b11efc327b6a04cd2224a08a62ec99a9f1649006f48d7930be20eb7"
-    },
-    {
-      "path": "docs/BACKLOG.md",
-      "size_bytes": 1077,
-      "sha256": "44d41f497875ba5a722fcfc4e6cfe46ce758619d5d4dfa2845f205be2303b7be"
     },
     {
       "path": "docs/DATA_CONTRACT.md",
@@ -178,8 +168,8 @@
     },
     {
       "path": "docs/DEVELOPMENT_PLAN.md",
-      "size_bytes": 2645,
-      "sha256": "8034e1b7d2876073691d25d88f6187eaf75eccd1495daa5e83275cf0946ce3f3"
+      "size_bytes": 1957,
+      "sha256": "fe570e8bb99d2092b13faf628ca7aba73a87bd832f3f4dd92f79df10747d4809"
     },
     {
       "path": "docs/MCP_ACCEPTANCE.md",
@@ -192,19 +182,14 @@
       "sha256": "676cf5477384ca1000169c2fe2feb5e6155e9ffeb08c9d4ff58fcdfddefcd2a4"
     },
     {
-      "path": "docs/REPOSITORY_STATUS.md",
-      "size_bytes": 901,
-      "sha256": "1da5ffad9f5357fe29e97405eebc8def6f22036bdd309259b5099f92030e328c"
-    },
-    {
       "path": "docs/ROADMAP.md",
-      "size_bytes": 9071,
-      "sha256": "9c084e84efedf11801157f8062ff3f4d209ebae850ac6145e2d85d6c4d713b44"
+      "size_bytes": 9160,
+      "sha256": "99bd0e99eaf009c830fab977cec26538c32f69bded83956a591f0eb4ef16dd64"
     },
     {
       "path": "docs/SOURCES.md",
-      "size_bytes": 4347,
-      "sha256": "3d931fbf36963b60c2b6bf309bd28c43a5fe4dc01cedaaa677076a75a7c16898"
+      "size_bytes": 4351,
+      "sha256": "cf8dfdb1bd0d821d6439a2bbdfd6dc84211cab471b47f71abdc96a2bd11c4b3b"
     },
     {
       "path": "docs/TOOL_CONTRACTS.md",
@@ -213,8 +198,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "size_bytes": 5349,
-      "sha256": "16c7aa4e1b27c31013693dd26f9773d12dd737b6c6acc29f30cab69307bb582c"
+      "size_bytes": 2058,
+      "sha256": "09fa8d20b6d748aba069cbb1ac0610f396eaed97a06ce19a66b1b58c39b26c41"
     },
     {
       "path": "examples/three_servo_lift/3X Lift Assembly.STEP",
@@ -228,13 +213,8 @@
     },
     {
       "path": "examples/three_servo_lift/README.md",
-      "size_bytes": 1347,
-      "sha256": "ebbeffe111cb1282fd8724b5205e09a1db658ca2ab2670bbd499fc1084217915"
-    },
-    {
-      "path": "examples/three_servo_lift/three_servo_lift.zip",
-      "size_bytes": 1095163,
-      "sha256": "52b487fd8d48807d4352d71d2fe609d004d9a0602ba9b7d898e85ffd5417a64b"
+      "size_bytes": 2323,
+      "sha256": "a56303d930ad09ac414137089004966177c9b016ea2ecabe41e9927bc1c9d16a"
     },
     {
       "path": "opencode.json",
@@ -245,11 +225,6 @@
       "path": "pyproject.toml",
       "size_bytes": 588,
       "sha256": "1bd67fc34ba9d55a36d6f6404088ee9c2bccf822c11aba91c7a5a945cb66b109"
-    },
-    {
-      "path": "reports/three_servo_lift.intake.json",
-      "size_bytes": 8213,
-      "sha256": "1f6c3c9d7407749985ab1828535682d4a6dbdd34476a322d96fe927553e03b28"
     },
     {
       "path": "tests/__init__.py",

@@ -23,17 +23,10 @@ jobs:
           import hashlib
           import json
           from pathlib import Path
-          import zipfile
           spec = json.loads(Path('configs/three_servo_lift.source.json').read_text(encoding='utf-8'))
-          asset = Path(spec['local_archive'])
-          assert asset.stat().st_size == spec['size_bytes'], 'Unexpected asset size'
-          assert hashlib.sha256(asset.read_bytes()).hexdigest() == spec['sha256'], 'Asset hash mismatch'
-          with zipfile.ZipFile(asset) as archive:
-              assert archive.testzip() is None, 'ZIP CRC check failed'
-              assert spec['step_member'] in archive.namelist(), 'STEP member missing'
-              for item in spec['extracted_files']:
-                  data = Path(item['path']).read_bytes()
-                  assert len(data) == item['size_bytes'], item['path']
-                  assert hashlib.sha256(data).hexdigest() == item['sha256'], item['path']
-                  assert data == archive.read(item['member']), 'Extracted file differs from original ZIP'
+          assert spec['local_step'] in [item['path'] for item in spec['bundled_files']]
+          for item in spec['bundled_files']:
+              data = Path(item['path']).read_bytes()
+              assert len(data) == item['size_bytes'], item['path']
+              assert hashlib.sha256(data).hexdigest() == item['sha256'], item['path']
           PY
