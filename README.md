@@ -1,6 +1,6 @@
 # 3DModel-RCGN
 
-工业数模自动拆解项目。已提供测试模型、STEP 体检和 SolidWorks 本地 MCP：读取文档/组件树、打开模型、切换视图、选择组件、重建。已通过离线与 MCP 协议测试，SolidWorks 实机待验收。
+工业数模自动拆解项目。提供测试 STEP、离线体检和 13 个 SolidWorks MCP 工具：文档/组件树、视图、选择、重建，以及基准面等辅助对象和组件显隐。用户已确认打开模型可用；其余操作待实机验证。
 
 ## 在 Windows 上使用
 
@@ -18,9 +18,9 @@ opencode mcp list
 opencode
 ```
 
-项目 `opencode.json` 已配置本地 MCP。告诉 Agent：
+项目 `opencode.json` 已配置本地 MCP。升级后退出并重新启动 OpenCode，让 MCP 加载新工具。告诉 Agent：
 
-> 加载 solidworks-connect，检查连接；然后加载 solidworks-document，打开 examples/three_servo_lift/3X Lift Assembly.STEP，报告实际文档类型。若为装配，加载 assembly-inventory 导出组件树。
+> 检查 SolidWorks 连接；打开 examples/three_servo_lift/3X Lift Assembly.STEP，然后隐藏基准面并回读显示状态，最后缩放适合窗口。
 
 ## 直接检查
 

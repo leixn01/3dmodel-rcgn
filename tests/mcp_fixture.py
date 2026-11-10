@@ -4,11 +4,11 @@ from mcp.server.stdio import stdio_server
 from cadkin.adapters.solidworks import SolidWorksAdapter
 from cadkin.mcp_server import create_server
 from cadkin.tools.solidworks import SolidWorksTools
-from tests.sw_fakes import App, Document
+from tests.sw_fakes import App, Document, runtime
 
 
 async def main():
-    service = SolidWorksTools(factory=lambda: SolidWorksAdapter(app=App(Document())))
+    service = SolidWorksTools(factory=lambda: SolidWorksAdapter(app=App(Document()), runtime=runtime()))
     server = create_server(service)
     try:
         async with stdio_server() as (read, write):

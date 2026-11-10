@@ -6,7 +6,7 @@
 | 工具 | `cadkin/tools/solidworks.py` | 固定工具目录、参数 Schema、统一错误 |
 | MCP | `cadkin/mcp_server.py` | 官方 SDK 的 stdio 协议、工具注册与结构化返回 |
 | CLI | `cadkin/__main__.py` | 调用同一工具层、将 JSON 保存到新文件 |
-| COM 适配 | `cadkin/adapters/solidworks.py` | 已有会话连接、文档及组件 API 操作 |
+| COM 适配 | `cadkin/adapters/solidworks.py`、`display.py` | 会话/文档/组件 API；显示操作独立模块，通过同一 STA 执行 |
 | STA 调度 | `cadkin/adapters/sta.py` | 单线程串行调用、超时及取消后的状态处理 |
 | 开源兼容片段 | `cadkin/_vendor/sw_mcp.py` | 从固定 SW_MCP 版本提取并修改的 COM 成员访问逻辑 |
 
@@ -33,13 +33,15 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 | `assembly-inventory` | 装配组件树、部分结果核对与清单导出 |
 | `solidworks-document` | 明确请求的打开/导入、重建操作 |
 | `solidworks-view` | 标准视图和缩放 |
+| `solidworks-display` | 基准面等类别显示过滤与总开关 |
+| `component-visibility` | 单个装配实例显隐与隐藏父级核对 |
 | `component-selection` | 按完整实例路径选择或清空选择 |
 
 后续几何提取、配合提取、运动关系推断继续独立增加。
 
 ## 验证边界
 
-代码、CLI 和 MCP 已实现；单元测试使用显式测试替身验证逻辑，stdio 测试实际进行握手及工具调用。它们不证明某个 SolidWorks 版本的 COM 兼容性。当前还需要在用户电脑验证导入行为、API 绑定和可见结果。
+代码、CLI 和 MCP 已实现；单元测试使用显式测试替身验证逻辑，stdio 测试实际进行握手及工具调用。它们不证明某个 SolidWorks 版本的 COM 兼容性。用户已确认打开模型可用；其他 API 绑定和可见结果仍需在用户电脑验证。
 
 只保留一个 SolidWorks 进程。调用串行，不排队叠加动作。超时不能撤回已经进入 SolidWorks 的操作，客户端要核对现场并重启 MCP。当前版本使用严格的 late binding；遇到无法标记为方法的成员会返回错误，不尝试无参数误调用。
 

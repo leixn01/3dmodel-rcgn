@@ -4,6 +4,7 @@ from pathlib import Path
 from cadkin.adapters.sta import StaWorker
 from cadkin.errors import ToolFailure, failure
 from cadkin._vendor.sw_mcp import NAMED_VIEWS
+from cadkin.adapters.display import DISPLAY_PREFERENCES, ALL_REFERENCE
 
 TOKEN = {"type": "string", "minLength": 24, "maxLength": 24,
          "description": "document_token returned by sw_active_document or sw_component_tree; binds the operation to that document/configuration."}
@@ -35,6 +36,18 @@ TOOLS = [
          {"expected_document_token": TOKEN}, ["expected_document_token"], False),
     spec("sw_rebuild", "Rebuild the expected active document and check the API return. May update in-memory geometry and dirty the document; does not save.",
          {"expected_document_token": TOKEN}, ["expected_document_token"], False),
+    spec("sw_get_display_state", "Read document visibility filters for planes, axes, temporary axes, sketches, origins and coordinate systems, plus Hide All Types. Does not change individually hidden features."),
+    spec("sw_set_display_visibility", "Show/hide a reference category in the current part/assembly, e.g. hide planes (隐藏基准面): target=planes, visible=false. Set an explicit state and verify readback. all_reference_geometry controls the Hide All Types master switch, including annotations; does not force individually hidden features visible or save.",
+         {"expected_document_token": TOKEN, "target": {"type": "string", "enum": [*DISPLAY_PREFERENCES, ALL_REFERENCE]},
+          "visible": {"type": "boolean"}}, ["expected_document_token", "target", "visible"], False),
+    spec("sw_zoom_to_fit", "Fit the current model in the window without requesting a new view orientation. Visual verification remains necessary.",
+         {"expected_document_token": TOKEN}, ["expected_document_token"], False),
+    spec("sw_get_component_visibility", "Read a uniquely identified assembly occurrence's own visibility and hidden parents. Use the full occurrence_path from the tree. Rejects unresolved targets/parents.",
+         {"expected_document_token": TOKEN, "occurrence_path": {"type": "string", "minLength": 1}},
+         ["expected_document_token", "occurrence_path"]),
+    spec("sw_set_component_visibility", "Show/hide one assembly occurrence by full occurrence_path and verify readback. Does not suppress, resolve, move, delete or save. Showing a child with hidden parents is rejected until the intended parents are explicitly shown.",
+         {"expected_document_token": TOKEN, "occurrence_path": {"type": "string", "minLength": 1},
+          "visible": {"type": "boolean"}}, ["expected_document_token", "occurrence_path", "visible"], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 

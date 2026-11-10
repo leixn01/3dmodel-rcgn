@@ -15,11 +15,24 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = (await session.list_tools()).tools
-                    self.assertEqual(len(tools), 8)
+                    self.assertEqual(len(tools), 13)
                     self.assertFalse(any('script' in tool.name or 'save' in tool.name for tool in tools))
                     doc = await session.call_tool('sw_active_document')
                     self.assertFalse(doc.isError)
                     token = doc.structuredContent['data']['document_token']
+                    display = await session.call_tool('sw_get_display_state')
+                    self.assertTrue(display.structuredContent['data']['visibility']['planes'])
+                    hidden = await session.call_tool('sw_set_display_visibility', {
+                        'expected_document_token': token, 'target': 'planes', 'visible': False})
+                    self.assertFalse(hidden.isError)
+                    self.assertFalse(hidden.structuredContent['data']['visible'])
+                    display = await session.call_tool('sw_get_display_state')
+                    self.assertFalse(display.structuredContent['data']['visibility']['planes'])
+                    for name, extra in [('sw_zoom_to_fit', {}),
+                                        ('sw_get_component_visibility', {'occurrence_path': 'rail-2'}),
+                                        ('sw_set_component_visibility', {'occurrence_path': 'rail-2', 'visible': False})]:
+                        result = await session.call_tool(name, {'expected_document_token': token, **extra})
+                        self.assertFalse(result.isError, result)
                     selection = await session.call_tool('sw_select_component', {'expected_document_token': token, 'occurrence_path': 'rail-2'})
                     self.assertFalse(selection.isError)
                     self.assertEqual(selection.structuredContent['data']['selected_count'], 1)
