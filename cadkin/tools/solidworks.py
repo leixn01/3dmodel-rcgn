@@ -53,21 +53,31 @@ TOOLS = [
     spec("sw_component_spatial", "Read one assembly occurrence's root/parent transforms, origin and approximate root-axis bounding box in meters and millimeters. Use full occurrence_path. Keeps unavailable fields null; no move, resolve, select, rebuild or save. Origin is not center of mass; box size is not precision part dimensions.",
          {"expected_document_token": TOKEN, "occurrence_path": {"type": "string", "minLength": 1}},
          ["expected_document_token", "occurrence_path"]),
-    spec("sw_spatial_inventory", "Read a bounded assembly spatial inventory with instance hierarchy, transforms and approximate bounding boxes. Repeated files remain separate. Partial/truncated/unresolved results are explicit; no auto-resolve or model modification. Save actual returned JSON with file tools, or use CLI --output.",
+    spec("sw_spatial_inventory", "Read one bounded page of assembly spatial data (default 20). Continue with next_offset and expected_inventory_signature until has_more=false, or use CLI spatial-export to collect all pages. Keep geometry unchanged during collection. include_bounding_boxes=false skips slow GetBox calls. No model modification; a page is not the full inventory.",
          {"expected_document_token": TOKEN,
           "max_components": {"type": "integer", "minimum": 1, "maximum": 5000, "default": 500},
-          "max_depth": {"type": "integer", "minimum": 1, "maximum": 128, "default": 64}},
+          "max_depth": {"type": "integer", "minimum": 1, "maximum": 128, "default": 64},
+          "offset": {"type": "integer", "minimum": 0, "maximum": 5000, "default": 0},
+          "page_size": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20},
+          "include_bounding_boxes": {"type": "boolean", "default": True},
+          "expected_inventory_signature": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
          ["expected_document_token"]),
+    spec("cad_group_components", "Create explainable role candidates from a complete exported spatial inventory JSON. No SOLIDWORKS connection or model modification. Classifies leaf occurrences, retains ambiguous names as pending, and writes a new JSON under outputs/. Optional review_path binds manual decisions to the inventory SHA256; never invent user confirmation.",
+         {"inventory_path": {"type": "string", "minLength": 1},
+          "output_path": {"type": "string", "minLength": 1},
+          "scope_occurrence_path": {"type": "string", "minLength": 1},
+          "review_path": {"type": "string", "minLength": 1}},
+         ["inventory_path", "output_path"], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
 
 class SolidWorksTools:
     def __init__(self, root=None, factory=None, timeout=180.0):
+        self.root = Path(root or Path.cwd()).resolve()
         if factory is None:
             from cadkin.adapters.solidworks import SolidWorksAdapter
-            root = Path(root or Path.cwd()).resolve()
-            factory = lambda: SolidWorksAdapter(root=root)
+            factory = lambda: SolidWorksAdapter(root=self.root)
         self.worker = StaWorker(factory, timeout=timeout)
 
     def call(self, name, arguments=None):
@@ -79,6 +89,9 @@ class SolidWorksTools:
             error = next(Draft202012Validator(CATALOG[name]["inputSchema"]).iter_errors(arguments), None)
             if error:
                 raise ToolFailure("INVALID_ARGUMENTS", error.message)
+            if name == "cad_group_components":
+                from cadkin.tools.grouping import group_components
+                return group_components(self.root, **arguments)
             return self.worker.call(name, arguments)
         except Exception as exc:
             return failure(exc)

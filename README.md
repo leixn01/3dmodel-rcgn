@@ -1,6 +1,6 @@
 # 3DModel-RCGN
 
-工业数模自动拆解项目。提供测试 STEP、离线体检和 16 个 SolidWorks MCP 工具：软件启动、文档/组件树、视图、选择、重建、显隐，以及组件位置、变换和近似包围盒。用户已确认打开模型可用；其余操作待实机验证。
+工业数模自动拆解项目。MCP 0.5.0 提供 17 个工具：SolidWorks 启动、文档/组件树、选择/显隐、分页空间读取，以及可复核的组件分组。STEP 测试模型已在 examples 中。
 
 ## 在 Windows 上使用
 
@@ -20,16 +20,18 @@ opencode
 
 项目 `opencode.json` 已配置本地 MCP。升级后退出并重新启动 OpenCode，让 MCP 加载新工具。告诉 Agent：
 
-> 如果 SolidWorks 未运行就启动它，已有会话则复用；打开 examples/three_servo_lift/3X Lift Assembly.STEP。若导入为装配，读取组件空间清单，将原始 JSON 保存到 outputs 下的新文件，并说明不完整项。
+> 启动或复用 SolidWorks，打开仓库测试 STEP；按 docs/MCP_ACCEPTANCE.md 的 0.5.0 清单复测显示和组件隐藏，分页导出空间清单，再生成组件分组候选。保存原始结果，列出待确认实例，不自动确认刚体或运动关系。
 
-## 直接检查
+## 导出与分组
+
+打开模型后，在仓库根目录执行（文件名需未被使用）：
 
 ```powershell
-.\.venv\Scripts\python.exe -m cadkin sw sw_start_application
-.\.venv\Scripts\python.exe -m cadkin sw sw_session_status
-.\.venv\Scripts\python.exe -m cadkin sw sw_component_tree --output outputs/solidworks_inventory.json
-python -m cadkin inspect "examples/three_servo_lift/3X Lift Assembly.STEP"
+.\.venv\Scripts\python.exe -m cadkin spatial-export --page-size 5 --output outputs/spatial.json
+.\.venv\Scripts\python.exe -m cadkin group outputs/spatial.json --output outputs/groups.json
 ```
+
+第一条自动读完所有页；若包围盒较慢，可另取文件名加 `--without-boxes`。第二条离线生成固定基体、移动平台、传动/导向相关件和待确认四类候选，保留依据；子装配容器不重复分组，未知名称不强行识别。复核方法见验收清单。
 
 Skill 在 `.opencode/skills/`，工具在 `cadkin/tools/`，COM 在 `cadkin/adapters/`。当前不含零件移动、配合编辑或自动运动关系识别。
 

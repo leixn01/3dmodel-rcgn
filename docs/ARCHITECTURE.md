@@ -4,6 +4,7 @@
 | --- | --- | --- |
 | Skill | `.opencode/skills/<名称>/SKILL.md` | 任务流程、工具选择与结果判断 |
 | 工具 | `cadkin/tools/solidworks.py` | 固定工具目录、参数 Schema、统一错误 |
+| 分页汇总/分组 | `cadkin/tools/spatial.py`、`grouping.py` | 逐页采集和离线角色候选；分组不创建 COM 对象 |
 | MCP | `cadkin/mcp_server.py` | 官方 SDK 的 stdio 协议、工具注册与结构化返回 |
 | CLI | `cadkin/__main__.py` | 调用同一工具层、将 JSON 保存到新文件 |
 | COM 适配 | `cadkin/adapters/solidworks.py`、`display.py`、`spatial.py`、`session.py` | 会话/文档/组件 API；显示、空间读取和显式启动独立模块，通过同一 STA 执行 |
@@ -33,7 +34,8 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 | `solidworks-start` | 独立启动/复用会话、可见性及就绪检查，不打开模型 |
 | `solidworks-connect` | 会话与活动文档检查、连接诊断 |
 | `assembly-inventory` | 装配组件树、部分结果核对与清单导出 |
-| `component-spatial` | 单实例/整机空间信息、单位与近似边界说明、JSON 导出 |
+| `component-spatial` | 单实例/分页空间信息、单位与近似边界说明、完整 JSON 导出 |
+| `component-grouping` | 叶实例角色候选、范围选择、人工复核与修正，不修改 CAD |
 | `solidworks-document` | 明确请求的打开/导入、重建操作 |
 | `solidworks-view` | 标准视图和缩放 |
 | `solidworks-display` | 基准面等类别显示过滤与总开关 |
@@ -44,7 +46,7 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 
 ## 验证边界
 
-代码、CLI 和 MCP 已实现；单元测试使用显式测试替身验证逻辑，stdio 测试实际进行握手及工具调用。它们不证明某个 SolidWorks 版本的 COM 兼容性。用户已确认打开模型可用；其他 API 绑定和可见结果仍需在用户电脑验证。
+代码、CLI 和 MCP 已实现；单元测试使用显式测试替身验证逻辑，stdio 测试实际进行握手及工具调用。它们不证明某个 SolidWorks 版本的 COM 兼容性。用户最新 SolidWorks 2025 旧版 15 工具反馈为 11 项 API 通过、2 项失败、2 项部分通过；0.5.0 修复和新增分组仍需按验收文档在用户电脑复测。
 
 只保留一个 SolidWorks 进程。调用串行，不排队叠加动作。超时不能撤回已经进入 SolidWorks 的操作，客户端要核对现场并重启 MCP。当前版本使用严格的 late binding；遇到无法标记为方法的成员会返回错误，不尝试无参数误调用。
 

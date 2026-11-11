@@ -11,7 +11,7 @@ from cadkin.tools.solidworks import SolidWorksTools, TOOLS
 def create_server(service):
     from mcp.server import Server
     from mcp.types import Tool, TextContent, CallToolResult
-    server = Server("3dmodel-rcgn-solidworks", version="0.4.0")
+    server = Server("3dmodel-rcgn-solidworks", version="0.5.0")
 
     @server.list_tools()
     async def list_tools():
@@ -22,7 +22,8 @@ def create_server(service):
         try:
             result = await asyncio.to_thread(service.call, name, arguments)
         except asyncio.CancelledError:
-            service.worker.mark_uncertain()
+            if name.startswith("sw_"):
+                service.worker.mark_uncertain()
             raise
         return CallToolResult(
             content=[TextContent(type="text", text=json.dumps(result, ensure_ascii=False))],

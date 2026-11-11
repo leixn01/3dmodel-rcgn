@@ -208,12 +208,11 @@ class App:
 
 
 def runtime():
-    def load_library(path, kind):
+    def load_library(path):
         assert path.replace('\\', '/') == 'C:/SOLIDWORKS/swconst.tlb'
-        assert kind == 2
         return ConstantLibrary()
     pythoncom = SimpleNamespace(VT_BYREF=16384, VT_I4=3, VT_DISPATCH=9,
-                                REGKIND_NONE=2, LoadTypeLibEx=load_library)
+                                REGKIND_NONE=2, LoadTypeLib=load_library)
     client = SimpleNamespace(VARIANT=lambda kind, val: SimpleNamespace(value=val))
     return pythoncom, client
 

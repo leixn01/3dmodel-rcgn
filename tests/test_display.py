@@ -67,7 +67,7 @@ class DisplayTests(unittest.TestCase):
         self.assertEqual(result['errors'][0]['code'], 'DISPLAY_READ_FAILED')
 
     def test_typelib_failures_never_change_display(self):
-        self.runtime[0].LoadTypeLibEx = Mock(side_effect=RuntimeError('missing swconst.tlb'))
+        self.runtime[0].LoadTypeLib = Mock(side_effect=RuntimeError('missing swconst.tlb'))
         result = self.service.call('sw_set_display_visibility', self.args(target='planes', visible=False))
         self.assertEqual(result['errors'][0]['code'], 'DISPLAY_CONSTANTS_UNAVAILABLE')
         self.assertEqual(self.doc.Extension.writes, [])
@@ -77,11 +77,11 @@ class DisplayTests(unittest.TestCase):
             read_constants(ConstantLibrary({'swDisplayPlanes': 'bad'}), {'swDisplayPlanes'})
 
     def test_typelib_values_are_loaded_once_without_registration(self):
-        loader = self.runtime[0].LoadTypeLibEx
-        self.runtime[0].LoadTypeLibEx = Mock(wraps=loader)
+        loader = self.runtime[0].LoadTypeLib
+        self.runtime[0].LoadTypeLib = Mock(wraps=loader)
         self.service.call('sw_get_display_state')
         self.service.call('sw_get_display_state')
-        self.runtime[0].LoadTypeLibEx.assert_called_once()
+        self.runtime[0].LoadTypeLib.assert_called_once()
         self.assertTrue(all(isinstance(x, int) for x in self.adapter._display_constant_cache[1].values()))
 
     def test_stale_target_invalid_arguments_and_drawing_never_mutate(self):
@@ -165,3 +165,40 @@ class DisplayTests(unittest.TestCase):
         result = self.service.call('sw_set_component_visibility', args)
         self.assertEqual(result['errors'][0]['code'], 'DOCUMENT_CHANGED')
         self.assertEqual(second.visibility_writes, [])
+
+    def test_visibility_uses_one_traversal_and_no_forced_redraw(self):
+        self.adapter._walk = Mock(wraps=self.adapter._walk)
+        self.doc.GraphicsRedraw2 = Mock(side_effect=AssertionError('Forced redraw must not block a setter'))
+        result = self.service.call('sw_set_component_visibility', self.args(occurrence_path='rail-2', visible=False))
+        self.assertEqual(result['status'], 'ok', result)
+        self.adapter._walk.assert_called_once()
+        self.assertFalse(result['data']['redraw_requested'])
+        result = self.service.call('sw_set_display_visibility', self.args(target='planes', visible=False))
+        self.assertEqual(result['status'], 'ok', result)
+        self.doc.GraphicsRedraw2.assert_not_called()
+
+    def test_relative_typelib_path_is_rejected_before_loading(self):
+        self.app.GetExecutablePath = lambda: 'relative/sldworks.exe'
+        self.runtime[0].LoadTypeLib = Mock()
+        result = self.service.call('sw_get_display_state')
+        self.assertEqual(result['errors'][0]['code'], 'DISPLAY_CONSTANTS_UNAVAILABLE')
+        self.runtime[0].LoadTypeLib.assert_not_called()
+
+
+@unittest.skipUnless(__import__('sys').platform == 'win32', 'Real Windows type library test')
+class WindowsTypeLibraryTests(unittest.TestCase):
+    def test_real_pywin32_load_and_integer_descriptors(self):
+        import os
+        from pathlib import Path
+        import pythoncom
+        pythoncom.CoInitialize()
+        try:
+            path = Path(os.environ['SystemRoot']) / 'System32' / 'stdole2.tlb'
+            self.assertTrue(path.is_file())
+            library = pythoncom.LoadTypeLib(str(path))
+            # Real SDK/OLE enums exercise cVars, memid and value, not COM-shaped fakes.
+            values = read_constants(library, {'Unchecked', 'Checked', 'Gray'})
+            self.assertEqual(values, {'Unchecked': 0, 'Checked': 1, 'Gray': 2})
+            del library
+        finally:
+            pythoncom.CoUninitialize()

@@ -15,7 +15,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = (await session.list_tools()).tools
-                    self.assertEqual(len(tools), 16)
+                    self.assertEqual(len(tools), 17)
                     self.assertFalse(any('script' in tool.name or 'save' in tool.name for tool in tools))
                     doc = await session.call_tool('sw_active_document')
                     self.assertFalse(doc.isError)
@@ -102,3 +102,46 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                     result = await session.call_tool('sw_session_status')
                     self.assertTrue(result.isError)
                     self.assertEqual(result.structuredContent['errors'][0]['code'], 'UNSUPPORTED_PLATFORM')
+
+    async def test_paging_and_offline_group_file_over_stdio(self):
+        import json
+        from pathlib import Path
+        import tempfile
+        from anyio import fail_after
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+        root = Path.cwd()
+        (root / 'outputs').mkdir(exist_ok=True)
+        parameters = StdioServerParameters(command=sys.executable, args=['-m', 'tests.mcp_fixture'])
+        with tempfile.TemporaryDirectory(dir=root / 'outputs') as directory, fail_after(20):
+            async with stdio_client(parameters) as (read, write):
+                async with ClientSession(read, write) as session:
+                    init = await session.initialize()
+                    self.assertEqual(init.serverInfo.version, '0.5.0')
+                    doc = (await session.call_tool('sw_active_document')).structuredContent['data']
+                    args = {'expected_document_token': doc['document_token'], 'page_size': 2}
+                    page = (await session.call_tool('sw_spatial_inventory', args)).structuredContent
+                    self.assertFalse(page['data']['collection_complete'])
+                    next_page = (await session.call_tool('sw_spatial_inventory', {**args, 'offset': 2,
+                        'expected_inventory_signature': page['data']['inventory_signature']})).structuredContent
+                    self.assertFalse(next_page['data']['pagination']['has_more'])
+                    self.assertFalse(next_page['data']['collection_complete'])
+                    source = Path(directory) / 'page.json'
+                    output = Path(directory) / 'groups.json'
+                    source.write_text(json.dumps(page), encoding='utf-8')
+                    rejected = await session.call_tool('cad_group_components', {'inventory_path': str(source), 'output_path': str(output)})
+                    self.assertTrue(rejected.isError)
+                    self.assertEqual(rejected.structuredContent['errors'][0]['code'], 'GROUPING_REQUIRES_COMPLETE_INVENTORY')
+                    self.assertFalse(output.exists())
+                    complete = (await session.call_tool('sw_spatial_inventory', {'expected_document_token': doc['document_token']})).structuredContent
+                    source = Path(directory) / 'complete.json'
+                    source.write_text(json.dumps(complete), encoding='utf-8')
+                    grouped = await session.call_tool('cad_group_components', {'inventory_path': str(source), 'output_path': str(output)})
+                    self.assertFalse(grouped.isError, grouped)
+                    self.assertFalse(grouped.structuredContent['data']['solidworks_modified'])
+                    self.assertEqual(grouped.structuredContent['data']['coverage']['scoped_leaf_occurrences'], 3)
+                    self.assertTrue(output.is_file())
+                    repeat = await session.call_tool('cad_group_components', {'inventory_path': str(source), 'output_path': str(output)})
+                    self.assertTrue(repeat.isError)
+                    still_alive = await session.call_tool('sw_active_document')
+                    self.assertFalse(still_alive.isError)

@@ -1,14 +1,67 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 16 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 17 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
 1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks]`，退出并重启 OpenCode。无需提前启动 SolidWorks，先完成下面 0.4.0 的启动检查，再做模型操作。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含下面 16 个工具。客户端可能给工具名添加服务器前缀。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 17 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
-用户反馈（2026-11-10）：已确认打开模型可用；其余原有 7 个工具未验证。反馈未附具体 SolidWorks 版本与原始调用记录。0.2.0 新增 5 个、0.3.0 新增 2 个、0.4.0 新增 1 个工具也待实机验证，不能据此标为全部通过。
+用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
+
+## 0.5.0：修复与组件分组
+
+### 更新与证据
+
+```powershell
+git pull --ff-only
+.\.venv\Scripts\python.exe -m pip install -e ".[solidworks]"
+.\.venv\Scripts\python.exe -c "from importlib.metadata import version; print(version('3dmodel-rcgn'))"
+```
+
+应显示 0.5.0；退出并重新启动 OpenCode，检查 17 个 MCP 工具（新增 `cad_group_components`）。若仍为 15 个工具或仍报旧的 60 秒上限，先核对所用目录、解释器与 MCP 进程。使用已有打开的测试装配，记录 SHA、软件版本、PID、当前文档/配置/token，以及修改前的选择/显隐/dirty。不要为测试关闭有未保存工程的会话。
+
+每次工具调用保存准确参数、原始返回、开始/结束时间与人工窗口结论到 `outputs/acceptance-0.5-<时间>/`。回读、耗时、窗口效果分别记录；没有窗口证据不填写视觉通过。
+
+### 三个问题复测
+
+| 项目 | 操作 | 通过标准 / 失败标准 |
+| --- | --- | --- |
+| 显示常量加载 | `sw_get_display_state({})`；然后用当前 token 调用 `sw_set_display_visibility`，target=planes、visible=false；再读状态；最后按记录恢复原类别值。 | 无不存在 LoadTypeLibEx 的错误；planes 回读 false，重复隐藏 changed=false、不会反向切换；返回 redraw_requested=false，其他类别不变。窗口核对辅助面是否隐藏。若总屏蔽影响恢复，记录 DISPLAY_BLOCKED，不擅自改变总开关。 |
+| 组件显隐等待 | 从 `sw_component_tree` 取一个已解析叶实例完整路径，先读其显隐；调用 `sw_set_component_visibility` 改为 false，再 `sw_get_component_visibility`；恢复原状态。 | 设置工具本身正常返回，visible 回读匹配、saved=false、redraw_requested=false；当前选择与其他重复实例不被改写。记录实际耗时，不能仅凭之后查询已隐藏就判设置通过。若仍 TIMEOUT，则标部分/失败并记录实例、耗时、弹窗；不要重复执行直到检查现场。 |
+| 单页读取 | 当前 token，`sw_spatial_inventory` 参数 page_size=5（max_components=5000、max_depth=64）。 | 本页最多 5 项；实际组件多于 5 时 has_more=true、next_offset=5、collection_complete=false；total_components 与范围内树数量一致。接续 offset=5、expected_inventory_signature=首个签名，其他参数不变。单页 GetBox 不跨全装配循环。 |
+| 完整分页导出 | 用下方 CLI page-size=5 导出，整个过程不编辑/重建/切换配置。 | collection_complete=true、hierarchy_complete=true、truncated=false；组件路径集合与同配置完整树一致且无重复，数量以当次实读为准（截图 254 不是硬编码标准）；无字段错误时 complete=true。抽查至少 3 个实例与 `sw_component_spatial` 一致，按 0.3.0 表核对坐标/盒。任何页失败时保存部分数据且 collection_complete=false，不误报完整。 |
+| 跳过包围盒 | 另用新文件，加 `--without-boxes` 导出。 | bounding_boxes_requested=false，所有 bounding_box=null、bounding_box_status=not_requested，变换仍保留。没有包围盒不能伪装零尺寸；此文件可用于初步角色候选，但没有近邻盒中心提示。 |
+| 分页错误 | 后续 offset>0 故意不传签名；或传入 64 个零的签名。 | 分别 INVALID_ARGUMENTS、INVENTORY_CHANGED；服务仍可查询活动文档。不要为测试主动改动原模型；自然遇到层级/配置变化时保留真实错误。 |
+
+```powershell
+.\.venv\Scripts\python.exe -m cadkin spatial-export --page-size 5 --output outputs/spatial-0.5.json
+.\.venv\Scripts\python.exe -m cadkin spatial-export --page-size 5 --without-boxes --output outputs/spatial-fast-0.5.json
+```
+
+已存在文件需改名，不能覆盖。完整导出可能超过 180 秒，这是多个独立页的累计时间；调用 CLI 的终端/Agent 需允许足够的命令执行时间。单页仍超时时先核对现场、重启 MCP，再用 page-size=1 或 without-boxes 和新文件复测；也可能是单个组件 API 阻塞，不能承诺分页一定消除所有卡顿。
+
+### 新增分组与修正
+
+```powershell
+.\.venv\Scripts\python.exe -m cadkin group outputs/spatial-0.5.json --output outputs/groups-0.5.json
+```
+
+MCP 等价调用：`cad_group_components({"inventory_path":"outputs/spatial-0.5.json","output_path":"outputs/groups-mcp-0.5.json"})`。详细 JSON 已写入文件，返回精简摘要；不要求从聊天输出重建文件。
+
+| 项目 | 操作 | 通过标准 / 失败标准 |
+| --- | --- | --- |
+| 候选覆盖与证据 | 读 groups JSON 与源清单，检查每个 role/members/evidence；抽查固定/移动/传动候选或待确认实例。 | 四类计数之和等于 coverage.scoped_leaf_occurrences；每个叶实例出现一次，子装配容器另计，同文件重复实例未合并。自动结果仅 candidate/pending，manual_confirmed_count=0；数值/路径来自输入。匿名或冲突名字可以全部 pending，不以“猜出多少类”评估成功。 |
+| 范围选择 | 从真实树中选定一个子装配路径，CLI 加 `--scope "实际路径"`，输出换新文件。 | 只有该实例的叶子后代（若本身是叶则仅该实例）被分配，未混入其他升降链；范围不存在时报 COMPONENT_NOT_FOUND。不要仅靠名称假定此范围就是某条运动链。 |
+| 几何辅助 | 抽查成员的 spatial_context 和 nearest_box_centers。 | 源变换/盒字段保持一致，距离为近似盒中心距离；缺盒无近邻提示，不把原点当中心，不把接近认定接触/碰撞/同刚体。 |
+| 人工确认/纠正 | 在窗口按完整路径选中一个实例核对；用户明确确认后，按 TOOL_CONTRACTS 格式写 review JSON，再用同一源/范围加 `--review` 和新输出文件。 | 只有指定叶实例变为 manual_confirmed 或显式 pending，reason 保留实际依据；其他候选不变。inventory_sha256 与原始源文件一致；源变了则拒绝 INVALID_REVIEW。确认角色不改变 rigid_body_confirmed=false。 |
+| 不完整输入 | 将单页原始返回保存新 JSON，再调用分组工具。 | GROUPING_REQUIRES_COMPLETE_INVENTORY，且没有写出分组文件；单页不能冒充整机。单独缺失几何、层级完整的输入可产生 partial 分组并保留 source_errors。 |
+| 文件与模型保护 | 对相同 output_path 再次调用；查询 CAD 状态，并核对原输入哈希。 | OUTPUT_EXISTS，原输出和输入不变；分组本身不选择、不显隐、不移动、不改 dirty 或保存 CAD，也不创建新 SolidWorks 进程。 |
+
+可直接交给 OpenCode：
+
+> 按 docs/MCP_ACCEPTANCE.md 的 0.5.0 清单验证本次修复和组件分组。使用当前测试装配，记录显示与组件原状态，复测隐藏并恢复；按每页 5 个组件导出全部空间清单，核对实际实例路径集合，然后生成角色候选并报告待确认项。保存准确参数、原始 JSON 和耗时到 outputs 新目录，窗口效果与 API 回读分别列出。不要自动确认分组、编辑几何或保存覆盖原模型；超时先检查现场，不连续重试。
 
 ## 0.4.0：自动启动 SolidWorks
 
@@ -106,12 +159,12 @@ Copy-Item -LiteralPath 'examples/three_servo_lift/3X Lift Assembly.STEP' -Destin
 
 ## 记录与结论
 
-在 `outputs/` 的新目录保存验收记录、每次实际参数和原始 MCP 返回；视图与选择另附人工窗口核对结果。每项标记“通过 / 失败 / 部分通过 / 阻塞 / 未测试”，写明原因。只有 16 项都满足标准，才能说本版本基础能力实机验收通过。
+在 `outputs/` 的新目录保存验收记录、每次实际参数和原始 MCP 返回；视图与选择另附人工窗口核对结果。每项标记“通过 / 失败 / 部分通过 / 阻塞 / 未测试”，写明原因。只有 17 项都满足标准，才能说本版本基础能力实机验收通过。
 
 可直接告诉 OpenCode：
 
-> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 16 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
+> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 17 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
 
-当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈打开模型可用，剩余功能的目标 SolidWorks 与 OpenCode 客户端实测仍待执行。零件移动、配合编辑、CAD 文件保存/导出及运动关系识别不在当前 16 个工具范围内；空间结果 JSON 可由客户端或 CLI 保存。
+当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，本次修复和新增分组仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及运动关系识别不在当前 17 个工具范围内；空间结果 JSON 可由客户端或 CLI 保存。
 
 后续每次功能变更都在此追加对应版本的操作、预期返回、人工核对和失败标准。每条记录注明提交 SHA、工具参数、原始返回文件、窗口核对者与结论；没有证据不沿用上版“通过”。

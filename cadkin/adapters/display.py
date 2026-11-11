@@ -1,5 +1,5 @@
 """Document display and occurrence visibility operations, executed on the STA."""
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from cadkin._vendor.sw_mcp import call, value
 from cadkin.errors import ToolFailure, success
@@ -52,14 +52,16 @@ class DisplayOperations:
             if install.suffix.lower() == ".exe":
                 install = install.parent
             path = install / "swconst.tlb"
+            if not PureWindowsPath(str(path)).is_absolute():
+                raise ValueError("SOLIDWORKS must report an absolute installation path")
             cache = getattr(self, "_display_constant_cache", None)
             if cache is not None and cache[0] == str(path):
                 return cache[1]
             if self.runtime is None:
                 raise ValueError("COM type-library support is unavailable")
             pythoncom, _ = self.runtime
-            # REGKIND_NONE: read the installed library without registration or makepy.
-            library = pythoncom.LoadTypeLibEx(str(path), pythoncom.REGKIND_NONE)
+            # A full path prevents LoadTypeLib registration; no makepy cache is generated.
+            library = pythoncom.LoadTypeLib(str(path))
             names = {*DISPLAY_PREFERENCES.values(), HIDE_ALL, NO_OPTION}
             constants = read_constants(library, names)
             self._display_constant_cache = (str(path), constants)
@@ -104,11 +106,9 @@ class DisplayOperations:
         self._check_current(info)
         if actual != desired:
             raise ToolFailure("DISPLAY_MISMATCH", "The display preference readback differs from the requested state.", target=target, requested=visible, actual=not actual if target == ALL_REFERENCE else actual)
-        value(doc, "GraphicsRedraw2")
-        self._check_current(info)
         return success({"document": self._info(doc), "target": target,
                         "previous_visible": not before if target == ALL_REFERENCE else before,
-                        "visible": visible, "changed": before != actual, "saved": False,
+                        "visible": visible, "changed": before != actual, "saved": False, "redraw_requested": False,
                         "verification": "Document filter readback matches; individually hidden features remain hidden. Check the graphics window."})
 
     def sw_zoom_to_fit(self, expected_document_token):
@@ -133,7 +133,7 @@ class DisplayOperations:
         if component is None:
             raise ToolFailure("COMPONENT_NOT_FOUND", "No unique component matches the full occurrence path.", traversal_errors=errors)
         by_path = {node["occurrence_path"]: node for node in nodes}
-        chain, node = [], by_path[occurrence_path]
+        chain, references, node = [], [], by_path[occurrence_path]
         while node is not None:
             if node["read_status"] != "ok" or node["suppression_state"] not in (2, 3):
                 raise ToolFailure("UNRESOLVED_COMPONENT", "Resolve the target and its parents before changing visibility.", occurrence_path=node["occurrence_path"])
@@ -144,9 +144,10 @@ class DisplayOperations:
             if not isinstance(raw, int) or raw not in (0, 1):
                 raise ToolFailure("DISPLAY_READ_FAILED", "Component visibility is unknown.", occurrence_path=node["occurrence_path"])
             chain.append((node["occurrence_path"], bool(raw)))
+            references.append((node["occurrence_path"], current))
             node = by_path.get(node["parent_occurrence_path"])
         self._check_current(info)
-        return doc, info, component, chain
+        return doc, info, component, chain, references
 
     @staticmethod
     def _visibility_data(info, occurrence_path, chain):
@@ -156,11 +157,11 @@ class DisplayOperations:
                 "scope": "Occurrence display flags in the active context, not occlusion or pixel visibility."}
 
     def sw_get_component_visibility(self, expected_document_token, occurrence_path):
-        _, info, _, chain = self._visibility_target(expected_document_token, occurrence_path)
+        _, info, _, chain, _ = self._visibility_target(expected_document_token, occurrence_path)
         return success(self._visibility_data(info, occurrence_path, chain))
 
     def sw_set_component_visibility(self, expected_document_token, occurrence_path, visible):
-        doc, info, component, chain = self._visibility_target(expected_document_token, occurrence_path)
+        doc, info, component, chain, references = self._visibility_target(expected_document_token, occurrence_path)
         parents = [path for path, shown in chain[1:] if not shown]
         if visible and parents:
             raise ToolFailure("PARENT_HIDDEN", "The parent assembly is hidden. Show the intended parent explicitly first.", hidden_parent_paths=parents)
@@ -169,11 +170,20 @@ class DisplayOperations:
         if previous != visible:
             # swComponentHidden=0, swComponentVisible=1 (IComponent2.Visible).
             component.Visible = 1 if visible else 0
-        # Rewalk/read the actual occurrence, including parent state, after mutation.
-        _, _, _, after = self._visibility_target(expected_document_token, occurrence_path)
+        # Read back the same verified occurrences; do not traverse the whole assembly twice.
+        after = []
+        for path, current in references:
+            self._check_current(info)
+            if value(current, "Name2") != path or value(current, "GetSuppression2") not in (2, 3):
+                raise ToolFailure("COMPONENT_CHANGED", "Target or parent changed during visibility update.", occurrence_path=path)
+            raw = value(current, "Visible")
+            if not isinstance(raw, int) or raw not in (0, 1):
+                raise ToolFailure("DISPLAY_READ_FAILED", "Component visibility is unknown.", occurrence_path=path)
+            after.append((path, bool(raw)))
         if after[0][1] != visible or (visible and any(not shown for _, shown in after[1:])):
             raise ToolFailure("DISPLAY_MISMATCH", "Component/parent visibility readback differs from the requested state.", occurrence_path=occurrence_path)
-        value(doc, "GraphicsRedraw2")
+        # SOLIDWORKS handles normal UI repaint; forcing a full redraw can block large assemblies.
         self._check_current(info)
         return success({**self._visibility_data(self._info(doc), occurrence_path, after),
-                        "previous_visible": previous, "changed": previous != after[0][1], "saved": False})
+                        "previous_visible": previous, "changed": previous != after[0][1], "saved": False,
+                        "redraw_requested": False, "verification": "Occurrence and parent flags read back; verify the graphics window separately."})
