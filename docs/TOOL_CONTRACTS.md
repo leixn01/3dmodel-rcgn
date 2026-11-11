@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.8.0。以下 22 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.9.0。以下 23 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -21,11 +21,12 @@
 | `sw_component_spatial` | `expected_document_token`、`occurrence_path` | 只读单实例的根/父变换、原点与近似包围盒，不选择或解析组件 |
 | `sw_spatial_inventory` | `expected_document_token`，可选范围、分页、签名和包围盒开关（见下） | 只读一页空间清单；CLI spatial-export 收齐所有页 |
 | `sw_component_constraints` | expected_document_token、occurrence_path；可选 max_mates、max_entities | 只读顶层固定标志与组件关联配合；不求解运动关系 |
-| `sw_component_cylinders` | expected_document_token、occurrence_path；可选 max_bodies、max_faces、max_cylinders | 只读匹配配置的零件定义圆柱面；放置到实例根坐标，不含装配级切除 |
+| `sw_component_cylinders` | expected_document_token、occurrence_path；可选 max_bodies、max_faces、max_cylinders、include_face_references | 只读匹配配置的零件定义圆柱面；放置到实例根坐标，不含装配级切除 |
 | `cad_group_components` | `inventory_path`、`output_path`，可选 `scope_occurrence_path`、`review_path` | 离线生成角色候选/应用人工复核，写 outputs 新 JSON，不调用 COM |
 | `cad_component_relations` | inventory_path、cylinder_paths、output_path、distance_tolerance_mm、angle_tolerance_deg；可选 grouping_path、预算 | 离线生成同轴/平行几何候选，写 outputs 新 JSON，不连接 COM 或确认运动副 |
 | `sw_mate_inventory` | expected_document_token；可选 max_features、max_mates、max_entities、max_depth | 只读根配合特征状态与已确认的引用实例，包含抑制记录，不含子装配内部配合 |
-| `cad_review_connections` | relations_path、mate_inventory_path、output_path | 离线关联几何候选与根配合，输出待复核实例对，不确认运动副 |
+| `sw_match_mate_faces` | expected_document_token、inventory_path、cylinder_paths；可选面/比较/根配合遍历预算 | 在线核对持久面引用与根配合实体，返回来源绑定证据，不修改模型 |
+| `cad_review_connections` | relations_path、mate_inventory_path、output_path | 离线关联几何候选与根配合；有面身份证据时细化到具体候选面，不确认运动副 |
 
 `view` 支持 front/back/left/right/top/bottom/isometric/trimetric/dimetric。接口用枚举值访问视图，不依赖中英文界面的视图名称。
 
@@ -189,16 +190,51 @@ python -m cadkin review-connections outputs/relations.json outputs/mates.json --
 
 | review_state | 判定口径 |
 | --- | --- |
-| has_unsuppressed_mate_evidence | 至少一条记录所有引用已映射、字段读取无错误、未抑制/未回滚且 code=0 |
+| has_unsuppressed_mate_evidence | 至少一条记录所有引用已映射、配合字段读取无错误、未抑制/未回滚且 code=0；额外面核对失败单独保留 |
 | unresolved_mate_evidence | 无上述记录，但有关联记录的引用或状态未知/读取不完整 |
 | only_suppressed_or_feature_issue | 关联记录只有抑制、回滚或特征错误/警告 |
 | geometry_only | 提供的根配合记录没有可关联到该实例对的证据 |
 
-汇总状态有上述优先级，但所有记录都保留；其中的抑制或报错记录不会消失。relation 文件的每个面候选由 geometric_candidate_indices 回指，配合由 feature_id 回指原始 mates 文件。association_level=occurrence_pair_only、face_match_confirmed=false：同一实例对的配合可能作用于其他面，不称为已匹配候选圆柱。
+汇总状态有上述优先级，但所有记录都保留；其中的抑制或报错记录不会消失。relation 文件的每个面候选由 geometric_candidate_indices 回指，配合由 feature_id 回指原始 mates 文件。普通 sw_mate_inventory 输入的 association_level=occurrence_pair_only、face_match_confirmed=false：同一实例对的配合可能作用于其他面。0.9.0 面身份输入的升级条件见下节。
 
 结果文件 connection_review_schema_version=1，含 pairs、counts、unmatched_mates、coverage、sources 路径/哈希、errors。覆盖范围为提供的几何候选和活动根配合；输入部分/错误导致 SOURCE_INCOMPLETE 与 partial/complete=false。完整仅表示此范围输入/处理完整，不表示工程连接模型完整或配合健康。无候选/无配合均不能推出无连接或自由运动。
 
 保持 requires_review=true、mechanical_relation_confirmed=false、solidworks_modified=false。不能确认运动副、刚体、接触、行程或导程；旧 sw_component_constraints 的 GetMates 结果不能替代本工具所需的根配合清单。
+
+## 配合面身份核对（0.9.0）
+
+### 圆柱持久引用
+
+sw_component_cylinders 新增 include_face_references（布尔，默认 false）；请求时每条圆柱增加 face_reference：encoding=base64、scope=referenced_part_definition、id。以 IModelDocExtension.GetPersistReference3 捕获，GetObjectByPersistReference3 解析回读并用 IsSame 核对。引用失败保留几何和 null 引用，errors/partial，不把原有轴线读取变成全空。结果 face_references_requested 记录选项；schema_version 保持向后兼容的可选字段扩展。
+
+引用是零件文档内的对象定位信息；base64 字节不直接用于判断两个对象是否相同，body/face 索引仍仅定位一份哈希源文件中的记录。默认 false 不增加相关 COM 调用。
+
+### sw_match_mate_faces
+
+必填 expected_document_token、inventory_path、cylinder_paths（1–8 个项目内原始圆柱 envelope，来自 include_face_references=true）。清单必须收齐层级/分页；复用关系工具的文档、配置、单位、位姿和派生几何校验。空间/圆柱 SHA256 保留；同实例不接受重复来源。文件验证在工具层，只有普通数据交给 STA。
+
+| 可选参数 | 默认 | 范围 |
+| --- | --- | --- |
+| max_candidate_faces | 100 | 1–500 |
+| max_comparisons | 2000 | 1–20000 |
+| max_features | 2000 | 1–20000 |
+| max_mates | 200 | 1–1000 |
+| max_entities | 16 | 1–64 |
+| max_depth | 32 | 1–64 |
+
+按完整实例路径、体/面索引确定预算内候选。复用根 MateGroup 遍历；对已验证实例、ReferenceType2=swSelFACES 的实体，延迟解析该实例对应的持久面 ID。持久状态必须 swPersistReferencedObject_Ok=0；当前零件配置/实例变换必须与来源一致，解析面必须仍为原始 CylinderParams（保守逐值核对，重新参数化也要求重采）。再用 IComponent2.GetCorrespondingEntity 转到该实例上下文，以 ISldWorks.IsSame 与 IMateEntity2.Reference 比较。只有返回 1 才匹配，0 为不同对象，其他值/异常为未知；不按几何近似兜底。
+
+结束前重查实际比较的面身份/圆柱参数、实例映射和配合引用。检测到 GEOMETRY_CHANGED、MATE_REFERENCE_CHANGED、DOCUMENT_CHANGED、COMPONENT_CHANGED、COMPONENT_CONFIGURATION_MISMATCH 时拒绝混合结果。仍不是事务快照，不证明并发编辑从未发生；请求期间保持模型稳定。
+
+返回为可直接给 cad_review_connections 的原始 envelope：mate_inventory_schema_version=1，新增 face_matching 元数据和每实体 face_match。face_match.status 为 checked、partial、unknown、not_face、outside_scope；matches 每条含完整实例、体/面源索引、source_path/source_sha256、identity_check。compared_faces 记录已完成的身份比较；空 matches 不能推断无连接。
+
+face_matching 包括来源空间/圆柱路径与哈希、requested_faces、resolved_faces、comparisons、预算、unvisited_occurrences、complete/truncated。没有配合、非面或范围外引用时可能不解析任何候选；范围完整不代表输入面全部被解析。CANDIDATE_FACE_LIMIT/FACE_COMPARISON_LIMIT 保留 partial/truncated；引用失效、对应失败或不支持身份比较保留对应错误与已取得证据。旧文件未请求引用返回 FACE_REFERENCE_UNAVAILABLE，不能自动生成 ID。
+
+### 离线复核扩展
+
+cad_review_connections 无需新参数：mate_inventory_path 可传 sw_match_mate_faces 原始 envelope。校验 face_matching 的空间哈希及圆柱来源与关系文件完全对应；只有恰好两个实体分别命中某条几何候选的两端准确面，才给该配合 association_level=candidate_face_pair、face_match_confirmed=true，并在 candidate_face_matches 列出 geometric_candidate_index、left_entity_index、right_entity_index。其他记录仍是实例对关联；多实体配合不降成两面关系。
+
+配合抑制/错误和身份结果独立保留；face_matching_errors 不将已知配合状态变成未知，但整体 partial 来源不升级为完整。新增 coverage.face_matched_mate_records 仅统计有面证据的配合记录，不是机械连接数。来源错误为 INVALID_FACE_MATCH_SOURCE；重采圆柱后必须重算关系。只读采集和离线复核都不确认有限面接触、装配切除形状、求解有效性、运动副或自由度。
 
 ## 离线组件关系候选（0.7.0）
 
@@ -343,3 +379,12 @@ max_faces 和 max_cylinders 是全调用预算，达到且仍有面未检查时�
 - [swObjectSame=1，Unsupported=2](https://help.solidworks.com/2024/english/api/swconst/SOLIDWORKS.Interop.swconst~SOLIDWORKS.Interop.swconst.swObjectEquality.html)
 - [GetID 的文档内身份](https://help.solidworks.com/2022/english/api/sldworksapi/solidworks.interop.sldworks~solidworks.interop.sldworks.ifeature~getid.html)
 - [EntityParams 所属装配坐标](https://help.solidworks.com/2026/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMateEntity2~EntityParams.html)
+
+0.9.0 官方接口核对：
+
+- [GetPersistReference3：文档作用域与内部表示变化](https://help.solidworks.com/2023/english/api/sldworksapi/SolidWorks.interop.sldworks~SolidWorks.interop.sldworks.IModelDocExtension~GetPersistReference3.html)
+- [GetObjectByPersistReference3：解析与输出状态](https://help.solidworks.com/2023/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IModelDocExtension~GetObjectByPersistReference3.html)
+- [持久引用状态位掩码](https://help.solidworks.com/2026/english/api/swconst/SolidWorks.Interop.swconst~SolidWorks.Interop.swconst.swPersistReferencedObjectStates_e.html?id=2.10.1.596)
+- [GetCorrespondingEntity：零件实体到指定组件上下文](https://help.solidworks.com/2025/English/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IComponent2~GetCorrespondingEntity.html)
+- [IMateEntity2.Reference](https://help.solidworks.com/2026/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IMateEntity2~Reference.html)
+- [对象身份与持久引用比较官方示例](https://help.solidworks.com/2023/English/api/sldworksapi/Compare_Selected_Objects_and_Their_Persistent_Reference_IDs_Example_CSharp.htm)

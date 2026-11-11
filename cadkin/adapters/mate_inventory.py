@@ -26,6 +26,10 @@ class MateInventoryOperations:
                 'error_is_warning': is_warning, 'state': state, 'solver_validity': 'not_evaluated'}
 
     def sw_mate_inventory(self, expected_document_token, max_features=2000, max_mates=200, max_entities=16, max_depth=32):
+        return self._collect_mates(expected_document_token, max_features, max_mates, max_entities, max_depth)
+
+    def _collect_mates(self, expected_document_token, max_features=2000, max_mates=200, max_entities=16, max_depth=32,
+                       inspect_entity=None):
         doc, info, nodes, errors, objects = self._spatial_tree(expected_document_token, 20000, 128)
         structural = {'COMPONENT_LIMIT', 'DEPTH_LIMIT', 'CHILDREN_READ_FAILED', 'INVALID_INSTANCE_NAME'}
         if any(e['code'] in structural or (e['code'] == 'COMPONENT_READ_FAILED' and e.get('field') == 'name') for e in errors):
@@ -98,7 +102,7 @@ class MateInventoryOperations:
                     if mate is None:
                         raise ToolFailure('MATE_INTERFACE_UNAVAILABLE', 'Mate feature has no readable specific interface.')
                     record, limited = read_mate(mate, len(mates), max_entities,
-                                               lambda: self._check_current(info), resolve_reference)
+                                               lambda: self._check_current(info), resolve_reference, inspect_entity)
                     truncated = truncated or limited
                 except ToolFailure as exc:
                     if exc.code in {'DOCUMENT_CHANGED', 'COMPONENT_CHANGED'}:
@@ -114,8 +118,9 @@ class MateInventoryOperations:
                               owner_configuration=info['configuration'])
                 record['errors'].extend(state_errors)
                 # Context changes must never be downgraded into usable mixed snapshots.
-                if any(e['code'] == 'COMPONENT_CHANGED' for e in record['errors']):
-                    raise ToolFailure('COMPONENT_CHANGED', 'Referenced occurrence changed during mate capture.')
+                for error in record['errors']:
+                    if error['code'] in {'DOCUMENT_CHANGED', 'COMPONENT_CHANGED', 'GEOMETRY_CHANGED', 'COMPONENT_CONFIGURATION_MISMATCH'}:
+                        raise ToolFailure(error['code'], 'Source context changed during mate capture; discard mixed evidence.')
                 record['read_status'] = 'partial' if record['errors'] else 'ok'
                 errors.extend(record['errors'])
                 mates.append(record)

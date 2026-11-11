@@ -10,3 +10,9 @@
 8. 按 0.6.0 验收核对一个已知圆柱件与其重复实例的半径/轴向/位置、文档与选择是否不变。需要确认机械角色时复用独立分组复核流程，保留待确认项。
 
 实现位于 `cadkin/adapters/cylinders.py` 和 `cadkin/geometry.py`；字段及上限见仓库根目录 docs/TOOL_CONTRACTS.md。
+
+## 持久面引用（0.9.0，可选）
+
+仅需后续面身份核对时传 include_face_references=true，默认 false 保留原读取成本。每条圆柱增加 face_reference（base64、零件定义范围），通过持久 ID 解析回读和 IsSame 核对；失败保留几何，引用为 null 且整体 partial。不要比较 ID 字节、跨文件复用 body/face 索引或按轴线认定同一面。
+
+新文件改变哈希，关系候选必须使用新文件重算；后续在线对应交给 mate-face-matching，当前流程只采集圆柱/引用。保持几何与配置稳定，工具不赋追踪 ID、不修改模型。验收见 docs/MCP_ACCEPTANCE.md 的 0.9.0 部分。

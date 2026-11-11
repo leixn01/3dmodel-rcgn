@@ -1,6 +1,6 @@
 # 3DModel-RCGN
 
-工业数模自动拆解项目。MCP 0.8.0 提供 22 个工具：SolidWorks 启动、文档/组件树、选择/显隐、分页空间读取，可复核的组件分组，配合/圆柱轴线证据读取，同轴/平行候选与配合状态关联。STEP 测试模型已在 examples 中。
+工业数模自动拆解项目。MCP 0.9.0 提供 23 个工具：SolidWorks 启动、文档/组件树、选择/显隐、分页空间读取，可复核的组件分组，配合/圆柱轴线证据读取，同轴/平行候选、配合状态与具体面身份核对。STEP 测试模型已在 examples 中。
 
 ## 在 Windows 上使用
 
@@ -20,7 +20,7 @@ opencode
 
 项目 `opencode.json` 使用当前环境的 `python` 启动 MCP，不绑定机器路径。升级后退出并重新启动 OpenCode，让 MCP 加载新工具。告诉 Agent：
 
-> 启动或复用 SolidWorks，打开仓库测试 STEP；按 docs/MCP_ACCEPTANCE.md 的 0.8.0 清单，读取根装配配合状态，并与已有几何候选离线关联。只加载当前任务对应 skill，按需读取参考文件；保存原始证据，列出待核对实例，不自动确认运动副。
+> 启动或复用 SolidWorks，打开仓库测试 STEP；按 docs/MCP_ACCEPTANCE.md 的 0.9.0 清单，核对配合引用面与圆柱候选面。只加载当前任务对应 skill，按需读取参考文件；保存原始证据，列出待核对实例，不自动确认运动副。
 
 ## 导出与分组
 
@@ -35,9 +35,9 @@ python -m cadkin group outputs/spatial.json --output outputs/groups.json
 
 `sw_component_constraints` 查询固定标志/配合，`sw_component_cylinders` 查询指定零件的圆柱面轴线/半径。它们只读；嵌套固定状态、装配级几何差异和运动关系仍需核对。
 
-新增离线 `cad_component_relations`：输入空间清单和至少两个圆柱证据文件，输出候选夹角、轴偏移、来源与待确认项。使用步骤见 [0.7.0 验收](docs/MCP_ACCEPTANCE.md#070组件关系候选)。
+`sw_match_mate_faces` 新增配合面身份核对：圆柱采集时设置 `include_face_references=true`，保存原始返回，再用 `cad_review_connections` 离线生成具体面对应清单。已有几何/配合文件仍可按原方式复核。
 
-新增 `sw_mate_inventory` 读取根配合状态，`cad_review_connections` 关联几何候选与配合证据。[0.8.0 验收](docs/MCP_ACCEPTANCE.md#080配合状态与连接复核)包含两项的核对步骤。
+[0.9.0 验收步骤](docs/MCP_ACCEPTANCE.md#090配合引用面核对)包含持久引用、重复实例、部分结果和只读检查。STEP 若无配合，只能验证空结果；面匹配成功分支需已有含配合的装配。
 
 Skill 在 `.opencode/skills/`，入口简短、references 按需读取；工具在 `cadkin/tools/`，COM 在 `cadkin/adapters/`。当前不含零件移动、配合编辑或自动运动关系识别。
 

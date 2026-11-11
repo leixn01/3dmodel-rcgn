@@ -15,8 +15,14 @@ def mate_app():
     return MateApp(doc)
 
 
+def face_app():
+    from tests.face_fakes import face_document
+    return face_document()[4]
+
+
 async def main():
-    factory = (lambda: SessionHarness().adapter) if '--cold-start' in sys.argv else (lambda: SolidWorksAdapter(app=mate_app(), runtime=runtime()))
+    factory = (lambda: SessionHarness().adapter) if '--cold-start' in sys.argv else (lambda: SolidWorksAdapter(
+        app=face_app() if '--faces' in sys.argv else mate_app(), runtime=runtime()))
     service = SolidWorksTools(factory=factory)
     server = create_server(service)
     try:

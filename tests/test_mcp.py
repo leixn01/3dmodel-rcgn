@@ -5,6 +5,57 @@ import unittest
 
 @unittest.skipUnless(importlib.util.find_spec('mcp'), 'Install .[solidworks] for protocol integration tests')
 class McpTests(unittest.IsolatedAsyncioTestCase):
+    async def test_face_identity_collection_and_review_over_real_stdio(self):
+        import json
+        from pathlib import Path
+        import tempfile
+        from anyio import fail_after
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+        from cadkin.adapters.solidworks import SolidWorksAdapter
+        from cadkin.tools.solidworks import SolidWorksTools
+        from tests.face_fakes import face_document
+        from tests.sw_fakes import runtime
+        from tests.test_face_matches import write_face_fixture
+        root = Path.cwd()
+        (root / 'outputs').mkdir(exist_ok=True)
+        parameters = StdioServerParameters(command=sys.executable, args=['-m', 'tests.mcp_fixture', '--faces'])
+        with tempfile.TemporaryDirectory(dir=root / 'outputs') as directory, fail_after(25):
+            base = Path(directory)
+            service = SolidWorksTools(root=base, factory=lambda: SolidWorksAdapter(app=face_document()[4], runtime=runtime()))
+            try: args = write_face_fixture(base, service)
+            finally: service.close()
+            args['inventory_path'] = str(base / args['inventory_path'])
+            args['cylinder_paths'] = [str(base / p) for p in args['cylinder_paths']]
+            async with stdio_client(parameters) as (read, write):
+                async with ClientSession(read, write) as session:
+                    init = await session.initialize()
+                    self.assertEqual(init.serverInfo.version, '0.9.0')
+                    capture = await session.call_tool('sw_component_cylinders', {
+                        'expected_document_token': args['expected_document_token'], 'occurrence_path': 'shaft-1', 'include_face_references': True})
+                    self.assertFalse(capture.isError, capture)
+                    self.assertEqual(capture.structuredContent['data']['cylinders'][0]['face_reference']['encoding'], 'base64')
+                    result = await session.call_tool('sw_match_mate_faces', args)
+                    self.assertFalse(result.isError, result)
+                    self.assertEqual(result.structuredContent['status'], 'ok')
+                    saved = base / 'mates.json'
+                    saved.write_text(json.dumps(result.structuredContent), encoding='utf-8')
+                    relations = await session.call_tool('cad_component_relations', {
+                        'inventory_path': args['inventory_path'], 'cylinder_paths': args['cylinder_paths'],
+                        'distance_tolerance_mm': 0.1, 'angle_tolerance_deg': 0.1, 'output_path': str(base / 'outputs/relations.json')})
+                    self.assertFalse(relations.isError, relations)
+                    review = await session.call_tool('cad_review_connections', {
+                        'relations_path': str(base / 'outputs/relations.json'), 'mate_inventory_path': str(saved),
+                        'output_path': str(base / 'outputs/review.json')})
+                    self.assertFalse(review.isError, review)
+                    self.assertEqual(review.structuredContent['data']['coverage']['face_matched_mate_records'], 3)
+                    limited = await session.call_tool('sw_match_mate_faces', {**args, 'max_comparisons': 1})
+                    self.assertFalse(limited.isError)
+                    self.assertEqual(limited.structuredContent['status'], 'partial')
+                    bad = await session.call_tool('sw_match_mate_faces', {**args, 'max_candidate_faces': 0})
+                    self.assertTrue(bad.isError)
+                    self.assertEqual(len((await session.list_tools()).tools), 23)
+
     async def test_production_offline_relations_over_real_stdio(self):
         import json
         from pathlib import Path
@@ -40,7 +91,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                         **args, 'output_path': str(base / 'outputs/bad.json'), 'angle_tolerance_deg': 0})
                     self.assertTrue(bad.isError)
                     self.assertFalse((base / 'outputs/bad.json').exists())
-                    self.assertEqual(len((await session.list_tools()).tools), 22)
+                    self.assertEqual(len((await session.list_tools()).tools), 23)
 
     async def test_real_stdio_handshake_schemas_success_and_tool_error(self):
         from anyio import fail_after
@@ -52,7 +103,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = (await session.list_tools()).tools
-                    self.assertEqual(len(tools), 22)
+                    self.assertEqual(len(tools), 23)
                     self.assertFalse(any('script' in tool.name or 'save' in tool.name for tool in tools))
                     doc = await session.call_tool('sw_active_document')
                     self.assertFalse(doc.isError)
@@ -154,7 +205,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.8.0')
+                    self.assertEqual(init.serverInfo.version, '0.9.0')
                     doc = (await session.call_tool('sw_active_document')).structuredContent['data']
                     args = {'expected_document_token': doc['document_token'], 'page_size': 2}
                     page = (await session.call_tool('sw_spatial_inventory', args)).structuredContent
@@ -258,11 +309,11 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.8.0')
+                    self.assertEqual(init.serverInfo.version, '0.9.0')
                     result = await session.call_tool('cad_review_connections', args)
                     self.assertFalse(result.isError, result)
                     self.assertEqual(result.structuredContent['data']['counts']['has_unsuppressed_mate_evidence'], 1)
                     repeated = await session.call_tool('cad_review_connections', args)
                     self.assertTrue(repeated.isError)
                     self.assertEqual(repeated.structuredContent['errors'][0]['code'], 'OUTPUT_EXISTS')
-                    self.assertEqual(len((await session.list_tools()).tools), 22)
+                    self.assertEqual(len((await session.list_tools()).tools), 23)

@@ -3,13 +3,14 @@ from datetime import datetime, timezone
 
 from cadkin._vendor.sw_mcp import call, value
 from cadkin.adapters.evidence import boolean, evidence_error, sequence
+from cadkin.adapters.face_identity import capture_face_reference
 from cadkin.errors import ToolFailure, success
 from cadkin.geometry import cylinder_from_sw, transform_from_sw
 
 
 class CylinderOperations:
     def sw_component_cylinders(self, expected_document_token, occurrence_path,
-                               max_bodies=50, max_faces=500, max_cylinders=100):
+                               max_bodies=50, max_faces=500, max_cylinders=100, include_face_references=False):
         _, info, node, component, errors = self._evidence_target(expected_document_token, occurrence_path)
         part = value(component, "GetModelDoc2")
         if part is None:
@@ -63,9 +64,16 @@ class CylinderOperations:
                         raise ToolFailure("SURFACE_UNAVAILABLE", "Face has no readable surface.")
                     if boolean(value(surface, "IsCylinder"), "IsCylinder"):
                         parameters = cylinder_from_sw(value(surface, "CylinderParams"), transform)
-                        cylinders.append({"body_index": body_index, "face_index": face_index,
+                        row = {"body_index": body_index, "face_index": face_index,
                                           "source": "ISurface.CylinderParams via IPartDoc.GetBodies2",
-                                          "candidate_status": "geometry_only", **parameters})
+                                          "candidate_status": "geometry_only", **parameters}
+                        if include_face_references:
+                            row['face_reference'] = None
+                            try:
+                                row['face_reference'] = capture_face_reference(part, face, self.app, self.runtime)
+                            except Exception as exc:
+                                errors.append(evidence_error(exc, body_index=body_index, face_index=face_index, field='face_reference'))
+                        cylinders.append(row)
                 except Exception as exc:
                     errors.append(evidence_error(exc, body_index=body_index, face_index=face_index, field="surface"))
                 try:
@@ -84,6 +92,7 @@ class CylinderOperations:
                         "source_part": part_info, "referenced_configuration": node["referenced_configuration"],
                         "captured_at_utc": datetime.now(timezone.utc).isoformat(), "snapshot_atomic": False,
                         "geometry_scope": "referenced_part_definition", "assembly_instance_features_evaluated": False,
+                        "face_references_requested": include_face_references,
                         "transform": transform, "cylinders": cylinders, "cylinder_count": len(cylinders),
                         "reported_body_count": len(bodies), "inspected_body_count": inspected_bodies,
                         "scanned_face_count": scanned_faces, "complete": not errors, "truncated": truncated,

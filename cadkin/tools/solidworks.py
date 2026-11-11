@@ -71,7 +71,8 @@ TOOLS = [
          {"expected_document_token": TOKEN, "occurrence_path": {"type": "string", "minLength": 1},
           "max_bodies": {"type": "integer", "minimum": 1, "maximum": 200, "default": 50},
           "max_faces": {"type": "integer", "minimum": 1, "maximum": 5000, "default": 500},
-          "max_cylinders": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100}},
+          "max_cylinders": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100},
+          "include_face_references": {"type": "boolean", "default": False, "description": "Capture and round-trip persistent part-face references for later live mate-face matching; adds COM reads."}},
          ["expected_document_token", "occurrence_path"]),
     spec("cad_group_components", "Create explainable role candidates from a complete exported spatial inventory JSON. No SOLIDWORKS connection or model modification. Classifies leaf occurrences, retains ambiguous names as pending, and writes a new JSON under outputs/. Optional review_path binds manual decisions to the inventory SHA256; never invent user confirmation.",
          {"inventory_path": {"type": "string", "minLength": 1},
@@ -86,7 +87,17 @@ TOOLS = [
           "max_entities": {"type": "integer", "minimum": 1, "maximum": 64, "default": 16},
           "max_depth": {"type": "integer", "minimum": 1, "maximum": 64, "default": 32}},
          ["expected_document_token"]),
-    spec("cad_review_connections", "Associate a saved geometric relation file with a sw_mate_inventory envelope at occurrence-pair level. Verifies source hashes, root document/configuration and mapped occurrence poses. Separates unsuppressed/no-feature-error, suppressed/issue, unknown and geometry-only evidence. Does not confirm matching faces or mechanical joints; writes a new outputs JSON without connecting COM.",
+    spec("sw_match_mate_faces", "Read current root mates and compare their referenced faces against 1-8 saved cylinder envelopes captured with include_face_references=true. Requires a complete spatial inventory and unchanged document/configuration/poses. Resolves persistent IDs in the referenced part, maps to the occurrence, then compares live CAD object identity. Preserves partial/unsupported evidence; does not infer contact or joints. Save the original envelope for offline cad_review_connections.",
+         {"expected_document_token": TOKEN, "inventory_path": {"type": "string", "minLength": 1},
+          "cylinder_paths": {"type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": True, "items": {"type": "string", "minLength": 1}},
+          "max_candidate_faces": {"type": "integer", "minimum": 1, "maximum": 500, "default": 100},
+          "max_comparisons": {"type": "integer", "minimum": 1, "maximum": 20000, "default": 2000},
+          "max_features": {"type": "integer", "minimum": 1, "maximum": 20000, "default": 2000},
+          "max_mates": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 200},
+          "max_entities": {"type": "integer", "minimum": 1, "maximum": 64, "default": 16},
+          "max_depth": {"type": "integer", "minimum": 1, "maximum": 64, "default": 32}},
+         ["expected_document_token", "inventory_path", "cylinder_paths"]),
+    spec("cad_review_connections", "Associate a saved geometric relation file with a sw_mate_inventory or sw_match_mate_faces envelope. Verifies source hashes, root document/configuration and mapped occurrence poses. Adds candidate-face-pair matches only when both mate entities have live identity evidence bound to the exact cylinder source files. Separates mate feature states; never confirms contact, solving or mechanical joints. Writes a new outputs JSON without connecting COM.",
          {"relations_path": {"type": "string", "minLength": 1},
           "mate_inventory_path": {"type": "string", "minLength": 1},
           "output_path": {"type": "string", "minLength": 1}},
@@ -132,6 +143,9 @@ class SolidWorksTools:
             if name == "cad_review_connections":
                 from cadkin.tools.connections import connection_review
                 return connection_review(self.root, **arguments)
+            if name == "sw_match_mate_faces":
+                from cadkin.tools.mate_faces import load_face_sources
+                arguments = load_face_sources(self.root, **arguments)
             return self.worker.call(name, arguments)
         except Exception as exc:
             return failure(exc)

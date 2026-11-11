@@ -7,7 +7,7 @@ description: 从 SolidWorks 指定零件实例读取解析圆柱面的轴线和�
 
 输入：一个已解析零件实例及匹配配置。输出：零件定义圆柱面的根坐标轴线/半径。
 
-1. 调用 sw_component_cylinders，保存原始 JSON；不自动解析、打开零件或切换配置。
+1. 调用 sw_component_cylinders，需要后续面身份核对时设 include_face_references=true，保存原始 JSON；不自动解析、打开零件或切换配置。
 2. 检查 complete/truncated/errors，保留 body/face 快照索引和原始参数，不从摘要重写数值。
 3. 零件定义不含装配级切除；轴向正负等价、轴点不是端点，不判孔轴、行程或运动副。关系分析另交付该文件。
 

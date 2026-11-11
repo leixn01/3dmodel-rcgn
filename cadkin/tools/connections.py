@@ -6,6 +6,7 @@ from cadkin.errors import ToolFailure, success
 from cadkin.geometry import transform_from_sw
 from cadkin.tools.files import json_path, read_json
 from cadkin.tools.inventory import spatial_inventory
+from cadkin.tools.face_matches import validate_face_matching, candidate_face_matches
 
 
 def require(condition, message, code='INVALID_CONNECTION_SOURCE'):
@@ -56,6 +57,7 @@ def review_connections(relations, mates, inventory, expected_inventory_sha256):
         require(all(isinstance(p, str) and p in nodes for p in paths) and paths[0] != paths[1], 'Candidate occurrences differ.', 'EVIDENCE_MISMATCH')
         pair = pairs.setdefault(tuple(sorted(paths)), {'geometric_candidate_indices': [], 'mate_evidence': []})
         pair['geometric_candidate_indices'].append(index)
+    face_evidence = validate_face_matching(data, relations, expected_inventory_sha256)
     ids, unmatched = set(), []
     for record in data['mates']:
         require(isinstance(record, dict) and type(record.get('feature_id')) is int and record['feature_id'] not in ids,
@@ -85,7 +87,13 @@ def review_connections(relations, mates, inventory, expected_inventory_sha256):
         activity = record.get('activity')
         require(isinstance(activity, dict), 'Missing mate activity evidence.')
         issue_code = activity.get('feature_error_code')
-        if not fully_mapped or record.get('errors') or record.get('read_status') != 'ok':
+        record_errors = record.get('errors', [])
+        require(isinstance(record_errors, list) and all(isinstance(e, dict) for e in record_errors), 'Invalid mate error list.')
+        mate_errors = [e for e in record_errors if e.get('field') != 'face_match']
+        # Additional face work may be incomplete while the original mate state is fully known.
+        state_read = record.get('read_status') == 'ok' or (
+            face_evidence is not None and record.get('read_status') == 'partial' and record_errors and not mate_errors)
+        if not fully_mapped or mate_errors or not state_read:
             category = 'unresolved'
         elif activity.get('suppressed') is True:
             category = 'suppressed'
@@ -98,10 +106,13 @@ def review_connections(relations, mates, inventory, expected_inventory_sha256):
             category = 'unsuppressed_no_feature_error'
         else:
             category = 'unresolved'
+        matches = candidate_face_matches(record, pairs[pair]['geometric_candidate_indices'], relations['candidates']) if face_evidence else []
         pairs[pair]['mate_evidence'].append({'feature_id': record['feature_id'], 'feature_name': record.get('feature_name'),
                                             'type_code': record.get('type_code'), 'type_name': record.get('type_name'),
                                             'category': category, 'activity': activity, 'record_errors': record.get('errors', []),
-                                            'association_level': 'occurrence_pair_only', 'face_match_confirmed': False})
+                                            'face_matching_errors': [e for e in record_errors if e.get('field') == 'face_match'],
+                                            'association_level': 'candidate_face_pair' if matches else 'occurrence_pair_only',
+                                            'face_match_confirmed': bool(matches), 'candidate_face_matches': matches})
     reviewed = []
     for pair, item in sorted(pairs.items()):
         categories = {m['category'] for m in item['mate_evidence']}
@@ -124,10 +135,12 @@ def review_connections(relations, mates, inventory, expected_inventory_sha256):
             'pairs': reviewed, 'counts': counts, 'unmatched_mates': unmatched,
             'coverage': {'scope': 'provided_geometric_candidates_and_active_root_mates',
                          'candidate_face_pairs': len(relations['candidates']), 'occurrence_pairs': len(reviewed),
-                         'read_mate_records': len(data['mates']), 'unmatched_mate_records': len(unmatched)},
+                         'read_mate_records': len(data['mates']), 'unmatched_mate_records': len(unmatched),
+                         'face_matched_mate_records': sum(m['face_match_confirmed'] for p in reviewed for m in p['mate_evidence'])},
+            'face_matching': face_evidence,
             'complete': not source_errors, 'errors': source_errors, 'requires_review': True, 'mechanical_relation_confirmed': False,
             'solidworks_modified': False,
-            'limitations': ['Associates occurrence pairs only: a mate may involve different faces from the cylindrical candidates. No face-level geometric match is claimed.',
+            'limitations': ['Default association is occurrence-pair only. Candidate-face matches require both exact faces to have source-bound live CAD identity evidence; absent matches remain unknown.',
                             'Unsuppressed with no reported feature error is not solver validation, DOF analysis, confirmed contact or a motion joint.',
                             'Internal subassembly mates, unmapped/root references and multi-component mate relationships are not resolved here.',
                             'No matching mate or geometric candidate does not prove absent connections/free motion. Source completeness covers only the stated scopes.',
