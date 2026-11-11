@@ -3,7 +3,11 @@
   "mcp": {
     "solidworks": {
       "type": "local",
-      "command": [".venv/Scripts/python.exe", "-m", "cadkin.mcp_server"],
+      "command": [
+        "python",
+        "-m",
+        "cadkin.mcp_server"
+      ],
       "enabled": true,
       "timeout": 190000
     }

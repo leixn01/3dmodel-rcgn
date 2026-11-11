@@ -12,12 +12,15 @@ from cadkin.errors import ToolFailure, success
 from cadkin.adapters.display import DisplayOperations
 from cadkin.adapters.spatial import SpatialOperations
 from cadkin.adapters.session import SessionOperations
+from cadkin.adapters.evidence import EvidenceOperations
+from cadkin.adapters.constraints import ConstraintOperations
+from cadkin.adapters.cylinders import CylinderOperations
 
 DOC_TYPES = {1: "part", 2: "assembly", 3: "drawing"}
 NATIVE_TYPES = {".sldprt": 1, ".sldasm": 2, ".slddrw": 3}
 
 
-class SolidWorksAdapter(DisplayOperations, SpatialOperations, SessionOperations):
+class SolidWorksAdapter(DisplayOperations, SpatialOperations, SessionOperations, EvidenceOperations, ConstraintOperations, CylinderOperations):
     def __init__(self, root=None, app=None, runtime=None):
         self.root = Path(root or Path.cwd()).resolve()
         self.app = app
@@ -127,13 +130,18 @@ class SolidWorksAdapter(DisplayOperations, SpatialOperations, SessionOperations)
             raise ToolFailure("DOCUMENT_CHANGED", "The active document/configuration changed during this call; inspect SOLIDWORKS before continuing.")
 
     def sw_session_status(self):
+        conda_prefix = os.environ.get("CONDA_PREFIX")
+        runtime = {"python_executable": sys.executable, "python_version": sys.version.split()[0],
+                   "python_prefix": sys.prefix, "conda_prefix": conda_prefix,
+                   "matches_conda_prefix": (os.path.normcase(os.path.abspath(sys.prefix)) ==
+                       os.path.normcase(os.path.abspath(conda_prefix))) if conda_prefix else None}
         try:
             app = self._connect()
         except ToolFailure as exc:
             if exc.code == "NOT_RUNNING":
-                return success({"connected": False, "reason": exc.code})
+                return success({"connected": False, "reason": exc.code, "runtime": runtime})
             raise
-        return success({"connected": True, "process_id": self.process_id,
+        return success({"connected": True, "runtime": runtime, "process_id": self.process_id,
                         "revision": str(value(app, "RevisionNumber")),
                         "has_active_document": value(app, "ActiveDoc") is not None})
 

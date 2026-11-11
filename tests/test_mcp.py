@@ -15,7 +15,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = (await session.list_tools()).tools
-                    self.assertEqual(len(tools), 17)
+                    self.assertEqual(len(tools), 19)
                     self.assertFalse(any('script' in tool.name or 'save' in tool.name for tool in tools))
                     doc = await session.call_tool('sw_active_document')
                     self.assertFalse(doc.isError)
@@ -117,7 +117,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.5.0')
+                    self.assertEqual(init.serverInfo.version, '0.6.0')
                     doc = (await session.call_tool('sw_active_document')).structuredContent['data']
                     args = {'expected_document_token': doc['document_token'], 'page_size': 2}
                     page = (await session.call_tool('sw_spatial_inventory', args)).structuredContent
@@ -145,3 +145,41 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                     self.assertTrue(repeat.isError)
                     still_alive = await session.call_tool('sw_active_document')
                     self.assertFalse(still_alive.isError)
+
+    async def test_environment_python_and_new_evidence_tools_over_stdio(self):
+        import json
+        import os
+        from pathlib import Path
+        from anyio import fail_after
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+        config = json.loads(Path('opencode.json').read_text(encoding='utf-8'))
+        command = config['mcp']['solidworks']['command']
+        self.assertEqual(command, ['python', '-m', 'cadkin.mcp_server'])
+        # Exercise PATH-based Python resolution with a conda marker; not a claim of installing Conda.
+        env = {'PATH': str(Path(sys.executable).parent) + os.pathsep + os.environ['PATH'], 'CONDA_PREFIX': sys.prefix}
+        parameters = StdioServerParameters(command=command[0], args=['-m', 'tests.mcp_fixture'], env=env)
+        with fail_after(20):
+            async with stdio_client(parameters) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    status = (await session.call_tool('sw_session_status')).structuredContent
+                    runtime = status['data']['runtime']
+                    self.assertEqual(Path(runtime['python_executable']).resolve(), Path(sys.executable).resolve())
+                    self.assertTrue(runtime['matches_conda_prefix'])
+                    doc = (await session.call_tool('sw_active_document')).structuredContent['data']
+                    args = {'expected_document_token': doc['document_token'], 'occurrence_path': 'rail-1'}
+                    mates = await session.call_tool('sw_component_constraints', args)
+                    self.assertFalse(mates.isError, mates)
+                    self.assertTrue(mates.structuredContent['data']['fixed_state']['value'])
+                    self.assertEqual(mates.structuredContent['data']['mates'][0]['type_name'], 'concentric')
+                    cylinders = await session.call_tool('sw_component_cylinders', args)
+                    self.assertFalse(cylinders.isError, cylinders)
+                    self.assertEqual(cylinders.structuredContent['data']['cylinder_count'], 1)
+                    self.assertEqual(cylinders.structuredContent['data']['cylinders'][0]['radius_root_mm'], 10)
+                    limited = await session.call_tool('sw_component_cylinders', {**args, 'max_faces': 1})
+                    self.assertFalse(limited.isError)
+                    self.assertEqual(limited.structuredContent['status'], 'partial')
+                    wrong = await session.call_tool('sw_component_cylinders', {**args, 'occurrence_path': 'slide-1'})
+                    self.assertTrue(wrong.isError)
+                    self.assertEqual(wrong.structuredContent['errors'][0]['code'], 'NOT_PART_COMPONENT')

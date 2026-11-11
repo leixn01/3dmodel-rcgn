@@ -2,16 +2,18 @@
 
 ## 首次安装
 
-在已安装 SolidWorks 的 Windows 电脑，取得仓库后进入根目录。使用 Python 3.10+：
+在已安装 SolidWorks 的 Windows 电脑，取得仓库后进入根目录。使用已有的 Python 3.10+ Conda 环境，下面环境名换为你本地实际名称：
 
 ```powershell
 git clone https://github.com/leixn01/3dmodel-rcgn.git
 cd 3dmodel-rcgn
-py -3 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[solidworks]"
+conda activate 你的环境名
+python -m pip install -e ".[solidworks]"
 ```
 
-已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 17 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32 及 SDK 依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 19 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32 及 SDK 依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+
+在同一个已激活 Conda 的终端启动 OpenCode；MCP 子进程通过 PATH 找到该环境的 python。先执行 `python -c "import sys; print(sys.executable)"` 记录解释器路径，再让 OpenCode 调用 `sw_session_status`，比较 `data.runtime.python_executable`，且 `matches_conda_prefix` 应为 true。运行时同时返回 python_prefix、conda_prefix、python_version；软件未运行时也能检查。没有 CONDA_PREFIX 时匹配值为 null，不能据此声称已在 Conda 中。
 
 ## 连接与实际操作
 
@@ -38,13 +40,19 @@ py -3 -m venv .venv
 
 模型已打开后执行 README 的 `spatial-export` 和 `group` 命令，或让 Agent 使用 `component-grouping`。指定子装配用 `group ... --scope "完整实例路径"`；人工复核用 `--review outputs/review.json` 加新输出文件名。输入/复核文件必须在项目内，分组输出必须在 outputs 内；不覆盖原文件。旧版单次空间导出改为分页，推荐直接使用新 CLI 收齐，不把一页返回当整机结果。
 
+## 配合与轴线证据
+
+从真实组件树选择一个完整实例路径，让 Agent 分别调用 `sw_component_constraints` 与 `sw_component_cylinders`。前者保留固定/浮动标志及原始配合，后者读取解析圆柱面的轴线/半径；缺失与上下文限制明确返回。按 0.6.0 清单核对，不把没有配合当作自由运动，也不把圆柱轴线直接当旋转副。
+
 ## 配置
 
-根目录 `opencode.json` 使用 V1 格式，V2 官方兼容说明支持该格式；无需为了加载 skill 迁移配置。服务启动命令为 `.venv/Scripts/python.exe -m cadkin.mcp_server`，必须在仓库根目录启动 OpenCode。
+根目录 `opencode.json` 使用 V1 格式，V2 官方兼容说明支持该格式；无需为了加载 skill 迁移配置。服务启动命令为 `python -m cadkin.mcp_server`，必须在已激活目标 Conda 的终端、仓库根目录启动 OpenCode。
 
 若本机使用 V2 原生配置，可将同一个服务对象置于 `mcp.servers.solidworks`，使用 `disabled: false`，并把超时写为 `timeout: {"catalog": 70000, "execution": 190000}`。不要同时维护两份冲突的同名服务定义。全局个人凭据不应提交到项目。
 
-需要从其他目录启动或有特殊路径时，将 command 第一项改为本机虚拟环境 Python 的绝对路径，并在命令参数中添加 `--root` 与仓库绝对路径。默认按项目工作目录解析相对模型路径。MCP/CLI 默认调用上限 180 秒，项目 OpenCode 超时为 190000 ms；启动工具的 `wait_seconds` 默认 120，仅约束能够返回控制权的就绪轮询，不能中断阻塞 COM 调用。
+需要从其他目录启动或有特殊路径时，将 command 第一项改为本机 Conda 环境 Python 的绝对路径，并在命令参数中添加 `--root` 与仓库绝对路径。默认按项目工作目录解析相对模型路径。MCP/CLI 默认调用上限 180 秒，项目 OpenCode 超时为 190000 ms；启动工具的 `wait_seconds` 默认 120，仅约束能够返回控制权的就绪轮询，不能中断阻塞 COM 调用。
+
+如果 OpenCode 由其他启动器运行、不能继承激活环境，可以在本机把 command 改为 `["conda", "run", "--no-capture-output", "-n", "实际环境名", "python", "-m", "cadkin.mcp_server"]`；conda 需可被该启动器找到。必须保留 --no-capture-output，避免缓冲 MCP stdio。机器专属名称/路径不要提交回公共配置；正常从激活终端启动不需要此改动。
 
 Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不需要额外配置 skills 路径或把所有正文塞进 instructions。
 
@@ -52,7 +60,8 @@ Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不�
 
 | 现象 | 处理 |
 | --- | --- |
-| MCP 无法启动 | 确认 `.venv/Scripts/python.exe` 存在，并重新执行安装命令；从仓库根目录启动 |
+| MCP 无法启动 | 激活已有 Conda，用 python -m pip 安装依赖，并从同一终端的仓库根目录重新启动 OpenCode |
+| 解释器不符 / matches_conda_prefix=false | 对比终端 sys.executable 与 MCP runtime，退出旧 OpenCode/MCP 后从正确激活终端启动；不要新建项目虚拟环境绕过 |
 | `UNSUPPORTED_PLATFORM` | 使用 SolidWorks 所在电脑的 Windows Python；Linux/WSL Python 不能直接访问 COM |
 | `connected: false` / `NOT_RUNNING` | 调用 `sw_start_application` 启动，再执行模型任务；纯状态查询保持只读 |
 | `APPLICATION_NOT_REGISTERED` | 检查桌面版 SolidWorks 安装和 COM 注册；工具不自动安装、修复注册或猜 exe 路径 |
@@ -60,7 +69,7 @@ Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不�
 | `START_FAILED` / `START_OUTCOME_UNKNOWN` | 进程可能已创建，先检查窗口/任务管理器；不要连续新建进程，结果不明时重启 MCP 后复核 |
 | `CONNECT_FAILED` | 确认同一 Windows 用户、相同权限级别，结束启动弹窗；不要把云端服务当作本机连接 |
 | `MULTIPLE_SESSIONS` | 当前版本需要保留一个目标 SolidWorks 进程；不要自动关闭用户工程 |
-| 缺少新增工具 | 更新仓库并安装依赖，退出并重新启动 OpenCode；核对 MCP 工具目录应为 17 个 |
+| 缺少新增工具 | 更新仓库并安装依赖，退出并重新启动 OpenCode；核对 MCP 工具目录应为 19 个 |
 | `DISPLAY_CONSTANTS_UNAVAILABLE` | 检查报错中的类型库原因；需要当前 SolidWorks 安装目录的 swconst.tlb，不靠猜测常量替代 |
 | `DISPLAY_BLOCKED` / `PARENT_HIDDEN` | 总开关或父装配仍隐藏；根据用户要求处理，不擅自显示其他对象 |
 | `DISPLAY_MISMATCH` | 设置后回读不一致，保留错误并核对窗口，不能报成功 |
@@ -72,8 +81,10 @@ Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不�
 | 空间字段为 null / `partial` | 检查字段级错误和实例状态；不补零；正常已解析实例读不到数据时保留原始返回反馈 |
 | 组件树为 `partial` | 检查 errors，记录未解析节点或上限；如需解析组件，由用户明确操作后重读 |
 
-诊断命令：`.\.venv\Scripts\python.exe -m cadkin sw sw_session_status`。结果输出到终端，不会开启 MCP 协议会话。运行产物留在 `outputs/`。
+诊断命令：`python -m cadkin sw sw_session_status`。结果输出到终端，不会开启 MCP 协议会话。运行产物留在 `outputs/`。
 
-用户已反馈旧版 15 工具的实测结果；本次显示/超时修复与新增分组按 0.5.0 清单复测，启动仍按 0.4.0 清单验证。请按 [17 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
+用户已反馈旧版 15 工具的实测结果；新增 Conda、配合与轴线按 0.6.0 清单验证；显示/超时修复与分组保留 0.5.0 复测项，启动仍按 0.4.0 清单验证。请按 [19 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
 
 官方说明：[Skills](https://opencode.ai/docs/skills/)、[MCP](https://opencode.ai/docs/mcp-servers/)、[V1/V2 兼容](https://opencode.ai/docs/migrate-v1/)。
+
+Conda 官方说明：[conda run](https://docs.conda.io/projects/conda/en/stable/commands/run.html)。

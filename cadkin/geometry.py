@@ -68,3 +68,27 @@ def bounding_box(raw):
             "min_mm": millimeters(low), "max_mm": millimeters(high),
             "size_mm": millimeters(size), "center_mm": millimeters(center),
             "limitation": "Approximate root-axis-aligned enclosure, not intrinsic part dimensions, center of mass, precision metrology or collision evidence; may change after rebuild."}
+
+
+def cylinder_from_sw(raw, transform):
+    """Part-definition cylindrical surface -> occurrence root frame, exactly once."""
+    data = numbers(raw, 7, "INVALID_CYLINDER")
+    origin, direction, radius = data[:3], data[3:6], data[6]
+    length = math.hypot(*direction)
+    if not math.isfinite(length) or length == 0 or radius <= 0:
+        raise ToolFailure("INVALID_CYLINDER", "Cylinder axis must be nonzero and radius positive.")
+    unit = [x / length for x in direction]
+    matrix = transform["to_root"]
+    root_origin = numbers([sum(matrix[i][j] * origin[j] for j in range(3)) + matrix[i][3]
+                           for i in range(3)], 3, "INVALID_CYLINDER")
+    root_axis = numbers([sum(matrix[i][j] * unit[j] for j in range(3)) for i in range(3)], 3, "INVALID_CYLINDER")
+    root_length = math.hypot(*root_axis)
+    if not math.isfinite(root_length) or root_length == 0:
+        raise ToolFailure("INVALID_CYLINDER", "Transformed cylinder axis is invalid.")
+    root_radius = radius * abs(transform["scale"])
+    numbers([root_radius, root_radius * 1000], 2, "INVALID_CYLINDER")
+    return {"raw_array": data, "origin_part_m": origin, "axis_part_unit": unit, "radius_part_m": radius,
+            "origin_root_m": root_origin, "origin_root_mm": millimeters(root_origin),
+            "axis_root_unit": [x / root_length for x in root_axis],
+            "radius_root_m": root_radius, "radius_root_mm": root_radius * 1000,
+            "axis_is_unoriented": True}

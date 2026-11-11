@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.5.0。以下 17 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.6.0。以下 19 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -20,6 +20,8 @@
 | `sw_set_component_visibility` | `expected_document_token`、`occurrence_path`、`visible` | 设置指定实例显示状态并回读，不抑制、解析、移动或保存 |
 | `sw_component_spatial` | `expected_document_token`、`occurrence_path` | 只读单实例的根/父变换、原点与近似包围盒，不选择或解析组件 |
 | `sw_spatial_inventory` | `expected_document_token`，可选范围、分页、签名和包围盒开关（见下） | 只读一页空间清单；CLI spatial-export 收齐所有页 |
+| `sw_component_constraints` | expected_document_token、occurrence_path；可选 max_mates、max_entities | 只读顶层固定标志与组件关联配合；不求解运动关系 |
+| `sw_component_cylinders` | expected_document_token、occurrence_path；可选 max_bodies、max_faces、max_cylinders | 只读匹配配置的零件定义圆柱面；放置到实例根坐标，不含装配级切除 |
 | `cad_group_components` | `inventory_path`、`output_path`，可选 `scope_occurrence_path`、`review_path` | 离线生成角色候选/应用人工复核，写 outputs 新 JSON，不调用 COM |
 
 `view` 支持 front/back/left/right/top/bottom/isometric/trimetric/dimetric。接口用枚举值访问视图，不依赖中英文界面的视图名称。
@@ -107,7 +109,7 @@
 推荐在仓库根目录执行：
 
 ```powershell
-.\.venv\Scripts\python.exe -m cadkin spatial-export --page-size 5 --output outputs/spatial.json
+python -m cadkin spatial-export --page-size 5 --output outputs/spatial.json
 ```
 
 CLI 先读当前 token，再在同一 STA 会话逐页采集、核对签名/连续序号/唯一实例；默认范围 5000、64 层，可用 `--max-components` / `--max-depth` 调整。每页使用 180 秒的调用上限，整个多页导出可以超过 180 秒；调用此 CLI 的客户端外层时限也应允许完整导出。`--without-boxes` 可跳过较慢的 GetBox。写新文件，存在则拒绝；导出前预检路径，保存原始 envelope 和字段级错误。全部页收齐后移除单页 pagination，增加 `pages_collected`、`total_components` 和 `next_offset`；collection_complete=true 不代表层级没有截断或几何全部可读，仍要检查 hierarchy_complete/complete/errors。
@@ -119,7 +121,7 @@ CLI 先读当前 token，再在同一 STA 会话逐页采集、核对签名/连�
 `cad_group_components` 的输入/复核文件必须为项目内 JSON（最大 64 MiB），输出必须为 `outputs/` 下尚不存在的 JSON；不使用 `CADKIN_ALLOWED_ROOTS` 扩展此离线工具的输入范围。CLI `group` 与 MCP 共用 `cadkin/tools/grouping.py`，无需 SolidWorks 运行，也不会启动软件。MCP 返回精简摘要和文件路径，详细结果已写入文件。
 
 ```powershell
-.\.venv\Scripts\python.exe -m cadkin group outputs/spatial.json --output outputs/groups.json
+python -m cadkin group outputs/spatial.json --output outputs/groups.json
 # 如需仅分析一个真实子装配：追加 --scope "组件树里的完整实例路径"
 ```
 
@@ -143,6 +145,37 @@ CLI 先读当前 token，再在同一 STA 会话逐页采集、核对签名/连�
 用同一输入/范围调用工具并传 `review_path`，或 CLI 加 `--review outputs/review.json`，输出换新文件。暂缓项使用 role=pending、decision=pending、明确 reason；确认项 decision=confirmed、role 为前三类。哈希/路径/范围/重复项/角色/理由错误返回 `INVALID_REVIEW`；未列出的实例保持自动候选。manual_confirmed 表示应用了复核文件中的声明，工具不验证声明者身份，Agent 不得编造人工确认。
 
 输入不存在或 JSON 无效返回 `INVALID_INPUT`，路径越界返回 `INVALID_PATH`，输出已有文件返回 `OUTPUT_EXISTS`，都不能写成成功。工具不创建 SolidWorks 特征树文件夹、不改显隐、不移动组件、不保存 CAD。
+
+## Conda 与只读证据（0.6.0）
+
+项目 MCP command 为 `["python","-m","cadkin.mcp_server"]`，从已激活 Conda 的终端启动 OpenCode。`sw_session_status` 额外返回 `data.runtime={python_executable,python_version,python_prefix,conda_prefix,matches_conda_prefix}`，软件未运行的 connected=false 结果也包含它。路径比较用于诊断当前解释器是否属于已声明的 Conda 前缀；无 CONDA_PREFIX 时匹配值为 null，不创建环境或修改 PATH。使用方法见 OPENCODE_START.md。
+
+### 指定组件的约束
+
+`sw_component_constraints` 必填 `expected_document_token` 与 `occurrence_path`；可选 `max_mates=100`（1–500）、`max_entities=16`（1–64）。只遍历目标组件的 GetMates，不扫描全部组件配合；不选择、解析、激活文档/配置、重建、保存或更改配合。
+
+结果包含 constraint_schema_version=1、文档/实例/父路径、采集时间、snapshot_atomic=false、fixed_state、mates、reported_mate_count、read_mate_count、complete、truncated 和 errors。
+
+- fixed_state.value 仅对根装配顶层实例调用 IsFixed，表示 API 的固定/浮动标志；false 不证明没有约束，true 不代表机械角色必为固定基体。嵌套实例为 null，scope=unavailable_nested_context，并返回 FIXED_STATE_CONTEXT_UNAVAILABLE，不能把根上下文的结果用作子装配内部状态。
+- mates=[] / reported_mate_count=0 表示本次 GetMates 未返回配合；调用失败则 mates=null、count=null 并 partial，不能解释成没有配合。GetMates 可能含 IMateInPlace，无法读取的记录保留部分信息和错误。
+- 每项保留快照内 mate_index、type_code（swMateType_e）、已知 type_name、alignment_code（swMateAlign_e）、entity_count、entities、read_status/errors。未知 type_code 原样保留、type_name=null；名称映射只解释枚举，不控制 CAD。未读取配合抑制或求解状态，constraint_activity 明示 unknown。
+- 每个 entity 保留 ReferenceType2（swSelectType_e）的 reference_type_code、原 API 上下文 reference_component_name/reference_status、entity_params_raw。ReferenceComponent=null 时为 root_or_unavailable，不猜是地面件或指定组件。名称未经上下文校验，不自动映射为根装配 occurrence_path。
+- EntityParams 根据 GetEntityParamsSize 验证数组长度和有限数值，保留原数组。参数点/半径为米，向量保持原值；所属坐标是“该配合所在装配”，未确定就不转换为根坐标。ReferenceType2 是选择类型，不是 swMateEntity_e 的几何种类；不能仅凭面类别将参数向量判为圆柱轴。
+- 数量限制分别返回 MATE_LIMIT / MATE_ENTITY_LIMIT 和 truncated=true。字段失败保留其他可读字段；文档/实例/配置改变时返回 error 并丢弃本次混合结果。
+
+### 指定零件的圆柱面
+
+`sw_component_cylinders` 必填 token 与 occurrence_path；可选 max_bodies=50（1–200）、max_faces=500（1–5000）、max_cylinders=100（1–1000）。仅支持已解析零件实例，子装配返回 NOT_PART_COMPONENT。GetModelDoc2 未加载时 COMPONENT_MODEL_UNAVAILABLE；零件活动配置与实例 ReferencedConfiguration 不一致时 COMPONENT_CONFIGURATION_MISMATCH，不自动打开、解析或切换。
+
+从匹配配置的 IPartDoc.GetBodies2(-1,false) 获取实体/曲面体（包括隐藏体），逐面 GetSurface/IsCylinder。只对解析圆柱面读取 CylinderParams，原数组为轴上一点 xyz、轴向 xyz、半径，长度量为米。按组件 Transform2 转换一次到根装配，轴向归一化，半径乘缩放绝对值。原点含平移，向量不含平移；负缩放不产生负半径。
+
+返回 cylinder_schema_version=1、源装配/实例、source_part（文档/configuration/dirty）、引用配置、变换、geometry_scope=referenced_part_definition、assembly_instance_features_evaluated=false、cylinders、计数/错误/截断和单位。每条包含 body_index/face_index、raw_array、origin_part_m、axis_part_unit、radius_part_m、origin_root_m/mm、axis_root_unit、radius_root_m/mm、axis_is_unoriented=true、candidate_status=geometry_only。
+
+这些是零件定义的解析曲面参数，未计入装配级切除等实例特有几何变化；即使配置匹配也需核对装配实际几何。零件定义可能是已打开文档的当前状态或其已加载保存状态。当前不拟合 NURBS/网格、不提取基准轴、不区分圆柱是孔还是轴；轴点不是端点或中心，不返回长度、导程、行程、接触或运动副结论。
+
+max_faces 和 max_cylinders 是全调用预算，达到且仍有面未检查时返回 FACE_LIMIT/CYLINDER_LIMIT；超过体上限为 BODY_LIMIT。保留已经读取的结果，partial/truncated 不等于全量。逐体及每 20 面核对文档/配置，结束时核对实例变换；仍为非原子读取，调用期间不要编辑。逐面失败保留其他轴线；source/config/token/transform 变化时丢弃结果。cylinders=[] 仅表示读取范围内未得到解析圆柱面，不证明没有轴孔。分割面可产生同轴多记录，不做自动合并；索引可能随重建变化，不作为持久选择 ID。
+
+两种工具均可通过 `python -m cadkin sw <工具名> --arguments '<实际JSON>' --output outputs/<新文件>.json` 保存真实 envelope。先取得实际 token 和实例路径，不复制占位值。上限减少总工作量，但不能取消单次阻塞 COM；仍沿用 TIMEOUT/OUTCOME_UNKNOWN 规则。角色分组继续独立运行，不会自动将这些证据写成人工确认。
 
 ## 软件启动（0.4.0）
 
@@ -197,3 +230,14 @@ CLI 先读当前 token，再在同一 STA 会话逐页采集、核对签名/连�
 - [pywin32 ProgID→IID 转换用法](https://github.com/mhammond/pywin32/blob/main/com/win32com/client/gencache.py)
 
 - [LoadTypeLib 完整路径不注册类型库](https://learn.microsoft.com/en-us/windows/win32/api/oleauto/nf-oleauto-loadtypelib)
+
+- [IsFixed：仅对顶层组件直接解释](https://help.solidworks.com/2022/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IComponent2~IsFixed.html)
+- [GetMates：IMate2 或 IMateInPlace](https://help.solidworks.com/2019/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IComponent2~GetMates.html)
+- [MateEntity 与索引](https://help.solidworks.com/2024/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IMate2~MateEntity.html)
+- [EntityParams 与所属装配坐标](https://help.solidworks.com/2026/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMateEntity2~EntityParams.html)
+- [ReferenceType2：swSelectType_e](https://help.solidworks.com/2025/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMateEntity2~ReferenceType2.html)
+- [swMateType_e 名称映射](https://help.solidworks.com/2026/english/api/swconst/SolidWorks.Interop.swconst~SolidWorks.Interop.swconst.swMateType_e.html)
+- [GetModelDoc2 的定义/实例差别及配置限制](https://help.solidworks.com/2024/english/api/sldworksapi/solidworks.interop.sldworks~solidworks.interop.sldworks.icomponent2~getmodeldoc2.html)
+- [IPartDoc.GetBodies2](https://help.solidworks.com/2024/english/api/sldworksapi/solidworks.interop.sldworks~solidworks.interop.sldworks.ipartdoc~getbodies2.html)
+- [swAllBodies=-1](https://help.solidworks.com/2024/English/api/swconst/SolidWorks.Interop.swconst~SolidWorks.Interop.swconst.swBodyType_e.html)
+- [CylinderParams：7 元素与米制单位](https://help.solidworks.com/2022/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ISurface~CylinderParams.html)

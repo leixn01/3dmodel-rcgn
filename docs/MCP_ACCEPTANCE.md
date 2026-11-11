@@ -1,14 +1,53 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 17 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 19 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
-1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks]`，退出并重启 OpenCode。无需提前启动 SolidWorks，先完成下面 0.4.0 的启动检查，再做模型操作。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 17 个工具。客户端可能给工具名添加服务器前缀。
+1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks]`，退出并重启 OpenCode。先完成 0.6.0 的 Conda 环境核对；SolidWorks 未运行时再按 0.4.0 启动，无需手动提前打开。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 19 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
+
+## 0.6.0：Conda与约束轴线证据
+
+### Conda 环境与协议
+
+以下命令在仓库根目录、你已有 Conda 环境中执行，环境名替换为本机名称。无需创建项目虚拟环境：
+
+```powershell
+conda activate 你的环境名
+git pull --ff-only
+python -m pip install -e ".[solidworks]"
+python -c "import sys; from importlib.metadata import version; print(sys.executable); print(version('3dmodel-rcgn'))"
+opencode mcp list
+opencode
+```
+
+版本应为 0.6.0，工具数 19。升级后要从同一已激活终端重新启动 OpenCode。调用 `sw_session_status({})`，核对 runtime.python_executable 与终端打印路径一致、matches_conda_prefix=true；软件未运行时 connected=false 也应带这些字段。与目标 Conda 不符即本项失败，不继续把其他环境的测试当作通过。配置不硬编码环境名称或机器路径。
+
+### 两个新工具逐项验收
+
+前置：活动文档为测试装配，先读 sw_active_document 和 sw_component_tree，保存实际 token 与完整实例路径。挑一个顶层实例、一个嵌套实例，以及能在窗口确认的圆柱零件。原 STEP 没有配合时可以验证空列表；含已知配合的成功读取须用用户已有合适装配/工作副本，不修改原 STEP 来制造数据。所有操作串行，保存真实参数/原始 JSON/版本/PID/耗时与窗口结论到 `outputs/acceptance-0.6-<时间>/`。
+
+| 项目 | 操作与准确参数 | 通过标准 / 失败标准 |
+| --- | --- | --- |
+| 顶层固定标志与配合 | `sw_component_constraints`：expected_document_token=当前值、occurrence_path=实际顶层路径；默认 max_mates=100、max_entities=16。 | fixed_state.value 与该实例特征树固定/浮动标志一致；reported_mate_count/read_mate_count 与实际关联记录核对。配合类型、引用名称和原参数保留；不自动生成自由度、刚体或运动副结论。 |
+| 嵌套状态 | 相同工具换成实际嵌套路径。 | fixed_state.value=null，errors 含 FIXED_STATE_CONTEXT_UNAVAILABLE，整体 partial；不会读取错误上下文后声称子件浮动，不切换/激活子装配配置。 |
+| 有配合样例 | 在已有可核验配合的装配里查询对应组件；核对至少一个同心/重合等已知配合。 | type_code/type_name 与对应配合一致，entity_count 和引用名称可核对；记录坐标所属装配，不把 EntityParams 当根坐标。无法提供该样例时记未测试，不能用 STEP 空列表代替。 |
+| 空值与失败 | 对实际无配合组件查询；自然遇到读取错误时保留原错误。 | 正常空值为 mates=[]、reported_mate_count=0；读取失败必须 partial、mates=null 或对应记录带 errors，不能冒充空列表。没有配合不等于自由运动。 |
+| 圆柱面几何 | `sw_component_cylinders`：当前 token、实际已解析圆柱零件路径；默认 max_bodies=50、max_faces=500、max_cylinders=100。 | 至少一个已知解析圆柱面的半径与人工测量一致（注意半径/直径差别），原点在轴线上、方向与该轴平行；源配置匹配、米/毫米正确。标明零件定义范围，不说已包含装配级切除。若导入面是 NURBS，0 条需注明当前不识别，不能强报通过。 |
+| 重复/嵌套实例 | 读取同文件不同位置的两个实例，尽量包含嵌套实例；对照 sw_component_spatial 的 Transform2。 | 共享零件定义不合并实例；局部参数相同而根位置/方向随实例正确变化；不重复乘父变换、不把轴点当中心。方向反向表示同一无向轴，不直接当运动正方向。 |
+| 不匹配配置/未加载/子装配 | 存在相应现场条件时查询，保留当前文档和配置。 | 分别 COMPONENT_CONFIGURATION_MISMATCH、COMPONENT_MODEL_UNAVAILABLE、NOT_PART_COMPONENT；不自动打开/解析/切配置。条件不具备记未测试，不人为破坏模型。 |
+| 上限/缺失 | 对确有多配合/多面的实例分别用 max_mates=1、max_entities=1、max_faces=1 或 max_cylinders=1。 | 未读完时 partial/truncated=true 与对应 LIMIT 错误，已读数据保留。实际恰好读完不应误报截断。失效字段不补零轴、零半径或单位变换。 |
+| 只读与错误后可用 | 调用前后比较活动文档/配置、dirty、选择和显隐；分别传过期 token、max_faces=0。 | 没有选择、移动、重建、保存或修改配合；错误分别 DOCUMENT_CHANGED、INVALID_ARGUMENTS，之后正常查询仍可用。TIMEOUT 另按现有规则核对现场。 |
+
+保存参数后也可由共享 CLI 写原始结果：`python -m cadkin sw sw_component_constraints --arguments '<实际JSON>' --output outputs/constraints-0.6.json`；圆柱工具同理。JSON 中必须使用刚读取的 token 和真实路径，不粘贴占位值；文件已存在则改名。优先让 OpenCode 组织实际参数以避免 PowerShell 引号转义问题。
+
+可直接交给 OpenCode：
+
+> 按 docs/MCP_ACCEPTANCE.md 的 0.6.0 清单检查当前 Conda 解释器与 MCP 一致，再读取测试装配中一个顶层实例和一个嵌套实例的约束，以及一个已知圆柱零件和其重复实例的轴线/半径。保存原始 JSON、真实参数和耗时；列出需要我窗口核对的结果。固定标志不等于机械角色，没有配合不等于自由运动，圆柱轴不直接认定为运动轴；不要切换配置、修改配合、移动或保存模型。
 
 ## 0.5.0：修复与组件分组
 
@@ -16,11 +55,11 @@
 
 ```powershell
 git pull --ff-only
-.\.venv\Scripts\python.exe -m pip install -e ".[solidworks]"
-.\.venv\Scripts\python.exe -c "from importlib.metadata import version; print(version('3dmodel-rcgn'))"
+python -m pip install -e ".[solidworks]"
+python -c "from importlib.metadata import version; print(version('3dmodel-rcgn'))"
 ```
 
-应显示 0.5.0；退出并重新启动 OpenCode，检查 17 个 MCP 工具（新增 `cad_group_components`）。若仍为 15 个工具或仍报旧的 60 秒上限，先核对所用目录、解释器与 MCP 进程。使用已有打开的测试装配，记录 SHA、软件版本、PID、当前文档/配置/token，以及修改前的选择/显隐/dirty。不要为测试关闭有未保存工程的会话。
+本节保留 0.5.0 的修复验收项；当前更新应显示 0.6.0、19 个工具（0.5.0 时为 17 个）。退出并重新启动 OpenCode，确认含 `cad_group_components`。若仍为 15 个工具或仍报旧的 60 秒上限，先核对所用目录、解释器与 MCP 进程。使用已有打开的测试装配，记录 SHA、软件版本、PID、当前文档/配置/token，以及修改前的选择/显隐/dirty。不要为测试关闭有未保存工程的会话。
 
 每次工具调用保存准确参数、原始返回、开始/结束时间与人工窗口结论到 `outputs/acceptance-0.5-<时间>/`。回读、耗时、窗口效果分别记录；没有窗口证据不填写视觉通过。
 
@@ -36,8 +75,8 @@ git pull --ff-only
 | 分页错误 | 后续 offset>0 故意不传签名；或传入 64 个零的签名。 | 分别 INVALID_ARGUMENTS、INVENTORY_CHANGED；服务仍可查询活动文档。不要为测试主动改动原模型；自然遇到层级/配置变化时保留真实错误。 |
 
 ```powershell
-.\.venv\Scripts\python.exe -m cadkin spatial-export --page-size 5 --output outputs/spatial-0.5.json
-.\.venv\Scripts\python.exe -m cadkin spatial-export --page-size 5 --without-boxes --output outputs/spatial-fast-0.5.json
+python -m cadkin spatial-export --page-size 5 --output outputs/spatial-0.5.json
+python -m cadkin spatial-export --page-size 5 --without-boxes --output outputs/spatial-fast-0.5.json
 ```
 
 已存在文件需改名，不能覆盖。完整导出可能超过 180 秒，这是多个独立页的累计时间；调用 CLI 的终端/Agent 需允许足够的命令执行时间。单页仍超时时先核对现场、重启 MCP，再用 page-size=1 或 without-boxes 和新文件复测；也可能是单个组件 API 阻塞，不能承诺分页一定消除所有卡顿。
@@ -45,7 +84,7 @@ git pull --ff-only
 ### 新增分组与修正
 
 ```powershell
-.\.venv\Scripts\python.exe -m cadkin group outputs/spatial-0.5.json --output outputs/groups-0.5.json
+python -m cadkin group outputs/spatial-0.5.json --output outputs/groups-0.5.json
 ```
 
 MCP 等价调用：`cad_group_components({"inventory_path":"outputs/spatial-0.5.json","output_path":"outputs/groups-mcp-0.5.json"})`。详细 JSON 已写入文件，返回精简摘要；不要求从聊天输出重建文件。
@@ -159,12 +198,12 @@ Copy-Item -LiteralPath 'examples/three_servo_lift/3X Lift Assembly.STEP' -Destin
 
 ## 记录与结论
 
-在 `outputs/` 的新目录保存验收记录、每次实际参数和原始 MCP 返回；视图与选择另附人工窗口核对结果。每项标记“通过 / 失败 / 部分通过 / 阻塞 / 未测试”，写明原因。只有 17 项都满足标准，才能说本版本基础能力实机验收通过。
+在 `outputs/` 的新目录保存验收记录、每次实际参数和原始 MCP 返回；视图与选择另附人工窗口核对结果。每项标记“通过 / 失败 / 部分通过 / 阻塞 / 未测试”，写明原因。只有 19 项都满足标准，才能说本版本基础能力实机验收通过。
 
 可直接告诉 OpenCode：
 
-> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 17 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
+> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 19 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
 
-当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，本次修复和新增分组仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及运动关系识别不在当前 17 个工具范围内；空间结果 JSON 可由客户端或 CLI 保存。
+当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，本次修复和新增分组仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及运动关系识别不在当前 19 个工具范围内；空间结果 JSON 可由客户端或 CLI 保存。
 
 后续每次功能变更都在此追加对应版本的操作、预期返回、人工核对和失败标准。每条记录注明提交 SHA、工具参数、原始返回文件、窗口核对者与结论；没有证据不沿用上版“通过”。

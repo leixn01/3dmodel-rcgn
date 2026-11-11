@@ -12,3 +12,5 @@ description: 检查或排查本机已有 SolidWorks 会话，读取版本与活�
 5. 工具缺失时检查安装与项目配置；只在用户要求开发/修复时改代码。没有 Windows COM 实测就明确说明，不能使用离线 STEP 统计代替。
 
 接口与错误语义见 [工具约定](../../../docs/TOOL_CONTRACTS.md)。
+
+使用用户已有 Conda 环境。在该环境激活的终端启动 OpenCode，核对 sw_session_status 的 runtime.python_executable 与终端 sys.executable 一致、matches_conda_prefix=true；软件未运行也能查询。不新建项目虚拟环境，不硬编码个人环境名或路径。

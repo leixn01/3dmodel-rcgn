@@ -57,6 +57,15 @@ class Component:
         self.Transform2 = pose()
         self.box = [0, 0, 0, 0.1, 0.2, 0.3]
         self.box_calls = []
+        self.fixed = False
+        self.mates = []
+        self.model_doc = None
+
+    def IsFixed(self): return self.fixed
+
+    def GetMates(self): return self.mates
+
+    def GetModelDoc2(self): return self.model_doc
 
     def GetBox(self, include_reference_planes, include_sketches):
         assert (include_reference_planes, include_sketches) == (False, False)

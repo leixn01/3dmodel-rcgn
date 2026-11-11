@@ -6,10 +6,11 @@ from cadkin.adapters.solidworks import SolidWorksAdapter
 from cadkin.mcp_server import create_server
 from cadkin.tools.solidworks import SolidWorksTools
 from tests.sw_fakes import App, Document, SessionHarness, runtime
+from tests.evidence_fakes import evidence_document
 
 
 async def main():
-    factory = (lambda: SessionHarness().adapter) if '--cold-start' in sys.argv else (lambda: SolidWorksAdapter(app=App(Document()), runtime=runtime()))
+    factory = (lambda: SessionHarness().adapter) if '--cold-start' in sys.argv else (lambda: SolidWorksAdapter(app=App(evidence_document()), runtime=runtime()))
     service = SolidWorksTools(factory=factory)
     server = create_server(service)
     try:
