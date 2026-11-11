@@ -40,9 +40,13 @@ def main():
     relations.add_argument("--max-pairs", type=int, default=10000)
     relations.add_argument("--max-candidates", type=int, default=1000)
     relations.add_argument("--grouping", dest="grouping_path")
+    review = commands.add_parser("review-connections", help="Associate geometric candidates with root mate evidence offline")
+    review.add_argument("relations_path")
+    review.add_argument("mate_inventory_path")
+    review.add_argument("--output", required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations"}:
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections"}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
@@ -54,6 +58,9 @@ def main():
                     from .tools.files import json_path
                     json_path(Path.cwd(), args.output, output=True)
                     result = collect_spatial(service, args.page_size, args.max_components, args.max_depth, not args.without_boxes)
+                elif args.command == "review-connections":
+                    result = service.call("cad_review_connections", {"relations_path": args.relations_path,
+                        "mate_inventory_path": args.mate_inventory_path, "output_path": args.output})
                 elif args.command == "relations":
                     arguments = {key: getattr(args, key) for key in (
                         "inventory_path", "cylinder_paths", "distance_tolerance_mm", "angle_tolerance_deg",
@@ -82,7 +89,7 @@ def main():
             print(str(output))
         else:
             print(payload, end="")
-        if args.command in {"sw", "spatial-export", "group", "relations"} and result["status"] == "error":
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections"} and result["status"] == "error":
             raise SystemExit(2)
     except (RuntimeError, OSError, ValueError, KeyError, zipfile.BadZipFile, URLError) as exc:
         parser.exit(2, f"Error: {exc}\n")

@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.7.0（20 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.8.0（22 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -19,6 +19,8 @@
 | 固定标志与关联配合证据 | `component-constraints` |
 | 零件定义圆柱面轴线/半径候选 | `component-cylinders` |
 | 离线同轴/平行候选与来源关联 | `component-relations` |
+| 根装配配合状态/坐标/引用身份 | `assembly-mates` |
+| 几何候选与配合的离线关联 | `connection-review` |
 | 打开/导入或重建文档 | `solidworks-document` |
 | 标准视图/缩放 | `solidworks-view` |
 | 基准面等辅助对象显隐 | `solidworks-display` |
@@ -45,3 +47,6 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 - 0.6.0 配合与圆柱读取只读指定实例：IsFixed 对嵌套组件不能直接解释；MateEntity 参数保留所属装配坐标，引用名称不自动当根路径；零件定义圆柱不包含装配级切除，不凭轴线认定运动副。配置不匹配时不自动切换。
 
 - 0.7.0 关系工具 cad_component_relations 只比较提供的实例圆柱证据；显式传毫米/度公差，绑定空间清单与可选分组哈希。分割面证据条数不是机械连接数；同轴/平行、角色确认都不证明运动副，部分来源和预算截断必须保留。
+
+- Skill 必须解耦、逐层披露：description 只说明职责与触发；SKILL.md 保留输入/输出、最小流程与关键边界；详细参数/字段/失败分支放同目录 references，入口写明何时读取。不要预加载全部参考文件、全套 skill 或完整开发文档。跨功能只交接数据，缺什么才调用对应能力；工具不读取 skill，不把执行代码放入 skill。
+- 0.8.0 sw_mate_inventory 只取活动根装配 MateGroup 的特征状态与原始实体参数，不含子装配内部配合。cad_review_connections 只做实例对关联；未抑制且无特征报错不是求解成功或运动副确认，不把配合引用面当作已匹配候选圆柱面。

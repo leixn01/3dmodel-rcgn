@@ -5,13 +5,10 @@ description: 按完整装配实例路径隐藏、显示或查询一个 SolidWork
 
 # 组件显隐
 
-1. 用 `sw_active_document` 确认当前装配并取得 `document_token`；零件文档中的实体不作为组件处理。
-2. 从最新 `sw_component_tree` 取得目标完整 `occurrence_path`；相同文件的不同实例分别处理。用户简称对应多个实例时列出候选，不猜测，也不批量隐藏全部实例。不能使用 `@unreadable/...`。
-3. 调用 `sw_get_component_visibility(expected_document_token=..., occurrence_path=...)`，记录原始自身可见状态和隐藏父路径；只查询时到此为止。
-4. 按明确请求调用 `sw_set_component_visibility(..., visible=false或true)`，再查询回读。操作无需先选择组件，不改变当前选择。恢复此前状态时使用记录值，不一律设为 true。
-5. `PARENT_HIDDEN` 表示显示子组件仍被父级挡住；报告具体父路径，只有用户要求显示该父级时才修改它。抑制、轻化或未解析的目标/父级报错时，不擅自解除抑制或解析。
-6. 报告实际实例路径、回读状态和是否保存（工具不保存）；窗口可访问时核对画面，否则说明尚未视觉核对。显示标志不等于没有遮挡或一定出现在当前视野。
+输入：完整实例路径、文档 token 和 visible。输出：目标自身及父级显隐读回。
 
-仅改变显示属性，不改几何/位置；隐藏子装配会影响其子件的可见画面，不逐个改写子件属性。文档或配置变化后重新获取 token 和实例树，超时不盲目重试。错误与参数见 [工具约定](../../../docs/TOOL_CONTRACTS.md)。
+1. 先用 sw_get_component_visibility 读取，按任务调用 sw_set_component_visibility，再核对返回。
+2. 父级隐藏时不要为显示子件擅自展开全部父级；重复实例按完整路径定位。
+3. 不抑制、解析、移动或保存模型。超时结果可能已生效，检查现场后再决定下一步。
 
-0.5.0 设置工具回读后返回，不再强制整机重绘（`redraw_requested=false`）。这不代表画面已验证；需要调整视野时按用户请求调用独立视图工具。
+仅在不确定参数、字段含义或遇到失败时读取 [细节与分支](references/details.md) 的对应段落；常规调用按 MCP Schema，不预加载参考文件或其他 skill。引用其他能力时只交接所需输入/输出。

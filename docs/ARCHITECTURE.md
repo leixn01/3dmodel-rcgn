@@ -9,6 +9,7 @@
 | MCP | `cadkin/mcp_server.py` | 官方 SDK 的 stdio 协议、工具注册与结构化返回 |
 | CLI | `cadkin/__main__.py` | 调用同一工具层、将 JSON 保存到新文件 |
 | COM 适配 | `cadkin/adapters/solidworks.py`、`display.py`、`spatial.py`、`session.py`、`constraints.py`、`cylinders.py` | 会话/文档/组件 API；显示、空间读取和显式启动独立模块，通过同一 STA 执行 |
+| 配合状态 / 连接复核 | `cadkin/adapters/mate_inventory.py`、`cadkin/tools/connections.py` | 根配合 COM 读取与离线文件关联分开；原始 mate 读取共用 mate_records.py |
 | 空间计算 | `cadkin/geometry.py` | 无 COM 依赖的矩阵、单位与近似包围盒转换 |
 | STA 调度 | `cadkin/adapters/sta.py` | 单线程串行调用、超时及取消后的状态处理 |
 | 开源兼容片段 | `cadkin/_vendor/sw_mcp.py` | 从固定 SW_MCP 版本提取并修改的 COM 成员访问逻辑 |
@@ -27,6 +28,14 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 
 多个 skill 可复用原子工具，一个 MCP 服务提供多个工具，无需为每个 skill 启动一个服务器。
 
+## 逐层披露
+
+1. 发现层只读取各 skill 的 name/description，按职责选择。
+2. 进入后读取简短 SKILL.md，获得输入/输出、最小流程及关键限制。
+3. 只有参数不明、需要解释字段或遇到失败时，读取入口明确链接的 references 对应文件/段落。不主动读全套参考、其他 skill 或完整开发文档；验收任务才读对应验收章节。
+
+现有 14 个入口已将详细流程移到 references/details.md；新增两项分别拆出字段/失败分支或判读文件。references 只含说明，执行仍在工具/适配层。已有文件足够时离线完成；缺少哪个输入才调用对应采集能力，不建立强制串联的全套流程。
+
 ## 功能拆分
 
 | Skill | 职责 |
@@ -40,6 +49,8 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 | `component-constraints` | 指定组件固定标志、原始配合/引用参数及上下文限制 |
 | `component-cylinders` | 匹配配置零件定义的圆柱面轴线/半径候选 |
 | `component-relations` | 指定实例的离线同轴/平行候选、公差、来源与待确认项 |
+| `assembly-mates` | 根配合特征状态、根坐标及引用实例身份，不识别运动副 |
+| `connection-review` | 已有几何/配合文件的实例对关联，不连接 COM |
 | `solidworks-document` | 明确请求的打开/导入、重建操作 |
 | `solidworks-view` | 标准视图和缩放 |
 | `solidworks-display` | 基准面等类别显示过滤与总开关 |
@@ -50,7 +61,7 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 
 ## 验证边界
 
-代码、CLI 和 MCP 已实现；单元测试使用显式测试替身验证逻辑，stdio 测试实际进行握手及工具调用。它们不证明某个 SolidWorks 版本的 COM 兼容性。用户最新 SolidWorks 2025 旧版 15 工具反馈为 11 项 API 通过、2 项失败、2 项部分通过；0.5.0 修复/分组及 0.6.0 证据读取及 0.7.0 真实模型关系候选仍需按验收文档在用户电脑复测。
+代码、CLI 和 MCP 已实现；单元测试使用显式测试替身验证逻辑，stdio 测试实际进行握手及工具调用。它们不证明某个 SolidWorks 版本的 COM 兼容性。用户最新 SolidWorks 2025 旧版 15 工具反馈为 11 项 API 通过、2 项失败、2 项部分通过；0.5.0 修复/分组及 0.6.0 证据读取及 0.7.0 关系候选和 0.8.0 配合状态/连接复核仍需按验收文档在用户电脑复测。
 
 只保留一个 SolidWorks 进程。调用串行，不排队叠加动作。超时不能撤回已经进入 SolidWorks 的操作，客户端要核对现场并重启 MCP。当前版本使用严格的 late binding；遇到无法标记为方法的成员会返回错误，不尝试无参数误调用。
 

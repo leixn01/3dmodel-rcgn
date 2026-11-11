@@ -40,7 +40,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                         **args, 'output_path': str(base / 'outputs/bad.json'), 'angle_tolerance_deg': 0})
                     self.assertTrue(bad.isError)
                     self.assertFalse((base / 'outputs/bad.json').exists())
-                    self.assertEqual(len((await session.list_tools()).tools), 20)
+                    self.assertEqual(len((await session.list_tools()).tools), 22)
 
     async def test_real_stdio_handshake_schemas_success_and_tool_error(self):
         from anyio import fail_after
@@ -52,7 +52,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = (await session.list_tools()).tools
-                    self.assertEqual(len(tools), 20)
+                    self.assertEqual(len(tools), 22)
                     self.assertFalse(any('script' in tool.name or 'save' in tool.name for tool in tools))
                     doc = await session.call_tool('sw_active_document')
                     self.assertFalse(doc.isError)
@@ -154,7 +154,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.7.0')
+                    self.assertEqual(init.serverInfo.version, '0.8.0')
                     doc = (await session.call_tool('sw_active_document')).structuredContent['data']
                     args = {'expected_document_token': doc['document_token'], 'page_size': 2}
                     page = (await session.call_tool('sw_spatial_inventory', args)).structuredContent
@@ -220,3 +220,49 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                     wrong = await session.call_tool('sw_component_cylinders', {**args, 'occurrence_path': 'slide-1'})
                     self.assertTrue(wrong.isError)
                     self.assertEqual(wrong.structuredContent['errors'][0]['code'], 'NOT_PART_COMPONENT')
+
+    async def test_root_mate_inventory_over_stdio(self):
+        from anyio import fail_after
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+        parameters = StdioServerParameters(command=sys.executable, args=['-m', 'tests.mcp_fixture'])
+        with fail_after(20):
+            async with stdio_client(parameters) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    doc = (await session.call_tool('sw_active_document')).structuredContent['data']
+                    args = {'expected_document_token': doc['document_token']}
+                    result = await session.call_tool('sw_mate_inventory', args)
+                    self.assertFalse(result.isError, result)
+                    self.assertEqual(result.structuredContent['data']['mate_count'], 3)
+                    self.assertEqual(result.structuredContent['data']['mates'][0]['activity']['state'], 'unsuppressed_no_feature_error')
+                    limited = await session.call_tool('sw_mate_inventory', {**args, 'max_mates': 1})
+                    self.assertEqual(limited.structuredContent['status'], 'partial')
+                    bad = await session.call_tool('sw_mate_inventory', {**args, 'max_features': 0})
+                    self.assertTrue(bad.isError)
+                    self.assertFalse((await session.call_tool('sw_active_document')).isError)
+
+    async def test_production_connection_review_over_stdio(self):
+        from pathlib import Path
+        import tempfile
+        from anyio import fail_after
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+        from tests.test_mates import connection_fixture
+        root = Path.cwd()
+        (root / 'outputs').mkdir(exist_ok=True)
+        parameters = StdioServerParameters(command=sys.executable, args=['-m', 'cadkin.mcp_server'])
+        with tempfile.TemporaryDirectory(dir=root / 'outputs') as directory, fail_after(20):
+            base = Path(directory)
+            args = {k: str(base / v) for k, v in connection_fixture(base).items()}
+            async with stdio_client(parameters) as (read, write):
+                async with ClientSession(read, write) as session:
+                    init = await session.initialize()
+                    self.assertEqual(init.serverInfo.version, '0.8.0')
+                    result = await session.call_tool('cad_review_connections', args)
+                    self.assertFalse(result.isError, result)
+                    self.assertEqual(result.structuredContent['data']['counts']['has_unsuppressed_mate_evidence'], 1)
+                    repeated = await session.call_tool('cad_review_connections', args)
+                    self.assertTrue(repeated.isError)
+                    self.assertEqual(repeated.structuredContent['errors'][0]['code'], 'OUTPUT_EXISTS')
+                    self.assertEqual(len((await session.list_tools()).tools), 22)

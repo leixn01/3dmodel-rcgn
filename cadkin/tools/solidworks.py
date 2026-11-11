@@ -79,6 +79,18 @@ TOOLS = [
           "scope_occurrence_path": {"type": "string", "minLength": 1},
           "review_path": {"type": "string", "minLength": 1}},
          ["inventory_path", "output_path"], False),
+    spec("sw_mate_inventory", "Read mate features owned by the active root assembly, including suppressed records. Returns feature suppression/error/rollback states, root-frame raw entities and root occurrence identities verified by IsSame. Does not include internal subassembly mates, solve, rebuild or edit. No feature error is not proof that a mate is solved.",
+         {"expected_document_token": TOKEN,
+          "max_features": {"type": "integer", "minimum": 1, "maximum": 20000, "default": 2000},
+          "max_mates": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 200},
+          "max_entities": {"type": "integer", "minimum": 1, "maximum": 64, "default": 16},
+          "max_depth": {"type": "integer", "minimum": 1, "maximum": 64, "default": 32}},
+         ["expected_document_token"]),
+    spec("cad_review_connections", "Associate a saved geometric relation file with a sw_mate_inventory envelope at occurrence-pair level. Verifies source hashes, root document/configuration and mapped occurrence poses. Separates unsuppressed/no-feature-error, suppressed/issue, unknown and geometry-only evidence. Does not confirm matching faces or mechanical joints; writes a new outputs JSON without connecting COM.",
+         {"relations_path": {"type": "string", "minLength": 1},
+          "mate_inventory_path": {"type": "string", "minLength": 1},
+          "output_path": {"type": "string", "minLength": 1}},
+         ["relations_path", "mate_inventory_path", "output_path"], False),
     spec("cad_component_relations", "Compare root-frame cylindrical axes from 2-32 saved sw_component_cylinders envelopes against a complete spatial inventory. Explicit millimeter/degree tolerances produce coaxial/parallel geometric candidates, never confirmed joints. Offline; writes a new outputs JSON with source hashes, metrics and limits. Partial evidence remains partial. Optional grouping_path copies role context bound to the same inventory hash. Keep the source assembly unchanged during capture.",
          {"inventory_path": {"type": "string", "minLength": 1},
           "cylinder_paths": {"type": "array", "minItems": 2, "maxItems": 32, "uniqueItems": True,
@@ -117,6 +129,9 @@ class SolidWorksTools:
             if name == "cad_component_relations":
                 from cadkin.tools.relations import component_relations
                 return component_relations(self.root, **arguments)
+            if name == "cad_review_connections":
+                from cadkin.tools.connections import connection_review
+                return connection_review(self.root, **arguments)
             return self.worker.call(name, arguments)
         except Exception as exc:
             return failure(exc)

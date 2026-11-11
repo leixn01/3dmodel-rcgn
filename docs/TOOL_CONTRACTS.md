@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.7.0。以下 20 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.8.0。以下 22 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -24,6 +24,8 @@
 | `sw_component_cylinders` | expected_document_token、occurrence_path；可选 max_bodies、max_faces、max_cylinders | 只读匹配配置的零件定义圆柱面；放置到实例根坐标，不含装配级切除 |
 | `cad_group_components` | `inventory_path`、`output_path`，可选 `scope_occurrence_path`、`review_path` | 离线生成角色候选/应用人工复核，写 outputs 新 JSON，不调用 COM |
 | `cad_component_relations` | inventory_path、cylinder_paths、output_path、distance_tolerance_mm、angle_tolerance_deg；可选 grouping_path、预算 | 离线生成同轴/平行几何候选，写 outputs 新 JSON，不连接 COM 或确认运动副 |
+| `sw_mate_inventory` | expected_document_token；可选 max_features、max_mates、max_entities、max_depth | 只读根配合特征状态与已确认的引用实例，包含抑制记录，不含子装配内部配合 |
+| `cad_review_connections` | relations_path、mate_inventory_path、output_path | 离线关联几何候选与根配合，输出待复核实例对，不确认运动副 |
 
 `view` 支持 front/back/left/right/top/bottom/isometric/trimetric/dimetric。接口用枚举值访问视图，不依赖中英文界面的视图名称。
 
@@ -146,6 +148,57 @@ python -m cadkin group outputs/spatial.json --output outputs/groups.json
 用同一输入/范围调用工具并传 `review_path`，或 CLI 加 `--review outputs/review.json`，输出换新文件。暂缓项使用 role=pending、decision=pending、明确 reason；确认项 decision=confirmed、role 为前三类。哈希/路径/范围/重复项/角色/理由错误返回 `INVALID_REVIEW`；未列出的实例保持自动候选。manual_confirmed 表示应用了复核文件中的声明，工具不验证声明者身份，Agent 不得编造人工确认。
 
 输入不存在或 JSON 无效返回 `INVALID_INPUT`，路径越界返回 `INVALID_PATH`，输出已有文件返回 `OUTPUT_EXISTS`，都不能写成成功。工具不创建 SolidWorks 特征树文件夹、不改显隐、不移动组件、不保存 CAD。
+
+## 根配合状态与连接复核（0.8.0）
+
+### sw_mate_inventory
+
+必填 expected_document_token；可选 max_features=2000（1–20000）、max_mates=200（1–1000）、max_entities=16（1–64）、max_depth=32（1–64）。max_features 包含根特征及已进入 MateGroup 的子特征访问，max_depth 限制其子树深度；只遍历活动根装配 MateGroup，不打开子装配定义或遍历组件特征内部。组件身份映射另以完整实例树校验，结构不完整时拒绝。
+
+从 IFeature.GetSpecificFeature2 读取 mate；抑制状态为 IsSuppressed2(swThisConfiguration=1, VT_EMPTY) 的单元素 Boolean 数组，读取 GetErrorCode2(out VARIANT_BOOL) 和 IsRolledBack。保留 feature_id/name/type，特征 ID 只在对应文档内使用。重复特征 ID 停止该分支并报告 FEATURE_REVISIT，不陷入循环或重复计数。IMateInPlace 等无法按当前字段读取的记录保留 partial，不丢弃。
+
+结果 mate_inventory_schema_version=1，scope=active_root_assembly，subassembly_internal_mates_included=false；mates、mate_count、root_mate_groups、scanned_feature_count、component_contexts、complete/truncated、参数预算和错误均保留。没有 MateGroup/无配合且遍历正常时可为空；入口读取失败为 error，途中失败为 partial，不能冒充完整空列表。
+
+| activity 字段/状态 | 含义 |
+| --- | --- |
+| suppressed / rolled_back | 当前配置中读取的抑制/回滚标志；状态读取失败为 null |
+| feature_error_code / error_is_warning | 原始特征错误码；code=0 时 warning 不解释，保留 null；非零警告也作为问题记录 |
+| state=suppressed / rolled_back | 相应特征状态 |
+| state=unsuppressed_feature_issue | 未抑制、未回滚，但有非零特征错误/警告 |
+| state=unsuppressed_no_feature_error | 未抑制、未回滚且没有报告特征错误；不是求解成功或有效独立约束证明 |
+| state=unknown | 状态未能可靠读取；不补 false |
+| solver_validity=not_evaluated | 本工具没有求解或验证自由度/冗余/实际运动 |
+
+引用组件必须先按完整 Name2 命中当前树，再经 ISldWorks.IsSame 返回 swObjectSame=1 确认，才填写 reference_occurrence_path / verified_root_occurrence。0（不同）、2（不支持）或失败均不按同名猜测；空引用保留 root_or_unavailable。component_contexts 包含已确认实例的文件/引用配置/父级/根变换；引用到嵌套零件仍属于根配合记录，不说明已读子装配内部配合。
+
+这些配合实体参数的所属装配已定位到根装配，entity_params_frame=root_assembly；继续保留原始 EntityParams，不解释选择类型为圆柱或直接构造运动轴。没有逐实体表面身份/形状对应。采集结束复读已知配合状态和引用实例变换；变动报 MATE_STATE_CHANGED/COMPONENT_CHANGED，配置/文档切换报 DOCUMENT_CHANGED，整次丢弃。不能检测所有几何编辑，snapshot_atomic=false，需保持模型不变。
+
+预算错误 FEATURE_LIMIT/FEATURE_DEPTH_LIMIT/MATE_LIMIT/MATE_ENTITY_LIMIT 保留部分结果。MATE_STATE_UNAVAILABLE、MATE_INTERFACE_UNAVAILABLE、MATE_REFERENCE_UNRESOLVED 及原始 API 失败保留未知/错误；COMPONENT_LOOKUP_INCOMPLETE 不输出猜测映射。只读，不重建、不切换配置、不修改配合、不保存。
+
+### cad_review_connections
+
+必填 relations_path（0.7.0 关系结果数据对象）、mate_inventory_path（上述工具原始 envelope）、output_path（outputs 下新 JSON）。输入限项目内，输出独占新建，不覆盖。离线、不连接 COM；CLI 共用实现：
+
+```powershell
+python -m cadkin review-connections outputs/relations.json outputs/mates.json --output outputs/connections.json
+```
+
+要求关系文件引用的原始空间和圆柱文件仍存在：核对空间/圆柱 SHA256，文档/配置，已映射配合实例的完整路径、源文件、引用配置、父级和根变换。不同位姿不能仅凭相同 token 拼接。失败 EVIDENCE_MISMATCH，错误格式 INVALID_CONNECTION_SOURCE/INVALID_INVENTORY；错误时不创建结果。源哈希用于追溯，不验证作者或几何快照真实性。
+
+按完整实例对归并几何候选索引；配合恰有两个不同的已验证引用实例时才关联到该对。另有根/未知引用时不会升级为无问题证据；多组件或没有候选对的配合保留 unmatched_mates。不把子装配容器配合展开成所有子件连接。
+
+| review_state | 判定口径 |
+| --- | --- |
+| has_unsuppressed_mate_evidence | 至少一条记录所有引用已映射、字段读取无错误、未抑制/未回滚且 code=0 |
+| unresolved_mate_evidence | 无上述记录，但有关联记录的引用或状态未知/读取不完整 |
+| only_suppressed_or_feature_issue | 关联记录只有抑制、回滚或特征错误/警告 |
+| geometry_only | 提供的根配合记录没有可关联到该实例对的证据 |
+
+汇总状态有上述优先级，但所有记录都保留；其中的抑制或报错记录不会消失。relation 文件的每个面候选由 geometric_candidate_indices 回指，配合由 feature_id 回指原始 mates 文件。association_level=occurrence_pair_only、face_match_confirmed=false：同一实例对的配合可能作用于其他面，不称为已匹配候选圆柱。
+
+结果文件 connection_review_schema_version=1，含 pairs、counts、unmatched_mates、coverage、sources 路径/哈希、errors。覆盖范围为提供的几何候选和活动根配合；输入部分/错误导致 SOURCE_INCOMPLETE 与 partial/complete=false。完整仅表示此范围输入/处理完整，不表示工程连接模型完整或配合健康。无候选/无配合均不能推出无连接或自由运动。
+
+保持 requires_review=true、mechanical_relation_confirmed=false、solidworks_modified=false。不能确认运动副、刚体、接触、行程或导程；旧 sw_component_constraints 的 GetMates 结果不能替代本工具所需的根配合清单。
 
 ## 离线组件关系候选（0.7.0）
 
@@ -279,3 +332,14 @@ max_faces 和 max_cylinders 是全调用预算，达到且仍有面未检查时�
 - [IPartDoc.GetBodies2](https://help.solidworks.com/2024/english/api/sldworksapi/solidworks.interop.sldworks~solidworks.interop.sldworks.ipartdoc~getbodies2.html)
 - [swAllBodies=-1](https://help.solidworks.com/2024/English/api/swconst/SolidWorks.Interop.swconst~SolidWorks.Interop.swconst.swBodyType_e.html)
 - [CylinderParams：7 元素与米制单位](https://help.solidworks.com/2022/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ISurface~CylinderParams.html)
+
+0.8.0 官方接口核对：
+
+- [Mate2 所属 MateGroup 与特征访问](https://help.solidworks.com/2024/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IMate2.html?id=2.2.1.210)
+- [IsSuppressed2 的数组返回](https://help.solidworks.com/2018/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IFeature~IsSuppressed2.html)
+- [swThisConfiguration=1](https://help.solidworks.com/2025/English/api/swconst/SOLIDWORKS.Interop.swconst~SOLIDWORKS.Interop.swconst.swInConfigurationOpts_e.html)
+- [GetErrorCode2 与 warning 输出](https://help.solidworks.com/2024/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IFeature~GetErrorCode2.html)
+- [IsSame 身份核对](https://help.solidworks.com/2021/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ISldWorks~IsSame.html)
+- [swObjectSame=1，Unsupported=2](https://help.solidworks.com/2024/english/api/swconst/SOLIDWORKS.Interop.swconst~SOLIDWORKS.Interop.swconst.swObjectEquality.html)
+- [GetID 的文档内身份](https://help.solidworks.com/2022/english/api/sldworksapi/solidworks.interop.sldworks~solidworks.interop.sldworks.ifeature~getid.html)
+- [EntityParams 所属装配坐标](https://help.solidworks.com/2026/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMateEntity2~EntityParams.html)
