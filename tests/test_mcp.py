@@ -5,6 +5,43 @@ import unittest
 
 @unittest.skipUnless(importlib.util.find_spec('mcp'), 'Install .[solidworks] for protocol integration tests')
 class McpTests(unittest.IsolatedAsyncioTestCase):
+    async def test_production_offline_relations_over_real_stdio(self):
+        import json
+        from pathlib import Path
+        import tempfile
+        from anyio import fail_after
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+        from tests.test_relations import write_fixture
+        root = Path.cwd()
+        (root / 'outputs').mkdir(exist_ok=True)
+        # Production transport, no simulated or real CAD connection needed by this tool.
+        parameters = StdioServerParameters(command=sys.executable, args=['-m', 'cadkin.mcp_server'])
+        with tempfile.TemporaryDirectory(dir=root / 'outputs') as directory, fail_after(20):
+            base = Path(directory)
+            args = write_fixture(base)
+            for key in ('inventory_path', 'output_path', 'grouping_path'): args[key] = str(base / args[key])
+            args['cylinder_paths'] = [str(base / p) for p in args['cylinder_paths']]
+            async with stdio_client(parameters) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    result = await session.call_tool('cad_component_relations', args)
+                    self.assertFalse(result.isError, result)
+                    self.assertEqual(result.structuredContent['data']['counts']['coaxial_candidate'], 1)
+                    self.assertFalse(result.structuredContent['data']['solidworks_modified'])
+                    stored = json.loads(Path(args['output_path']).read_text(encoding='utf-8'))
+                    self.assertTrue(stored['requires_review'])
+                    partial = await session.call_tool('cad_component_relations', {
+                        **args, 'output_path': str(base / 'outputs/limited.json'), 'max_pairs': 1})
+                    self.assertFalse(partial.isError)
+                    self.assertEqual(partial.structuredContent['status'], 'partial')
+                    self.assertTrue(partial.structuredContent['data']['truncated'])
+                    bad = await session.call_tool('cad_component_relations', {
+                        **args, 'output_path': str(base / 'outputs/bad.json'), 'angle_tolerance_deg': 0})
+                    self.assertTrue(bad.isError)
+                    self.assertFalse((base / 'outputs/bad.json').exists())
+                    self.assertEqual(len((await session.list_tools()).tools), 20)
+
     async def test_real_stdio_handshake_schemas_success_and_tool_error(self):
         from anyio import fail_after
         from mcp import ClientSession, StdioServerParameters
@@ -15,7 +52,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = (await session.list_tools()).tools
-                    self.assertEqual(len(tools), 19)
+                    self.assertEqual(len(tools), 20)
                     self.assertFalse(any('script' in tool.name or 'save' in tool.name for tool in tools))
                     doc = await session.call_tool('sw_active_document')
                     self.assertFalse(doc.isError)
@@ -117,7 +154,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.6.0')
+                    self.assertEqual(init.serverInfo.version, '0.7.0')
                     doc = (await session.call_tool('sw_active_document')).structuredContent['data']
                     args = {'expected_document_token': doc['document_token'], 'page_size': 2}
                     page = (await session.call_tool('sw_spatial_inventory', args)).structuredContent

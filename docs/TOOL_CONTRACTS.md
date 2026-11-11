@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.6.0。以下 19 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.7.0。以下 20 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -23,6 +23,7 @@
 | `sw_component_constraints` | expected_document_token、occurrence_path；可选 max_mates、max_entities | 只读顶层固定标志与组件关联配合；不求解运动关系 |
 | `sw_component_cylinders` | expected_document_token、occurrence_path；可选 max_bodies、max_faces、max_cylinders | 只读匹配配置的零件定义圆柱面；放置到实例根坐标，不含装配级切除 |
 | `cad_group_components` | `inventory_path`、`output_path`，可选 `scope_occurrence_path`、`review_path` | 离线生成角色候选/应用人工复核，写 outputs 新 JSON，不调用 COM |
+| `cad_component_relations` | inventory_path、cylinder_paths、output_path、distance_tolerance_mm、angle_tolerance_deg；可选 grouping_path、预算 | 离线生成同轴/平行几何候选，写 outputs 新 JSON，不连接 COM 或确认运动副 |
 
 `view` 支持 front/back/left/right/top/bottom/isometric/trimetric/dimetric。接口用枚举值访问视图，不依赖中英文界面的视图名称。
 
@@ -145,6 +146,43 @@ python -m cadkin group outputs/spatial.json --output outputs/groups.json
 用同一输入/范围调用工具并传 `review_path`，或 CLI 加 `--review outputs/review.json`，输出换新文件。暂缓项使用 role=pending、decision=pending、明确 reason；确认项 decision=confirmed、role 为前三类。哈希/路径/范围/重复项/角色/理由错误返回 `INVALID_REVIEW`；未列出的实例保持自动候选。manual_confirmed 表示应用了复核文件中的声明，工具不验证声明者身份，Agent 不得编造人工确认。
 
 输入不存在或 JSON 无效返回 `INVALID_INPUT`，路径越界返回 `INVALID_PATH`，输出已有文件返回 `OUTPUT_EXISTS`，都不能写成成功。工具不创建 SolidWorks 特征树文件夹、不改显隐、不移动组件、不保存 CAD。
+
+## 离线组件关系候选（0.7.0）
+
+`cad_component_relations` 不连接 SolidWorks。输入必须为项目内 JSON，输出为 outputs 内未使用的 JSON 文件。共享 CLI：
+
+```powershell
+python -m cadkin relations outputs/spatial.json --cylinders outputs/cylinder-a.json outputs/cylinder-b.json --distance-tolerance-mm 0.1 --angle-tolerance-deg 0.1 --output outputs/relations.json
+```
+
+上述 0.1 mm、0.1° 仅为探索示例，不是机械精度要求；必须以实际任务明确的公差为准。
+
+| 参数 | 约束 |
+| --- | --- |
+| inventory_path | spatial-export 的原始完整返回；collection_complete/hierarchy_complete 为 true，不能是单页或截断树；选中实例必须有根变换且已解析 |
+| cylinder_paths | 2–32 个 sw_component_cylinders 原始返回文件；每个完整 occurrence_path 一份，每份最多 1000 面。允许 partial，但部分状态/错误保留 |
+| output_path | outputs 下新 JSON；不覆盖源文件或已有结果 |
+| distance_tolerance_mm | 必填有限正数，毫米；没有工具默认值 |
+| angle_tolerance_deg | 必填有限正数且不大于 5°；没有工具默认值 |
+| max_pairs | 默认 10000，1–100000，跨实例圆柱面配对的计算上限 |
+| max_candidates | 默认 1000，1–5000，输出候选面配对上限 |
+| grouping_path | 可选 cad_group_components 生成的结果文件；source.inventory_sha256 必须与输入清单原始字节一致，仅复制角色上下文 |
+
+校验 document token/标题/路径/配置/类型、实例路径、引用配置、根变换原始数组与完整空间基准一致。根变换必须数值相等；原始圆柱参数重新转换，冗余的根坐标/方向/半径用绝对 1e-9、相对 1e-12 的数值一致性阈值核对，**该阈值不是用户几何判断公差**。不额外乘父变换、不修补源 JSON。绑定失败为 EVIDENCE_MISMATCH，格式/单位/范围不符为 INVALID_RELATION_SOURCE，非法原始矩阵/圆柱参数也可能返回 INVALID_TRANSFORM/INVALID_CYLINDER，截断清单为 INCOMPLETE_INVENTORY；参数错误为 INVALID_ARGUMENTS，路径/覆盖沿用 INVALID_PATH/OUTPUT_EXISTS。输入错误不创建输出文件。
+
+算法按完整实例路径、body_index/face_index 排序后，逐对比较不同实例的解析圆柱面。设单位轴向 u、v，夹角为 `atan2(|u×v|, |u·v|)`（转换为度），因此反向轴等价。取两组件根原点的中点 r，分别投影到两条无限轴线上得到 q1、q2，偏移为 `|q1-q2|`。严格平行时等于通常轴间距；近似平行时表示参考点附近的偏移，不是所有位置或有限面长度内的最大偏移。轴点沿自身方向移动不会改变这个几何定义；未使用远处相交导致为零的无限线最短距冒充同轴。
+
+- `coaxial_candidate`：角度不超过角度阈值，且参考偏移不超过距离阈值。
+- `parallel_candidate`：角度不超过阈值，但参考偏移超过距离阈值。没有接近距离筛选，远距离平行件也可能出现。
+- 其他方向仅计入 coverage.nonparallel_pairs，不输出关系结论。相同半径不是筛选条件，不将半径差解释为配合间隙。
+
+文件为 relation_schema_version=1 的数据对象：document、parameters、metric、sources、candidates、counts、coverage、errors。sources 保留每份文件路径/哈希/时间/完整性/源错误/零件配置与轴线数据，可选 role_context；candidates 含左右完整实例、快照内 body/face 索引、根轴线/半径、angle_deg、axis_offset_at_reference_mm、reference_root_mm。哈希绑定原始文件字节，不是来源真实性认证。
+
+`comparison_complete` 只说明**所提供文件中已读取的面**是否全部配对；`complete` 还要求输入无部分状态/错误。输入 partial 导致 SOURCE_INCOMPLETE，即使已比较完仍不能说分析完整；计算/输出预算不足导致 RELATION_LIMIT、truncated=true，coverage 保留总配对数和实际计算数。候选为零、零圆柱或未提供的实例不证明无连接。工具返回简短成功/部分 envelope 和输出路径，完整结果在文件中。预算限制无断点续跑；缩小实例范围或增大预算后写新文件。
+
+只分析 referenced_part_definition，仍不包含装配级切除；无限轴不提供有限面重叠、接触、孔轴类别或间隙证据。分割面不去重，计数是候选面配对数而非独立机械连接数。相同文件的不同实例保留独立身份。snapshot_atomic=false；一致文档/变换不证明采集期间几何未改，需在不编辑、不重建的同一会话采集。
+
+结果总保留 requires_review=true、mechanical_relation_confirmed=false、solidworks_modified=false；不调用 LLM、解析 MateEntity 坐标、改变角色确认记录、合并刚体、判定运动副、行程或导程。
 
 ## Conda 与只读证据（0.6.0）
 

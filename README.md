@@ -1,6 +1,6 @@
 # 3DModel-RCGN
 
-工业数模自动拆解项目。MCP 0.6.0 提供 19 个工具：SolidWorks 启动、文档/组件树、选择/显隐、分页空间读取，可复核的组件分组，以及配合/圆柱轴线证据读取。STEP 测试模型已在 examples 中。
+工业数模自动拆解项目。MCP 0.7.0 提供 20 个工具：SolidWorks 启动、文档/组件树、选择/显隐、分页空间读取，可复核的组件分组，配合/圆柱轴线证据读取，以及同轴/平行关系候选。STEP 测试模型已在 examples 中。
 
 ## 在 Windows 上使用
 
@@ -20,7 +20,7 @@ opencode
 
 项目 `opencode.json` 使用当前环境的 `python` 启动 MCP，不绑定机器路径。升级后退出并重新启动 OpenCode，让 MCP 加载新工具。告诉 Agent：
 
-> 启动或复用 SolidWorks，打开仓库测试 STEP；按 docs/MCP_ACCEPTANCE.md 的 0.6.0 清单核对 Conda 解释器；读取一个组件的配合和圆柱轴线证据，结合分组候选列出待确认关系。保存原始结果，列出待确认实例，不自动确认刚体或运动关系。
+> 启动或复用 SolidWorks，打开仓库测试 STEP；按 docs/MCP_ACCEPTANCE.md 的 0.7.0 清单，选一条升降链上的少量组件，采集完整空间清单与圆柱证据，用明确公差生成同轴/平行候选并保存来源。列出需要我核对的实例，不自动确认运动副。
 
 ## 导出与分组
 
@@ -33,7 +33,9 @@ python -m cadkin group outputs/spatial.json --output outputs/groups.json
 
 第一条自动读完所有页；若包围盒较慢，可另取文件名加 `--without-boxes`。第二条离线生成固定基体、移动平台、传动/导向相关件和待确认四类候选，保留依据；子装配容器不重复分组，未知名称不强行识别。复核方法见验收清单。
 
-新增 `sw_component_constraints` 查询固定标志/配合，`sw_component_cylinders` 查询指定零件的圆柱面轴线/半径。它们只读；嵌套固定状态、装配级几何差异和运动关系仍需核对。
+`sw_component_constraints` 查询固定标志/配合，`sw_component_cylinders` 查询指定零件的圆柱面轴线/半径。它们只读；嵌套固定状态、装配级几何差异和运动关系仍需核对。
+
+新增离线 `cad_component_relations`：输入空间清单和至少两个圆柱证据文件，输出候选夹角、轴偏移、来源与待确认项。使用步骤见 [0.7.0 验收](docs/MCP_ACCEPTANCE.md#070组件关系候选)。
 
 Skill 在 `.opencode/skills/`，工具在 `cadkin/tools/`，COM 在 `cadkin/adapters/`。当前不含零件移动、配合编辑或自动运动关系识别。
 

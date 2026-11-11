@@ -79,6 +79,17 @@ TOOLS = [
           "scope_occurrence_path": {"type": "string", "minLength": 1},
           "review_path": {"type": "string", "minLength": 1}},
          ["inventory_path", "output_path"], False),
+    spec("cad_component_relations", "Compare root-frame cylindrical axes from 2-32 saved sw_component_cylinders envelopes against a complete spatial inventory. Explicit millimeter/degree tolerances produce coaxial/parallel geometric candidates, never confirmed joints. Offline; writes a new outputs JSON with source hashes, metrics and limits. Partial evidence remains partial. Optional grouping_path copies role context bound to the same inventory hash. Keep the source assembly unchanged during capture.",
+         {"inventory_path": {"type": "string", "minLength": 1},
+          "cylinder_paths": {"type": "array", "minItems": 2, "maxItems": 32, "uniqueItems": True,
+                             "items": {"type": "string", "minLength": 1}},
+          "output_path": {"type": "string", "minLength": 1},
+          "distance_tolerance_mm": {"type": "number", "exclusiveMinimum": 0},
+          "angle_tolerance_deg": {"type": "number", "exclusiveMinimum": 0, "maximum": 5},
+          "max_pairs": {"type": "integer", "minimum": 1, "maximum": 100000, "default": 10000},
+          "max_candidates": {"type": "integer", "minimum": 1, "maximum": 5000, "default": 1000},
+          "grouping_path": {"type": "string", "minLength": 1}},
+         ["inventory_path", "cylinder_paths", "output_path", "distance_tolerance_mm", "angle_tolerance_deg"], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -103,6 +114,9 @@ class SolidWorksTools:
             if name == "cad_group_components":
                 from cadkin.tools.grouping import group_components
                 return group_components(self.root, **arguments)
+            if name == "cad_component_relations":
+                from cadkin.tools.relations import component_relations
+                return component_relations(self.root, **arguments)
             return self.worker.call(name, arguments)
         except Exception as exc:
             return failure(exc)
