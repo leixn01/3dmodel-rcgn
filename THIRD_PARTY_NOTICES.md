@@ -15,3 +15,9 @@ The STA worker, typed tool catalogue, bounded occurrence traversal, document tar
 The MCP transport uses the official `modelcontextprotocol/python-sdk` package, pinned to `mcp==1.29.0` (MIT) as an optional dependency. It is installed from the package index, not copied into the repository. Version 1.x is chosen deliberately for the reviewed API; upgrading to 2.x requires adapting its server API.
 
 The bundled example CAD asset has separate provenance; see `examples/three_servo_lift/README.md`. SOLIDWORKS itself is proprietary and is not distributed here.
+
+## ForgeCAD structural reference assets (CC BY 4.0)
+
+Eight small modified USDA excerpts are bundled under `cadkin/resources/mechanisms/`; [attribution and modifications](cadkin/resources/mechanisms/ATTRIBUTION.md), exact source URLs/hashes and original package license are recorded there. They are structural references, not full certified SimReady packages. No full source meshes or archives are bundled.
+
+The optional reference parser uses OpenUSD `usd-core==25.11` from the package index (Apache-2.0). It is not copied into this repository and does not require Isaac Sim or Omniverse to run. It uses `Usd`, `UsdGeom`, and `UsdPhysics`; vendor-specific coupling metadata is retained but not simulated.

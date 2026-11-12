@@ -1,0 +1,186 @@
+#usda 1.0
+(
+    defaultPrim = "Model"
+    doc = "Structure-only derivative of ForgeCAD/simready-assets; CC BY 4.0. See catalog.json and ATTRIBUTION.md. Visual meshes, collisions, materials, animation and simulation are omitted; source default world frames are retained."
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Model"
+{
+    def "Geometry"
+    {
+        def Xform "Base" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            customData = {
+                dictionary cadkin = {
+                    int sourceColliderCount = 580
+                    string[] sourceGeometryMembers = ["/Model/Geometry/Base/Base_mesh", "/Model/Geometry/Base/FloorGasket/FloorGasket_mesh", "/Model/Geometry/Base/Barrel/Barrel_mesh", "/Model/Geometry/Base/Barrel/UpperStop/UpperStop_mesh", "/Model/Geometry/Base/Barrel/UpperGuide/UpperGuide_mesh", "/Model/Geometry/Base/Barrel/LowerGuide/LowerGuide_mesh", "/Model/Geometry/Base/Barrel/StopSleeve/StopSleeve_mesh", "/Model/Geometry/Base/Barrel/BottomBumper/BottomBumper_mesh", "/Model/Geometry/Base/Barrel/GuideRetainer/GuideRetainer_mesh", "/Model/Geometry/Base/Barrel/Footrest/Footrest_mesh"]
+                }
+            }
+        )
+        {
+            bool physics:kinematicEnabled = 0
+            bool physics:rigidBodyEnabled = 1
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+            def "Barrel"
+            {
+                def Xform "LiftShaft" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                    customData = {
+                        dictionary cadkin = {
+                            int sourceColliderCount = 27
+                            string[] sourceGeometryMembers = ["/Model/Geometry/Base/Barrel/LiftShaft/LiftShaft_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/ThrustWasher/ThrustWasher_mesh"]
+                        }
+                    }
+                )
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0.188, 1) )
+                    uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+                    def Xform "SeatPlate" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                        customData = {
+                            dictionary cadkin = {
+                                int sourceColliderCount = 58
+                                string[] sourceGeometryMembers = ["/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPlate_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/LeverPin/LeverPin_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SpacerLF/SpacerLF_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/BoltLF/BoltLF_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SpacerLB/SpacerLB_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/BoltLB/BoltLB_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SpacerRF/SpacerRF_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/BoltRF/BoltRF_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SpacerRB/SpacerRB_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/BoltRB/BoltRB_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/SeatPan_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/ThreadInsertLF/ThreadInsertLF_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/ThreadInsertLB/ThreadInsertLB_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/ThreadInsertRF/ThreadInsertRF_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/ThreadInsertRB/ThreadInsertRB_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/SeatFoam/SeatFoam_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/VinylCover/VinylCover_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/StapleL0/StapleL0_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/StapleL80/StapleL80_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/StapleL160/StapleL160_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/StapleL240/StapleL240_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/StapleR0/StapleR0_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/StapleR80/StapleR80_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/StapleR160/StapleR160_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/SeatPan/StapleR240/StapleR240_mesh"]
+                            }
+                        }
+                    )
+                    {
+                        bool physics:kinematicEnabled = 0
+                        bool physics:rigidBodyEnabled = 1
+                        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0.592, 1) )
+                        uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+                        def Xform "Lever" (
+                            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                            customData = {
+                                dictionary cadkin = {
+                                    int sourceColliderCount = 3
+                                    string[] sourceGeometryMembers = ["/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/Lever/Lever_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/Lever/LeverGrip/LeverGrip_mesh", "/Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/Lever/LeverGrip/grasp_identifier_01"]
+                                }
+                            }
+                        )
+                        {
+                            bool physics:kinematicEnabled = 0
+                            bool physics:rigidBodyEnabled = 1
+                            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.035, 0, 0.606, 1) )
+                            uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                        }
+                    }
+
+                    def Xform "ValvePlunger" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                        customData = {
+                            dictionary cadkin = {
+                                int sourceColliderCount = 2
+                                string[] sourceGeometryMembers = ["/Model/Geometry/Base/Barrel/LiftShaft/ValvePlunger/ValvePlunger_mesh"]
+                            }
+                        }
+                    )
+                    {
+                        bool physics:kinematicEnabled = 0
+                        bool physics:rigidBodyEnabled = 1
+                        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0.6008, 1) )
+                        uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                    }
+                }
+            }
+        }
+    }
+
+    def "Physics"
+    {
+        def Scope "Joints"
+        {
+            def PhysicsPrismaticJoint "Height" (
+                apiSchemas = ["PhysicsDriveAPI:linear", "PhysicsJointStateAPI:linear"]
+            )
+            {
+                float drive:linear:physics:damping = 250
+                float drive:linear:physics:stiffness = 0
+                float drive:linear:physics:targetVelocity = 0
+                uniform token drive:linear:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base>
+                rel physics:body1 = </Model/Geometry/Base/Barrel/LiftShaft>
+                point3f physics:localPos0 = (0, 0, 0.188)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 0.12
+                float state:linear:physics:position = 0
+                float state:linear:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "Swivel" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.002617994
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base/Barrel/LiftShaft>
+                rel physics:body1 = </Model/Geometry/Base/Barrel/LiftShaft/SeatPlate>
+                point3f physics:localPos0 = (0, 0, 0.404)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.5, -0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, -0.5, 0.5, 0.5)
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsPrismaticJoint "Valve" (
+                apiSchemas = ["PhysicsDriveAPI:linear", "PhysicsJointStateAPI:linear"]
+            )
+            {
+                float drive:linear:physics:damping = 0.2
+                float drive:linear:physics:stiffness = 300
+                float drive:linear:physics:targetPosition = -0.0005
+                uniform token drive:linear:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base/Barrel/LiftShaft>
+                rel physics:body1 = </Model/Geometry/Base/Barrel/LiftShaft/ValvePlunger>
+                point3f physics:localPos0 = (0, 0, 0.4128)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.5, -0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, -0.5, 0.5, 0.5)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 0.0035
+                float state:linear:physics:position = 0
+                float state:linear:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "LeverPress" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000698132
+                float drive:angular:physics:stiffness = 0.07
+                float drive:angular:physics:targetPosition = -5
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base/Barrel/LiftShaft/SeatPlate>
+                rel physics:body1 = </Model/Geometry/Base/Barrel/LiftShaft/SeatPlate/Lever>
+                point3f physics:localPos0 = (-0.035, 0, 0.014)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.70710677, 0, 0, 0.70710677)
+                quatf physics:localRot1 = (0.70710677, 0, 0, 0.70710677)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 12
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+        }
+    }
+}

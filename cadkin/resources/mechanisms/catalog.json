@@ -1,0 +1,412 @@
+{
+  "catalog_schema_version": 1,
+  "templates": [
+    {
+      "id": "articulation_test_bench",
+      "label": "articulation test bench",
+      "tags": [
+        "prismatic",
+        "revolute",
+        "test_fixture"
+      ],
+      "split": "reference",
+      "file": "articulation_test_bench.usda",
+      "sha256": "34b3b73e4e20b94c62a49f507d1881ee07bb4cfa76627ba81403da9e3d5db759",
+      "author": "ForgeCAD",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "asset_url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/tree/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/articulation_test_bench",
+      "source_revision": "b94ea770666b6c0f82e09a78e9fcb375b223e3b1",
+      "source_files": [
+        {
+          "path": "articulation_test_bench/simready_usd/articulation_test_bench.usda",
+          "sha256": "a089b5d64e309c59bf14fa2d98a3ddf3a016e616bebfa431e201b7d2faf8e0c9",
+          "size_bytes": 51367,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/articulation_test_bench/simready_usd/articulation_test_bench.usda"
+        },
+        {
+          "path": "articulation_test_bench/simready_usd/forgecad/physics.usda",
+          "sha256": "a9e0bedff3975f408f60626d8446b6e15f8efc0245114199050745647574e289",
+          "size_bytes": 128076,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/articulation_test_bench/simready_usd/forgecad/physics.usda"
+        },
+        {
+          "path": "articulation_test_bench/simready_usd/forgecad/geometry.usda",
+          "sha256": "b91de70db0afbdab87b00958855e0b36ef2ea11c958445b4df60a6968d4aadfa",
+          "size_bytes": 27622992,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/articulation_test_bench/simready_usd/forgecad/geometry.usda"
+        },
+        {
+          "path": "articulation_test_bench/com.nvidia.simready.packaging.json",
+          "sha256": "9692814b8739b40eec26a24a27ce850e2e82b62a89c56e1c4a6c83e53f252df4",
+          "size_bytes": 933,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/articulation_test_bench/com.nvidia.simready.packaging.json"
+        }
+      ],
+      "modifications": "Structure-only derivative: default world frames baked with resetXformStack; source joints preserved; meshes/collision geometry/materials/animation omitted; geometry paths and collider counts retained as source metadata.",
+      "expected": {
+        "body_count": 8,
+        "joint_count": 8,
+        "joint_types": {
+          "PhysicsFixedJoint": 1,
+          "PhysicsPrismaticJoint": 3,
+          "PhysicsRevoluteJoint": 4
+        }
+      }
+    },
+    {
+      "id": "bench_vise",
+      "label": "bench vise",
+      "tags": [
+        "clamping",
+        "linear_motion",
+        "screw_candidate"
+      ],
+      "split": "reference",
+      "file": "bench_vise.usda",
+      "sha256": "961135f7fc53ec83fce4331c0b05a685549b3a3860c3315970da699b98012973",
+      "author": "ForgeCAD",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "asset_url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/tree/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bench_vise",
+      "source_revision": "b94ea770666b6c0f82e09a78e9fcb375b223e3b1",
+      "source_files": [
+        {
+          "path": "bench_vise/simready_usd/bench_vise.usda",
+          "sha256": "eb29a3b375ac3714990722bc28261dbf5dc50a99fb7db20004dec25ae013d3bf",
+          "size_bytes": 18979,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bench_vise/simready_usd/bench_vise.usda"
+        },
+        {
+          "path": "bench_vise/simready_usd/forgecad/physics.usda",
+          "sha256": "f231218e05cb923b883548e227d0d1ae52bf9198e5eb030e3e459111434a0c84",
+          "size_bytes": 63560,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bench_vise/simready_usd/forgecad/physics.usda"
+        },
+        {
+          "path": "bench_vise/simready_usd/forgecad/geometry.usda",
+          "sha256": "fa50b0abafef42469c0d3c37bce475929f38865b662264944096008bb5c0604a",
+          "size_bytes": 71696634,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bench_vise/simready_usd/forgecad/geometry.usda"
+        },
+        {
+          "path": "bench_vise/com.nvidia.simready.packaging.json",
+          "sha256": "df26bea98cade8699a479d0e8f6da6dfc5eb08341c3f2b8718cbb26d769d1cd6",
+          "size_bytes": 920,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bench_vise/com.nvidia.simready.packaging.json"
+        }
+      ],
+      "modifications": "Structure-only derivative: default world frames baked with resetXformStack; source joints preserved; meshes/collision geometry/materials/animation omitted; geometry paths and collider counts retained as source metadata.",
+      "expected": {
+        "body_count": 7,
+        "joint_count": 7,
+        "joint_types": {
+          "PhysicsFixedJoint": 1,
+          "PhysicsPrismaticJoint": 2,
+          "PhysicsRevoluteJoint": 4
+        }
+      }
+    },
+    {
+      "id": "bearing_pulley_shaft_kit",
+      "label": "bearing pulley shaft kit",
+      "tags": [
+        "shaft",
+        "bearing",
+        "pulley"
+      ],
+      "split": "reference",
+      "file": "bearing_pulley_shaft_kit.usda",
+      "sha256": "fd7f9aa80116cd8025affa36401e0ff89131f6cef899e865deedb0a48134146c",
+      "author": "ForgeCAD",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "asset_url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/tree/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bearing_pulley_shaft_kit",
+      "source_revision": "b94ea770666b6c0f82e09a78e9fcb375b223e3b1",
+      "source_files": [
+        {
+          "path": "bearing_pulley_shaft_kit/simready_usd/bearing_pulley_shaft_kit.usda",
+          "sha256": "ad14c365e3f4c9fb97ef97ba342f53eb89b70abdfb6f896c1b65343b8647dfc5",
+          "size_bytes": 18226,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bearing_pulley_shaft_kit/simready_usd/bearing_pulley_shaft_kit.usda"
+        },
+        {
+          "path": "bearing_pulley_shaft_kit/simready_usd/forgecad/physics.usda",
+          "sha256": "2f96a0db1325fb9d1b9dc869c4ae69d9f38a5ccf7b08488316e62b0fbf0d0c7f",
+          "size_bytes": 378104,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bearing_pulley_shaft_kit/simready_usd/forgecad/physics.usda"
+        },
+        {
+          "path": "bearing_pulley_shaft_kit/simready_usd/forgecad/geometry.usda",
+          "sha256": "d7111f0be83bb253abc76db55b16e9c4f4f60e2426270e630ca9346942beccbc",
+          "size_bytes": 26480632,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bearing_pulley_shaft_kit/simready_usd/forgecad/geometry.usda"
+        },
+        {
+          "path": "bearing_pulley_shaft_kit/com.nvidia.simready.packaging.json",
+          "sha256": "3f0689a677515281a1c5f59887ba54debd1214d924fd278e12beb6f4cca44888",
+          "size_bytes": 934,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bearing_pulley_shaft_kit/com.nvidia.simready.packaging.json"
+        }
+      ],
+      "modifications": "Structure-only derivative: default world frames baked with resetXformStack; source joints preserved; meshes/collision geometry/materials/animation omitted; geometry paths and collider counts retained as source metadata.",
+      "expected": {
+        "body_count": 6,
+        "joint_count": 0,
+        "joint_types": {}
+      }
+    },
+    {
+      "id": "toggle_clamp_fixture_plate",
+      "label": "toggle clamp fixture plate",
+      "tags": [
+        "clamping",
+        "linkage"
+      ],
+      "split": "reference",
+      "file": "toggle_clamp_fixture_plate.usda",
+      "sha256": "3509f252876fec07dd38b08181c2ecc3e8f308222e7ffaeebd2a8954938f3f6c",
+      "author": "ForgeCAD",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "asset_url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/tree/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/toggle_clamp_fixture_plate",
+      "source_revision": "b94ea770666b6c0f82e09a78e9fcb375b223e3b1",
+      "source_files": [
+        {
+          "path": "toggle_clamp_fixture_plate/simready_usd/toggle_clamp_fixture_plate.usda",
+          "sha256": "f0c54cefd753d1e8771dda0c1b66cef1399267b612a3f0a1856fb7cb003e88e3",
+          "size_bytes": 18111,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/toggle_clamp_fixture_plate/simready_usd/toggle_clamp_fixture_plate.usda"
+        },
+        {
+          "path": "toggle_clamp_fixture_plate/simready_usd/forgecad/physics.usda",
+          "sha256": "c11135b1fc11942416fcf12f60365295c4a2be70b39c706d4d9088bdb142f33f",
+          "size_bytes": 129903,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/toggle_clamp_fixture_plate/simready_usd/forgecad/physics.usda"
+        },
+        {
+          "path": "toggle_clamp_fixture_plate/simready_usd/forgecad/geometry.usda",
+          "sha256": "8265a11709624e21cecd17a305bdffbbe90759eadf395a28e5b961d91ab931e3",
+          "size_bytes": 60739596,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/toggle_clamp_fixture_plate/simready_usd/forgecad/geometry.usda"
+        },
+        {
+          "path": "toggle_clamp_fixture_plate/com.nvidia.simready.packaging.json",
+          "sha256": "11de299b97d22a004b184204ae03f85b9e56e76599f58e56ea3d205957634e50",
+          "size_bytes": 936,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/toggle_clamp_fixture_plate/com.nvidia.simready.packaging.json"
+        }
+      ],
+      "modifications": "Structure-only derivative: default world frames baked with resetXformStack; source joints preserved; meshes/collision geometry/materials/animation omitted; geometry paths and collider counts retained as source metadata.",
+      "expected": {
+        "body_count": 8,
+        "joint_count": 7,
+        "joint_types": {
+          "PhysicsFixedJoint": 1,
+          "PhysicsRevoluteJoint": 6
+        }
+      }
+    },
+    {
+      "id": "gas_lift_bar_stool",
+      "label": "gas lift bar stool",
+      "tags": [
+        "lifting",
+        "linear_motion"
+      ],
+      "split": "reference",
+      "file": "gas_lift_bar_stool.usda",
+      "sha256": "31291700ce6b845214c6a31a1ef7a33bda5426b5a7011f33431177a9aa7549b4",
+      "author": "ForgeCAD",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "asset_url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/tree/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/gas_lift_bar_stool",
+      "source_revision": "b94ea770666b6c0f82e09a78e9fcb375b223e3b1",
+      "source_files": [
+        {
+          "path": "gas_lift_bar_stool/simready_usd/gas_lift_bar_stool.usda",
+          "sha256": "e2ddf3ef0f5daa3ecd898e607bc5f9dcd2f9e3904d861fa6e00009bc306c4ae8",
+          "size_bytes": 18468,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/gas_lift_bar_stool/simready_usd/gas_lift_bar_stool.usda"
+        },
+        {
+          "path": "gas_lift_bar_stool/simready_usd/forgecad/physics.usda",
+          "sha256": "2e29bfc9e02b1eda5156483fb8b83d6f6812d6220ee8cbcf669412c353fc3edd",
+          "size_bytes": 1007229,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/gas_lift_bar_stool/simready_usd/forgecad/physics.usda"
+        },
+        {
+          "path": "gas_lift_bar_stool/simready_usd/forgecad/geometry.usda",
+          "sha256": "4f333f8e15de95ba2ecab7e9b7c26d3a85849fac95bc185cdaa5dad285b33b01",
+          "size_bytes": 13515214,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/gas_lift_bar_stool/simready_usd/forgecad/geometry.usda"
+        },
+        {
+          "path": "gas_lift_bar_stool/com.nvidia.simready.packaging.json",
+          "sha256": "6fcfd9d722846aae6f5142ced299d86cd8e43e6dcdd8cbd3034e564404fdaf12",
+          "size_bytes": 928,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/gas_lift_bar_stool/com.nvidia.simready.packaging.json"
+        }
+      ],
+      "modifications": "Structure-only derivative: default world frames baked with resetXformStack; source joints preserved; meshes/collision geometry/materials/animation omitted; geometry paths and collider counts retained as source metadata.",
+      "expected": {
+        "body_count": 5,
+        "joint_count": 4,
+        "joint_types": {
+          "PhysicsPrismaticJoint": 2,
+          "PhysicsRevoluteJoint": 2
+        }
+      }
+    },
+    {
+      "id": "gear_meshing_kit",
+      "label": "gear meshing kit",
+      "tags": [
+        "gear",
+        "rotation"
+      ],
+      "split": "reference",
+      "file": "gear_meshing_kit.usda",
+      "sha256": "15ef85340144ec5c6a1ad01b9e9fbfd37d0b3e5a3713b32a788e5971013f3442",
+      "author": "ForgeCAD",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "asset_url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/tree/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/gear_meshing_kit",
+      "source_revision": "b94ea770666b6c0f82e09a78e9fcb375b223e3b1",
+      "source_files": [
+        {
+          "path": "gear_meshing_kit/simready_usd/gear_meshing_kit.usda",
+          "sha256": "d0ee4c915898a2fa57e83ce5defefc776e14ef3c5dcb4c8461b4c9c90dd49152",
+          "size_bytes": 13406,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/gear_meshing_kit/simready_usd/gear_meshing_kit.usda"
+        },
+        {
+          "path": "gear_meshing_kit/simready_usd/forgecad/physics.usda",
+          "sha256": "a00770287c3bae8f87f57cc180af65a2199914854d81c6d76d15e39c76325045",
+          "size_bytes": 764726,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/gear_meshing_kit/simready_usd/forgecad/physics.usda"
+        },
+        {
+          "path": "gear_meshing_kit/simready_usd/forgecad/geometry.usda",
+          "sha256": "5b9daaf24dc7c1fa96ea767210ff725ef7893a5d665dd74e1637ed932c741e02",
+          "size_bytes": 46943399,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/gear_meshing_kit/simready_usd/forgecad/geometry.usda"
+        },
+        {
+          "path": "gear_meshing_kit/com.nvidia.simready.packaging.json",
+          "sha256": "e8ed792164887477bae23de484816b3bd112fbbdccea60ebd92b5b6c13993303",
+          "size_bytes": 926,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/gear_meshing_kit/com.nvidia.simready.packaging.json"
+        }
+      ],
+      "modifications": "Structure-only derivative: default world frames baked with resetXformStack; source joints preserved; meshes/collision geometry/materials/animation omitted; geometry paths and collider counts retained as source metadata.",
+      "expected": {
+        "body_count": 3,
+        "joint_count": 0,
+        "joint_types": {}
+      }
+    },
+    {
+      "id": "planetary_gearbox",
+      "label": "planetary gearbox",
+      "tags": [
+        "gear",
+        "rotation"
+      ],
+      "split": "heldout",
+      "file": "planetary_gearbox.usda",
+      "sha256": "7454867ed4aa2bbb9a28f4554fed5a60a032776daefaf07e5124be0b4d6debeb",
+      "author": "ForgeCAD",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "asset_url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/tree/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/planetary_gearbox",
+      "source_revision": "b94ea770666b6c0f82e09a78e9fcb375b223e3b1",
+      "source_files": [
+        {
+          "path": "planetary_gearbox/simready_usd/planetary_gearbox.usda",
+          "sha256": "7e8560c5dcee628c6cb0f63718b6c91e9a9fec9a172124e80c53e89609d30d02",
+          "size_bytes": 21828,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/planetary_gearbox/simready_usd/planetary_gearbox.usda"
+        },
+        {
+          "path": "planetary_gearbox/simready_usd/forgecad/physics.usda",
+          "sha256": "0af24f0d214092b2542694d0b128ca0df53880b809045146cf561cb6e06e2075",
+          "size_bytes": 1205791,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/planetary_gearbox/simready_usd/forgecad/physics.usda"
+        },
+        {
+          "path": "planetary_gearbox/simready_usd/forgecad/geometry.usda",
+          "sha256": "52e5d8f2f5633845f3177051487e40bcf747b2918aee00a440982fa9a5d8cae9",
+          "size_bytes": 14997376,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/planetary_gearbox/simready_usd/forgecad/geometry.usda"
+        },
+        {
+          "path": "planetary_gearbox/com.nvidia.simready.packaging.json",
+          "sha256": "44ffca435e21eda52c00b3f7e77a9b78d6649dde74d9767a58151862556367af",
+          "size_bytes": 927,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/planetary_gearbox/com.nvidia.simready.packaging.json"
+        }
+      ],
+      "modifications": "Structure-only derivative: default world frames baked with resetXformStack; source joints preserved; meshes/collision geometry/materials/animation omitted; geometry paths and collider counts retained as source metadata.",
+      "expected": {
+        "body_count": 6,
+        "joint_count": 6,
+        "joint_types": {
+          "PhysicsFixedJoint": 1,
+          "PhysicsRevoluteJoint": 5
+        }
+      }
+    },
+    {
+      "id": "bar_clamp",
+      "label": "bar clamp",
+      "tags": [
+        "clamping",
+        "linear_motion"
+      ],
+      "split": "heldout",
+      "file": "bar_clamp.usda",
+      "sha256": "cf2c5d3b8aff9de7d6501c00187eb3ab548cd2b109c6bd3a205e6876c51bf43a",
+      "author": "ForgeCAD",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "asset_url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/tree/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bar_clamp",
+      "source_revision": "b94ea770666b6c0f82e09a78e9fcb375b223e3b1",
+      "source_files": [
+        {
+          "path": "bar_clamp/simready_usd/bar_clamp.usda",
+          "sha256": "4f163ef7593ef365483923998424fac0b8e00b6a2822a1c78720fa8426050417",
+          "size_bytes": 18368,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bar_clamp/simready_usd/bar_clamp.usda"
+        },
+        {
+          "path": "bar_clamp/simready_usd/forgecad/physics.usda",
+          "sha256": "69f06ec5e65b1057257134ec74d6a3d2c9372e0d8efd76186a79b5bf60793112",
+          "size_bytes": 49104,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bar_clamp/simready_usd/forgecad/physics.usda"
+        },
+        {
+          "path": "bar_clamp/simready_usd/forgecad/geometry.usda",
+          "sha256": "e5d6a58511a826059ce36c7a9872baeca0e61e6501d50eb5dbc403b6edd8381d",
+          "size_bytes": 37740183,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bar_clamp/simready_usd/forgecad/geometry.usda"
+        },
+        {
+          "path": "bar_clamp/com.nvidia.simready.packaging.json",
+          "sha256": "f5e1073e76d4fb2789baa7b820fd58b99521398ff2b8f1498b12d9e001a86347",
+          "size_bytes": 919,
+          "url": "https://huggingface.co/datasets/ForgeCAD/simready-assets/resolve/b94ea770666b6c0f82e09a78e9fcb375b223e3b1/bar_clamp/com.nvidia.simready.packaging.json"
+        }
+      ],
+      "modifications": "Structure-only derivative: default world frames baked with resetXformStack; source joints preserved; meshes/collision geometry/materials/animation omitted; geometry paths and collider counts retained as source metadata.",
+      "expected": {
+        "body_count": 5,
+        "joint_count": 4,
+        "joint_types": {
+          "PhysicsPrismaticJoint": 2,
+          "PhysicsRevoluteJoint": 2
+        }
+      }
+    }
+  ]
+}

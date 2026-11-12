@@ -1,14 +1,64 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 31 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前工具（31个既有工具＋3个离线模板工具），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
-1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks]`，退出并重启 OpenCode。先完成 0.6.0 的 Conda 环境核对；SolidWorks 未运行时再按 0.4.0 启动，无需手动提前打开。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 31 个工具。客户端可能给工具名添加服务器前缀。
+1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks,templates]`，退出并重启 OpenCode。先完成 0.6.0 的 Conda 环境核对；SolidWorks 未运行时再按 0.4.0 启动，无需手动提前打开。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 34 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
+
+## 0.13.0：参考模板与图结构评分
+
+本轮新增3个离线工具、3个独立skill，并移除默认人工复核skill。目录共34工具、27个skill；旧人工复核API仅保留兼容。下方0.12.0人工复核步骤是历史功能验收，不是现在的拆解前置条件。默认遇到未知继续处理独立部分，最终说明风险。
+
+### 前置与一键自动验证
+
+Windows上激活你已有Conda环境，在仓库根目录执行：
+
+```powershell
+git pull --ff-only
+python -m pip install -e ".[solidworks,templates]"
+python scripts/verify_reference_templates.py --output outputs/verify-0.13
+```
+
+输出应为`passed: true`、`checks: 17`，退出码0。目录必须新建，重复运行换`outputs/verify-0.13-2`。报告在`report.json`，另保存所有模板raw graph、构造的错误候选/对应文件/评分和原始工具envelope。全部离线，不需要打开SolidWorks，不修改测试STEP。
+
+17项检查包括：目录默认排除heldout、8个资产的作者标注数量、2个无关节负例保持不完整、同图控制、缺关节、错误类型、部分body_map、未知ID报错及错误后继续调用。构造对应关系已知，仅验证解析/评分，**不是升降机识别率**。
+
+### 逐项通过OpenCode / MCP验证
+
+升级后重启OpenCode，确认生产MCP版本0.13.0、tools/list含34工具。每次调用参数和原始envelope另存到新的`outputs/acceptance-0.13/`，图文件读取工具返回的output_path。
+
+| 工具 | 参数示例 | 必须核对 | 失败标准 |
+| --- | --- | --- | --- |
+| cad_list_mechanism_templates | `{}` | 6个reference，4个有关节、2个无关节；无planetary_gearbox/bar_clamp | 默认泄漏heldout或把标签称为识别结果 |
+| cad_list_mechanism_templates | `{"query":"lifting"}` | gas_lift_bar_stool来源、许可、数量 | 错绑来源或不提供检索范围 |
+| cad_extract_mechanism_template | `{"template_id":"gas_lift_bar_stool","output_path":"outputs/acceptance-0.13/lift.json"}` | 5刚体、4关节（2移动/2转动），complete=true；source哈希/CC-BY来源；requires_human_review=false | 丢失来源、错误单位、将行程迁移到目标STEP |
+| cad_extract_mechanism_template | `{"template_id":"gear_meshing_kit","output_path":"outputs/acceptance-0.13/gears.json"}` | 3刚体、0关节；partial、complete=false、NO_JOINTS风险 | 从名称补造齿轮传动关节/传动比，或等待人工判断 |
+| cad_extract_mechanism_template | `{"template_id":"bench_vise","output_path":"outputs/acceptance-0.13/vise.json"}` | 7刚体、7关节：固定1、移动2、转动4；jaw上限约0.125 m | 把m当mm，把USD行矩阵当CAD列矩阵 |
+| cad_compare_mechanism_graphs | 使用自动验证生成的两份raw graph、对应JSON及新output_path | identity控制得1；缺一关节召回6/7；错类型仍有完整连接但类型召回6/7；缺映射不隐藏；报告未评项 | 把这些分数称为自动识别率、隐去缺边/未知或用摘要替代原始关节 |
+
+比较调用的具体参数可直接复用`report.json`中对应calls项，**仅换新的output_path**。真实新图必须重新提供准确对应，不能仅把旧对应里的哈希改成新值。输出summary过期时评分用实际记录，并提示STALE_GRAPH_SUMMARY/partial。
+
+CLI等价入口：
+
+```powershell
+python -m cadkin templates --query lifting
+python -m cadkin template-extract --template-id gas_lift_bar_stool --output outputs/lift-reference.json
+python -m cadkin template-compare outputs/verify-0.13/bench_vise.json outputs/verify-0.13/wrong_joint_type.candidate.json --correspondence outputs/verify-0.13/wrong_joint_type.map.json --output outputs/type-check.json
+```
+
+### 错误与证据范围
+
+- 不传来源或同时传template_id/asset_path：INVALID_ARGUMENTS；不存在ID：TEMPLATE_NOT_FOUND。错误后再次列目录仍可用。
+- 复用输出：OUTPUT_EXISTS；路径越出项目/输出目录：INVALID_PATH；对应哈希过期：EVIDENCE_MISMATCH，不生成成功报告。
+- 仅视觉USD：NO_RIGID_BODIES；外部层/变体/实例：USD_COMPOSITION_UNSUPPORTED，本版不隐式下载或选择变体。解析预算64MiB/20000prim。
+- 案例的coupling属性保留但不求解；NO_JOINTS、未知耦合、未知端点等保留不完整状态。轴线位置/角度、限位、刚体误合并、运动与拆卸路径均不在当前评分范围。
+- 校验来源时见`cadkin/resources/mechanisms/catalog.json`和ATTRIBUTION.md。8个摘录约100KB，原完整网格不打包；不要拿这些结构摘录直接当完整SimReady场景运行。
+- 本轮不连接COM，不能改变SolidWorks实机验收状态；本地仍应保留0.5.0显示/超时修复等复测记录。工程数据不提交公共仓库。
 
 ## 0.12.0：机构链证据清单与人工复核
 
@@ -242,7 +292,7 @@ python -m cadkin review-proximity outputs/proximity-cli-0.10.json --distances ou
 
 ## 0.9.0：配合引用面核对
 
-本节保留 **0.9.0 新增能力**；当前版本与工具数量按上方 0.12.0 检查。在已有 Conda 环境运行 `git pull --ff-only`、`python -m pip install -e ".[solidworks]"`，退出并重启 OpenCode；调用会话工具核对 Python 解释器和 Conda 前缀。
+本节保留 **0.9.0 新增能力**；当前版本与工具数量按上方 0.12.0 检查。在已有 Conda 环境运行 `git pull --ff-only`、`python -m pip install -e ".[solidworks,templates]"`，退出并重启 OpenCode；调用会话工具核对 Python 解释器和 Conda 前缀。
 
 ### 前置与准确调用
 
@@ -373,7 +423,7 @@ python -m cadkin relations outputs/spatial-0.7.json --cylinders outputs/cylinder
 ```powershell
 conda activate 你的环境名
 git pull --ff-only
-python -m pip install -e ".[solidworks]"
+python -m pip install -e ".[solidworks,templates]"
 python -c "import sys; from importlib.metadata import version; print(sys.executable); print(version('3dmodel-rcgn'))"
 opencode mcp list
 opencode
@@ -409,7 +459,7 @@ opencode
 
 ```powershell
 git pull --ff-only
-python -m pip install -e ".[solidworks]"
+python -m pip install -e ".[solidworks,templates]"
 python -c "from importlib.metadata import version; print(version('3dmodel-rcgn'))"
 ```
 
@@ -558,6 +608,6 @@ Copy-Item -LiteralPath 'examples/three_servo_lift/3X Lift Assembly.STEP' -Destin
 
 > 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 31 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
 
-当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 31 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
+当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 34 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
 
 后续每次功能变更都在此追加对应版本的操作、预期返回、人工核对和失败标准。每条记录注明提交 SHA、工具参数、原始返回文件、窗口核对者与结论；没有证据不沿用上版“通过”。

@@ -1,0 +1,271 @@
+#usda 1.0
+(
+    defaultPrim = "Model"
+    doc = "Structure-only derivative of ForgeCAD/simready-assets; CC BY 4.0. See catalog.json and ATTRIBUTION.md. Visual meshes, collisions, materials, animation and simulation are omitted; source default world frames are retained."
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Model"
+{
+    def Xform "Geometry"
+    {
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+        def Xform "Base" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            customData = {
+                dictionary cadkin = {
+                    int sourceColliderCount = 11
+                    string[] sourceGeometryMembers = ["/Model/Geometry/Base/Bench_stub/Top/Top_mesh", "/Model/Geometry/Base/Casting/Casting_mesh", "/Model/Geometry/Base/Bolts/Bolts_mesh"]
+                }
+            }
+        )
+        {
+            bool physics:kinematicEnabled = 0
+            bool physics:rigidBodyEnabled = 1
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0.1, 1) )
+            uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+            def Xform "Body" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                customData = {
+                    dictionary cadkin = {
+                        int sourceColliderCount = 11
+                        string[] sourceGeometryMembers = ["/Model/Geometry/Base/Body/Fixed_jaw_insert/Serrated_Insert/Serrated_Insert_mesh", "/Model/Geometry/Base/Body/Fixed_jaw_insert/Screws/Screws_mesh", "/Model/Geometry/Base/Body/Casting/Casting_mesh", "/Model/Geometry/Base/Body/Anvil_Face/Anvil_Face_mesh", "/Model/Geometry/Base/Body/Pipe_Jaw/Pipe_Jaw_mesh", "/Model/Geometry/Base/Body/Nut/Nut_mesh", "/Model/Geometry/Base/Body/Lock_Studs/Lock_Studs_mesh"]
+                    }
+                }
+            )
+            {
+                bool physics:kinematicEnabled = 0
+                bool physics:rigidBodyEnabled = 1
+                matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0.12, 1) )
+                uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+                def Xform "Lock_lever_1" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                    customData = {
+                        dictionary cadkin = {
+                            int sourceColliderCount = 3
+                            string[] sourceGeometryMembers = ["/Model/Geometry/Base/Body/Lock_lever_1/Lever/Lever_mesh", "/Model/Geometry/Base/Body/Lock_lever_1/grasp_identifier_01"]
+                        }
+                    }
+                )
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.056, 0, 0.132, 1) )
+                    uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                }
+
+                def Xform "Lock_lever_2" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                    customData = {
+                        dictionary cadkin = {
+                            int sourceColliderCount = 3
+                            string[] sourceGeometryMembers = ["/Model/Geometry/Base/Body/Lock_lever_2/Lever/Lever_mesh", "/Model/Geometry/Base/Body/Lock_lever_2/grasp_identifier_01"]
+                        }
+                    }
+                )
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.056, 0, 0.132, 1) )
+                    uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                }
+
+                def Xform "Sliding_jaw" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                    customData = {
+                        dictionary cadkin = {
+                            int sourceColliderCount = 7
+                            string[] sourceGeometryMembers = ["/Model/Geometry/Base/Body/Sliding_jaw/Sliding_jaw_insert/Serrated_Insert/Serrated_Insert_mesh", "/Model/Geometry/Base/Body/Sliding_jaw/Sliding_jaw_insert/Screws/Screws_mesh", "/Model/Geometry/Base/Body/Sliding_jaw/Casting/Casting_mesh", "/Model/Geometry/Base/Body/Sliding_jaw/Pipe_Jaw/Pipe_Jaw_mesh", "/Model/Geometry/Base/Body/Sliding_jaw/Travel_Stop/Travel_Stop_mesh"]
+                        }
+                    }
+                )
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.13, 0.153, 1) )
+                    uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+                    def Xform "Screw" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                        customData = {
+                            dictionary cadkin = {
+                                int sourceColliderCount = 3
+                                string[] sourceGeometryMembers = ["/Model/Geometry/Base/Body/Sliding_jaw/Screw/Shaft/Shaft_mesh", "/Model/Geometry/Base/Body/Sliding_jaw/Screw/Head/Head_mesh"]
+                            }
+                        }
+                    )
+                    {
+                        bool physics:kinematicEnabled = 0
+                        bool physics:rigidBodyEnabled = 1
+                        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.168, 0.153, 1) )
+                        uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+                        def Xform "Handle_bar" (
+                            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                            customData = {
+                                dictionary cadkin = {
+                                    int sourceColliderCount = 3
+                                    string[] sourceGeometryMembers = ["/Model/Geometry/Base/Body/Sliding_jaw/Screw/Handle_bar/Bar/Bar_mesh", "/Model/Geometry/Base/Body/Sliding_jaw/Screw/Handle_bar/Knobs/Knobs_mesh", "/Model/Geometry/Base/Body/Sliding_jaw/Screw/Handle_bar/grasp_identifier_01", "/Model/Geometry/Base/Body/Sliding_jaw/Screw/Handle_bar/grasp_identifier_02"]
+                                }
+                            }
+                        )
+                        {
+                            bool physics:kinematicEnabled = 0
+                            bool physics:rigidBodyEnabled = 1
+                            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.186, 0.153, 1) )
+                            uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    def "Physics"
+    {
+        def Scope "Joints"
+        {
+            def PhysicsRevoluteJoint "swivel" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.034906585
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base>
+                rel physics:body1 = </Model/Geometry/Base/Body>
+                point3f physics:localPos0 = (0, 0, 0.02)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 360
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsPrismaticJoint "jaw" (
+                apiSchemas = ["PhysicsDriveAPI:linear", "PhysicsJointStateAPI:linear"]
+            )
+            {
+                float drive:linear:physics:damping = 50
+                float drive:linear:physics:stiffness = 0
+                float drive:linear:physics:targetVelocity = 0
+                uniform token drive:linear:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base/Body>
+                rel physics:body1 = </Model/Geometry/Base/Body/Sliding_jaw>
+                point3f physics:localPos0 = (0, -0.08, 0.033)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.70710677, 0, 0, -0.70710677)
+                quatf physics:localRot1 = (0.70710677, 0, 0, -0.70710677)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 0.125
+                float state:linear:physics:position = 0.05
+                float state:linear:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "screw" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000872665
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base/Body/Sliding_jaw>
+                rel physics:body1 = </Model/Geometry/Base/Body/Sliding_jaw/Screw>
+                uniform bool physics:excludeFromArticulation = 1
+                point3f physics:localPos0 = (0, -0.038, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.70710677, 0, 0, -0.70710677)
+                quatf physics:localRot1 = (0.70710677, 0, 0, -0.70710677)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 9000
+                float state:angular:physics:position = 3600
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsPrismaticJoint "handle_slide" (
+                apiSchemas = ["PhysicsDriveAPI:linear", "PhysicsJointStateAPI:linear"]
+            )
+            {
+                float drive:linear:physics:damping = 2
+                float drive:linear:physics:stiffness = 0
+                float drive:linear:physics:targetVelocity = 0
+                uniform token drive:linear:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base/Body/Sliding_jaw/Screw>
+                rel physics:body1 = </Model/Geometry/Base/Body/Sliding_jaw/Screw/Handle_bar>
+                point3f physics:localPos0 = (0, -0.018, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -0.08331
+                float physics:upperLimit = 0.08331
+                float state:linear:physics:position = 0
+                float state:linear:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "lock_1" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000349066
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base/Body>
+                rel physics:body1 = </Model/Geometry/Base/Body/Lock_lever_1>
+                point3f physics:localPos0 = (-0.056, 0, 0.012)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 90
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "lock_2" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000349066
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base/Body>
+                rel physics:body1 = </Model/Geometry/Base/Body/Lock_lever_2>
+                point3f physics:localPos0 = (0.056, 0, 0.012)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 90
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsFixedJoint "Base_fixed_base"
+            {
+                rel physics:body0 = </Model/Geometry>
+                rel physics:body1 = </Model/Geometry/Base>
+                point3f physics:localPos0 = (0, 0, 0.1)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }
+        }
+    }
+}

@@ -1,9 +1,12 @@
 # SolidWorks 工具接口
 
-版本：0.12.0。以下 31 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.13.0。以下 34 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `cad_list_mechanism_templates` | 可选query、include_heldout | 查询固定参考目录；不连接CAD/网络，不导入USD |
+| `cad_extract_mechanism_template` | output_path；template_id/asset_path恰有一个 | 提取一个USD作者标注的机构图，保留来源与风险，写outputs新文件 |
+| `cad_compare_mechanism_graphs` | reference_path、candidate_path、correspondence_path、output_path | 给定一对一body_map比较图连接/类型；不推断映射，不评轴线/限位/运动 |
 | `sw_start_application` | 可选 `wait_seconds`（1–120，默认 120） | 启动或复用唯一 SolidWorks，会显示窗口并交给用户控制；等待启动完成，不打开文件 |
 | `sw_session_status` | 无 | 连接已有进程，读取版本；未运行返回 `connected: false` |
 | `sw_active_document` | 无 | 文档标题、路径、类型、配置、dirty 状态和 `document_token` |
@@ -525,3 +528,17 @@ max_faces 和 max_cylinders 是全调用预算，达到且仍有面未检查时�
 - [GetCorrespondingEntity：零件实体到指定组件上下文](https://help.solidworks.com/2025/English/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IComponent2~GetCorrespondingEntity.html)
 - [IMateEntity2.Reference](https://help.solidworks.com/2026/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IMateEntity2~Reference.html)
 - [对象身份与持久引用比较官方示例](https://help.solidworks.com/2023/English/api/sldworksapi/Compare_Selected_Objects_and_Their_Persistent_Reference_IDs_Example_CSharp.htm)
+
+## 0.13.0 参考模板契约
+
+目录默认6个reference，include_heldout=true才列出全部8个；query为英文子串，最长200字符。两个reference只有刚体，无关节；名称/标签不能当机械关系。所有资源为独立小型结构摘录，完整来源、许可、固定版本与SHA256在catalog.json。
+
+提取只接受项目内独立USD/USDA/USDC或自带template_id；文件≤64MiB，prim≤20000，不加载外部composition，不选择variants、不展开instances/inherits/specializes。输出mechanism_template_schema_version=1：bodies、joints、summary、source、complete、risks、requires_human_review=false。固定/移动/转动副用官方UsdPhysics；其他类型显式unsupported；mimic/gear/rack/tendon属性保留而不解算。默认时刻、USD源upAxis、行向量矩阵和stage单位保留；origin/anchor与平移限位以m，角度限位以degree，不能无转换与SolidWorks列矩阵混用。缺失目标/非刚性变换使世界轴线未知。
+
+有NO_JOINTS、未知耦合等时envelope为partial/TEMPLATE_INCOMPLETE，已有图仍写出；这些状态不设置人工门槛。输入解析成功只说明读取了作者定义，不能认证物理正确性。原始图文件不含外层MCP envelope；比较使用raw graph路径。
+
+比较的correspondence为body_correspondence_schema_version=1、reference_sha256、candidate_sha256、body_map列表；每项candidate_body/reference_body为图内准确ID。一对一，可不完整；SHA必须对应输入文件实际字节。只比较enabled、支持类型、两端已解析的边，其余写入excluded。connections按无向端点对集合，typed_joints按端点对+类型多重集合；未映射候选边仍计额外边，参考漏边仍计漏检。分母0返回null。静态Xform/world只在拓扑中折算ground。
+
+输出mechanism_comparison_schema_version=1，包括body_coverage、connections、typed_joints、missing/extra_typed_joints、excluded、source_risks、unassessed与来源hash。body_coverage不证明刚体分组合并正确。摘要与实际记录不同提示STALE_GRAPH_SUMMARY，评分使用实际记录。图哈希相同提示SELF_COMPARISON，复制/构造案例同样不得宣称识别精度。
+
+错误代码：INVALID_ARGUMENTS、TEMPLATE_NOT_FOUND、INVALID_PATH、INVALID_INPUT、OUTPUT_EXISTS、USD_DEPENDENCY_MISSING、USD_COMPOSITION_UNSUPPORTED、INVALID_TEMPLATE、TEMPLATE_LIMIT、NO_RIGID_BODIES、INVALID_GRAPH、EVIDENCE_MISMATCH。COMPARISON_PARTIAL标明输入/对应/边覆盖不完整；继续报告风险。旧cad_apply_chain_review仅保留兼容，默认自动拆解不调用；旧requires_review字段不等于需要用户确认。

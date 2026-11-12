@@ -1,38 +1,31 @@
 # 3DModel-RCGN
 
-工业数模自动拆解项目。MCP 0.12.0 提供 31 个工具：SolidWorks 启动、文档/组件树、选择/显隐、空间读取、组件分组、配合/圆柱证据、面身份核对，以及组件距离、具体面目录、局部面间隙/法向、机构链证据清单与人工复核。STEP 测试模型已在 examples 中。
+用 OpenCode + MCP 操作 SolidWorks，逐步实现工业数模自动拆解。当前 **0.13.0 / 34 个工具**：已有组件与几何证据采集、分组/机构链汇总；新增8个真实资产的结构参考、USD关节提取和图结构评分。测试STEP已在examples中。
 
-## 在 Windows 上使用
+## 更新与使用
 
-在仓库根目录的 PowerShell 中激活你已有的 Conda 环境（替换环境名；已有仓库先更新）：
+在仓库根目录、你已有的 Conda 环境中执行：
 
 ```powershell
 conda activate 你的环境名
 git pull --ff-only
-python -m pip install -e ".[solidworks]"
+python -m pip install -e ".[solidworks,templates]"
 opencode mcp list
 opencode
 ```
 
-仅面向 Windows + 桌面版 SolidWorks，Python 3.10+。无需提前启动 SolidWorks，无需解压模型。项目使用当前 Conda 环境的 python；升级后退出并重新启动 OpenCode。
+Windows + Python 3.10+ + 桌面版SolidWorks；不需要.venv。升级后重启OpenCode。操作模型时可自动启动SolidWorks；模板工具可独立离线运行。
 
-本次可直接告诉 Agent：
-
-> 启动或复用 SolidWorks，打开仓库测试 STEP，按 docs/MCP_ACCEPTANCE.md 的 0.12.0 清单验收。先明确一条升降链的零件范围，将已有分组、配合、距离与面级结果汇总；缺少证据的零件对保持未知。只有我明确给出的判断才写入人工复核。只加载当前任务对应 skill，按需读取参考文件；保存原始返回，列出需要我在窗口核对的结果，不自动确认接触或运动副。
-
-## 导出与分组
-
-模型打开后执行（输出需用新文件名）：
+## 验证这次新增功能
 
 ```powershell
-python -m cadkin spatial-export --page-size 5 --output outputs/spatial.json
-python -m cadkin group outputs/spatial.json --output outputs/groups.json
+python scripts/verify_reference_templates.py --output outputs/verify-0.13
 ```
 
-第一条收齐空间分页；第二条离线生成角色候选供复核。若只做名称分组、包围盒很慢，可用新文件名加 `--without-boxes`；邻近筛选需要包围盒。
+应返回 `passed: true`、17项检查；报告及原始结果保存在指定目录。再次运行换新目录名。也可告诉OpenCode：
 
-[0.12.0 验收步骤](docs/MCP_ACCEPTANCE.md#0120机构链证据清单与人工复核)包含汇总、来源核对和人工意见格式。可先离线生成保留未知的草案；人工确认与CAD验证分开保存，不自动合并或移动零件。
+> 按docs/MCP_ACCEPTANCE.md的0.13.0步骤验收参考模板功能。按任务加载对应skill，详细说明按需读取。不设置人工复核节点，不确定处在结论说明风险。
 
-25 个功能 skill 保持简短入口、references 按需读取；执行代码独立放在工具/COM 层。当前不含零件移动、配合编辑或自动运动关系确认。
+27个功能skill与工具代码隔离。**本轮完成参考模板基础设施；尚未将模板自动匹配到升降机，也未实现刚体合并、零件移动或拆卸路径验证。**
 
-[模型拆解进度与已用工具](docs/MODEL_PROGRESS.md) · [下一步](docs/DEVELOPMENT_PLAN.md) · [实机验收](docs/MCP_ACCEPTANCE.md) · [使用与排错](docs/OPENCODE_START.md) · [工具接口](docs/TOOL_CONTRACTS.md) · [分层](docs/ARCHITECTURE.md) · [开源来源](THIRD_PARTY_NOTICES.md)
+[详细验收](docs/MCP_ACCEPTANCE.md#0130参考模板与图结构评分) · [使用与排错](docs/OPENCODE_START.md) · [模型进度](docs/MODEL_PROGRESS.md) · [下一步](docs/DEVELOPMENT_PLAN.md) · [工具接口](docs/TOOL_CONTRACTS.md) · [来源许可](THIRD_PARTY_NOTICES.md)

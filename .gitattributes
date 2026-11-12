@@ -1,3 +1,6 @@
 # Keep extracted CAD bytes unchanged, including original encoding and line endings.
 "/examples/three_servo_lift/3X Lift Assembly.STEP" -text -diff
 "/examples/three_servo_lift/Bosch SSS 08.JPG" -text -diff
+
+# Structural reference hashes must be identical on Windows checkouts.
+*.usda text eol=lf

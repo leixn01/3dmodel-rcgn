@@ -1,0 +1,249 @@
+#usda 1.0
+(
+    defaultPrim = "Model"
+    doc = "Structure-only derivative of ForgeCAD/simready-assets; CC BY 4.0. See catalog.json and ATTRIBUTION.md. Visual meshes, collisions, materials, animation and simulation are omitted; source default world frames are retained."
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Model"
+{
+    def Xform "Geometry"
+    {
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+        def Xform "Base_and_ring" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            customData = {
+                dictionary cadkin = {
+                    int sourceColliderCount = 180
+                    string[] sourceGeometryMembers = ["/Model/Geometry/Base_and_ring/Cover/Cover_plate/Cover_plate_mesh", "/Model/Geometry/Base_and_ring/Cover/Standoffs/Standoffs_mesh", "/Model/Geometry/Base_and_ring/Cover/Screws/Screws_mesh", "/Model/Geometry/Base_and_ring/Cover/Bushing/Bushing_mesh", "/Model/Geometry/Base_and_ring/Base_plate/Base_plate_mesh", "/Model/Geometry/Base_and_ring/Ring_gear/Ring_gear_mesh", "/Model/Geometry/Base_and_ring/Dial/Dial_mesh", "/Model/Geometry/Base_and_ring/Feet/Feet_mesh", "/Model/Geometry/Base_and_ring/Ring_screws/Ring_screws_mesh", "/Model/Geometry/Base_and_ring/Bushing/Bushing_mesh"]
+                }
+            }
+        )
+        {
+            bool physics:kinematicEnabled = 0
+            bool physics:rigidBodyEnabled = 1
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+            def Xform "Carrier_and_output_arm" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                customData = {
+                    dictionary cadkin = {
+                        int sourceColliderCount = 39
+                        string[] sourceGeometryMembers = ["/Model/Geometry/Base_and_ring/Carrier_and_output_arm/Carrier_plate/Carrier_plate_mesh", "/Model/Geometry/Base_and_ring/Carrier_and_output_arm/Pins/Pins_mesh", "/Model/Geometry/Base_and_ring/Carrier_and_output_arm/Bushing/Bushing_mesh", "/Model/Geometry/Base_and_ring/Carrier_and_output_arm/Index/Index_mesh"]
+                    }
+                }
+            )
+            {
+                bool physics:kinematicEnabled = 0
+                bool physics:rigidBodyEnabled = 1
+                matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0.029, 1) )
+                uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+                def Xform "Planet_1" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                    customData = {
+                        dictionary cadkin = {
+                            int sourceColliderCount = 66
+                            string[] sourceGeometryMembers = ["/Model/Geometry/Base_and_ring/Carrier_and_output_arm/Planet_1/Gear/Gear_mesh", "/Model/Geometry/Base_and_ring/Carrier_and_output_arm/Planet_1/grasp_identifier_01"]
+                        }
+                    }
+                )
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.027, 0.016, 1) )
+                    uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                }
+
+                def Xform "Planet_2" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                    customData = {
+                        dictionary cadkin = {
+                            int sourceColliderCount = 66
+                            string[] sourceGeometryMembers = ["/Model/Geometry/Base_and_ring/Carrier_and_output_arm/Planet_2/Gear/Gear_mesh", "/Model/Geometry/Base_and_ring/Carrier_and_output_arm/Planet_2/grasp_identifier_01"]
+                        }
+                    }
+                )
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.023382686, -0.0135, 0.016, 1) )
+                    uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                }
+
+                def Xform "Planet_3" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                    customData = {
+                        dictionary cadkin = {
+                            int sourceColliderCount = 66
+                            string[] sourceGeometryMembers = ["/Model/Geometry/Base_and_ring/Carrier_and_output_arm/Planet_3/Gear/Gear_mesh", "/Model/Geometry/Base_and_ring/Carrier_and_output_arm/Planet_3/grasp_identifier_01"]
+                        }
+                    }
+                )
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.023382686, -0.0135, 0.016, 1) )
+                    uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                }
+            }
+
+            def Xform "Sun_and_input_knob" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                customData = {
+                    dictionary cadkin = {
+                        int sourceColliderCount = 58
+                        string[] sourceGeometryMembers = ["/Model/Geometry/Base_and_ring/Sun_and_input_knob/Sun_gear/Sun_gear_mesh", "/Model/Geometry/Base_and_ring/Sun_and_input_knob/Shaft/Shaft_mesh", "/Model/Geometry/Base_and_ring/Sun_and_input_knob/Collar/Collar_mesh", "/Model/Geometry/Base_and_ring/Sun_and_input_knob/Knob/Knob_mesh", "/Model/Geometry/Base_and_ring/Sun_and_input_knob/Knob_arrow/Knob_arrow_mesh", "/Model/Geometry/Base_and_ring/Sun_and_input_knob/grasp_identifier_01"]
+                    }
+                }
+            )
+            {
+                bool physics:kinematicEnabled = 0
+                bool physics:rigidBodyEnabled = 1
+                matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0.016, 1) )
+                uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+            }
+        }
+    }
+
+    def "Physics"
+    {
+        def Scope "Joints"
+        {
+            def PhysicsRevoluteJoint "input" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000034907
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base_and_ring>
+                rel physics:body1 = </Model/Geometry/Base_and_ring/Sun_and_input_knob>
+                point3f physics:localPos0 = (0, 0, 0.016)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -1000000
+                float physics:upperLimit = 1000000
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "carrier" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular", "PhysxMimicJointAPI:rotX"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000008727
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base_and_ring>
+                rel physics:body1 = </Model/Geometry/Base_and_ring/Carrier_and_output_arm>
+                point3f physics:localPos0 = (0, 0, 0.029)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -1000000
+                float physics:upperLimit = 1000000
+                float physxMimicJoint:rotX:gearing = -0.25
+                float physxMimicJoint:rotX:offset = 0
+                rel physxMimicJoint:rotX:referenceJoint = </Model/Physics/Joints/input>
+                uniform token physxMimicJoint:rotX:referenceJointAxis = "rotX"
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "planet_1" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular", "PhysxMimicJointAPI:rotX"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000003491
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base_and_ring/Carrier_and_output_arm>
+                rel physics:body1 = </Model/Geometry/Base_and_ring/Carrier_and_output_arm/Planet_1>
+                point3f physics:localPos0 = (0, 0.027, -0.013)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -1000000
+                float physics:upperLimit = 1000000
+                float physxMimicJoint:rotX:gearing = 0.75
+                float physxMimicJoint:rotX:offset = 0
+                rel physxMimicJoint:rotX:referenceJoint = </Model/Physics/Joints/input>
+                uniform token physxMimicJoint:rotX:referenceJointAxis = "rotX"
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "planet_2" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular", "PhysxMimicJointAPI:rotX"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000003491
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base_and_ring/Carrier_and_output_arm>
+                rel physics:body1 = </Model/Geometry/Base_and_ring/Carrier_and_output_arm/Planet_2>
+                point3f physics:localPos0 = (-0.023383, -0.0135, -0.013)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -1000000
+                float physics:upperLimit = 1000000
+                float physxMimicJoint:rotX:gearing = 0.75
+                float physxMimicJoint:rotX:offset = 0
+                rel physxMimicJoint:rotX:referenceJoint = </Model/Physics/Joints/input>
+                uniform token physxMimicJoint:rotX:referenceJointAxis = "rotX"
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "planet_3" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular", "PhysxMimicJointAPI:rotX"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000003491
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Base_and_ring/Carrier_and_output_arm>
+                rel physics:body1 = </Model/Geometry/Base_and_ring/Carrier_and_output_arm/Planet_3>
+                point3f physics:localPos0 = (0.023383, -0.0135, -0.013)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -1000000
+                float physics:upperLimit = 1000000
+                float physxMimicJoint:rotX:gearing = 0.75
+                float physxMimicJoint:rotX:offset = 0
+                rel physxMimicJoint:rotX:referenceJoint = </Model/Physics/Joints/input>
+                uniform token physxMimicJoint:rotX:referenceJointAxis = "rotX"
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsFixedJoint "Base_and_ring_fixed_base"
+            {
+                rel physics:body0 = </Model/Geometry>
+                rel physics:body1 = </Model/Geometry/Base_and_ring>
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }
+        }
+    }
+}

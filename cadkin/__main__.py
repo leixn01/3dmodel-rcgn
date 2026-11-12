@@ -69,18 +69,38 @@ def main():
     chain.add_argument('--grouping', dest='grouping_path')
     chain.add_argument('--grouping-review', dest='grouping_review_path')
     chain.add_argument('--output', required=True)
-    chain_review = commands.add_parser('review-chain', help='Apply attributed human declarations to an exact dossier')
+    chain_review = commands.add_parser('review-chain', help='Legacy optional human declarations; not part of automatic decomposition')
     chain_review.add_argument('chain_path')
     chain_review.add_argument('review_path')
     chain_review.add_argument('--output', required=True)
+    templates = commands.add_parser('templates', help='List bundled mechanism reference excerpts')
+    templates.add_argument('--query', default='')
+    templates.add_argument('--include-heldout', action='store_true')
+    extract = commands.add_parser('template-extract', help='Extract authored USD reference structure offline')
+    choice = extract.add_mutually_exclusive_group(required=True)
+    choice.add_argument('--template-id')
+    choice.add_argument('--asset-path')
+    extract.add_argument('--output', required=True)
+    compare = commands.add_parser('template-compare', help='Compare graph topology with explicit hash-bound body correspondence')
+    compare.add_argument('reference_path')
+    compare.add_argument('candidate_path')
+    compare.add_argument('--correspondence', dest='correspondence_path', required=True)
+    compare.add_argument('--output', required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain'}:
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare'}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
                 if args.command == "sw":
                     result = service.call(args.tool, json.loads(args.arguments))
+                elif args.command == 'templates':
+                    result = service.call('cad_list_mechanism_templates', {'query':args.query,'include_heldout':args.include_heldout})
+                elif args.command == 'template-extract':
+                    arguments = {k:getattr(args,k) for k in ('template_id','asset_path') if getattr(args,k) is not None}
+                    result = service.call('cad_extract_mechanism_template', {**arguments,'output_path':args.output})
+                elif args.command == 'template-compare':
+                    result = service.call('cad_compare_mechanism_graphs', {k:getattr(args,k) for k in ('reference_path','candidate_path','correspondence_path')} | {'output_path':args.output})
                 elif args.command == "spatial-export":
                     from .tools.spatial import collect_spatial
                     # Check destination before spending time reading the assembly.
@@ -136,7 +156,7 @@ def main():
             print(str(output))
         else:
             print(payload, end="")
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain'} and result["status"] == "error":
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare'} and result["status"] == "error":
             raise SystemExit(2)
     except (RuntimeError, OSError, ValueError, KeyError, zipfile.BadZipFile, URLError) as exc:
         parser.exit(2, f"Error: {exc}\n")

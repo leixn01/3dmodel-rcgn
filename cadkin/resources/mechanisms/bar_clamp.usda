@@ -1,0 +1,187 @@
+#usda 1.0
+(
+    defaultPrim = "Model"
+    doc = "Structure-only derivative of ForgeCAD/simready-assets; CC BY 4.0. See catalog.json and ATTRIBUTION.md. Visual meshes, collisions, materials, animation and simulation are omitted; source default world frames are retained."
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Model"
+{
+    def "Geometry"
+    {
+        def Xform "Handle" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            customData = {
+                dictionary cadkin = {
+                    int sourceColliderCount = 5
+                    string[] sourceGeometryMembers = ["/Model/Geometry/Handle/Grip/Overmold/Overmold_mesh", "/Model/Geometry/Handle/Fixed_jaw_pad/Pad/Pad_mesh", "/Model/Geometry/Handle/Body/Body_mesh", "/Model/Geometry/Handle/Logo/Logo_mesh", "/Model/Geometry/Handle/Pins/Pins_mesh", "/Model/Geometry/Handle/Springs/Springs_mesh", "/Model/Geometry/Handle/Screws/Screws_mesh", "/Model/Geometry/Handle/grasp_identifier_01", "/Model/Geometry/Handle/grasp_identifier_02"]
+                }
+            }
+        )
+        {
+            bool physics:kinematicEnabled = 0
+            bool physics:rigidBodyEnabled = 1
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.0465, 0.040462045, 0.017, 1) )
+            uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+            def Xform "Bar" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                customData = {
+                    dictionary cadkin = {
+                        int sourceColliderCount = 5
+                        string[] sourceGeometryMembers = ["/Model/Geometry/Handle/Bar/Sliding_jaw/Sliding_jaw_pad/Pad/Pad_mesh", "/Model/Geometry/Handle/Bar/Sliding_jaw/Jaw/Jaw_mesh", "/Model/Geometry/Handle/Bar/Sliding_jaw/Pin/Pin_mesh", "/Model/Geometry/Handle/Bar/Sliding_jaw/Button/Button_mesh", "/Model/Geometry/Handle/Bar/Bar/Bar_mesh", "/Model/Geometry/Handle/Bar/Stop_pin/Stop_pin_mesh"]
+                    }
+                }
+            )
+            {
+                bool physics:kinematicEnabled = 0
+                bool physics:rigidBodyEnabled = 1
+                matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.1905, 0.040462045, 0.017, 1) )
+                uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+            }
+
+            def Xform "Drive_plate" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                customData = {
+                    dictionary cadkin = {
+                        int sourceColliderCount = 5
+                        string[] sourceGeometryMembers = ["/Model/Geometry/Handle/Drive_plate/Plate/Plate_mesh"]
+                    }
+                }
+            )
+            {
+                bool physics:kinematicEnabled = 0
+                bool physics:rigidBodyEnabled = 1
+                matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.0465, 0.040462045, 0.017, 1) )
+                uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+            }
+
+            def Xform "Release_lever" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                customData = {
+                    dictionary cadkin = {
+                        int sourceColliderCount = 5
+                        string[] sourceGeometryMembers = ["/Model/Geometry/Handle/Release_lever/Brake_plate/Brake_plate_mesh", "/Model/Geometry/Handle/Release_lever/Thumb_cap/Thumb_cap_mesh"]
+                    }
+                }
+            )
+            {
+                bool physics:kinematicEnabled = 0
+                bool physics:rigidBodyEnabled = 1
+                matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.0465, 0.040462045, 0.017, 1) )
+                uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+            }
+
+            def Xform "Trigger" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                customData = {
+                    dictionary cadkin = {
+                        int sourceColliderCount = 3
+                        string[] sourceGeometryMembers = ["/Model/Geometry/Handle/Trigger/Lever/Lever_mesh"]
+                    }
+                }
+            )
+            {
+                bool physics:kinematicEnabled = 0
+                bool physics:rigidBodyEnabled = 1
+                matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.0465, 0.040462045, 0.017, 1) )
+                uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+            }
+        }
+    }
+
+    def "Physics"
+    {
+        def Scope "Joints"
+        {
+            def PhysicsPrismaticJoint "bar" (
+                apiSchemas = ["PhysicsDriveAPI:linear", "PhysicsJointStateAPI:linear"]
+            )
+            {
+                float drive:linear:physics:damping = 20
+                float drive:linear:physics:stiffness = 0
+                float drive:linear:physics:targetVelocity = 0
+                uniform token drive:linear:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Handle>
+                rel physics:body1 = </Model/Geometry/Handle/Bar>
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0, 0, 0, 1)
+                quatf physics:localRot1 = (0, 0, 0, 1)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 0.3
+                float state:linear:physics:position = 0.144
+                float state:linear:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "trigger" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000034907
+                float drive:angular:physics:stiffness = 0.012
+                float drive:angular:physics:targetPosition = -3
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Handle>
+                rel physics:body1 = </Model/Geometry/Handle/Trigger>
+                point3f physics:localPos0 = (0.055, -0.0155, 0)
+                point3f physics:localPos1 = (0.055, -0.0155, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 25
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsPrismaticJoint "drive_plate" (
+                apiSchemas = ["PhysicsDriveAPI:linear", "PhysicsJointStateAPI:linear", "PhysxMimicJointAPI:rotX"]
+            )
+            {
+                float drive:linear:physics:damping = 0.5
+                float drive:linear:physics:stiffness = 300
+                float drive:linear:physics:targetPosition = -0.0005
+                uniform token drive:linear:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Handle>
+                rel physics:body1 = </Model/Geometry/Handle/Drive_plate>
+                point3f physics:localPos0 = (0.0603, 0, 0)
+                point3f physics:localPos1 = (0.0603, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 0.004145
+                float physxMimicJoint:rotX:gearing = -0.00016580628
+                float physxMimicJoint:rotX:offset = 0
+                rel physxMimicJoint:rotX:referenceJoint = </Model/Physics/Joints/trigger>
+                uniform token physxMimicJoint:rotX:referenceJointAxis = "rotX"
+                float state:linear:physics:position = 0
+                float state:linear:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "release" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000017453
+                float drive:angular:physics:stiffness = 0.012
+                float drive:angular:physics:targetPosition = -3
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Handle>
+                rel physics:body1 = </Model/Geometry/Handle/Release_lever>
+                point3f physics:localPos0 = (0.095, 0.0155, 0)
+                point3f physics:localPos1 = (0.095, 0.0155, 0)
+                quatf physics:localRot0 = (-0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (-0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 15
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+        }
+    }
+}

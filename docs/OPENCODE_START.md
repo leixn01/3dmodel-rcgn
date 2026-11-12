@@ -8,10 +8,10 @@
 git clone https://github.com/leixn01/3dmodel-rcgn.git
 cd 3dmodel-rcgn
 conda activate 你的环境名
-python -m pip install -e ".[solidworks]"
+python -m pip install -e ".[solidworks,templates]"
 ```
 
-已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 31 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32 及 SDK 依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 34 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
 
 在同一个已激活 Conda 的终端启动 OpenCode；MCP 子进程通过 PATH 找到该环境的 python。先执行 `python -c "import sys; print(sys.executable)"` 记录解释器路径，再让 OpenCode 调用 `sw_session_status`，比较 `data.runtime.python_executable`，且 `matches_conda_prefix` 应为 true。运行时同时返回 python_prefix、conda_prefix、python_version；软件未运行时也能检查。没有 CONDA_PREFIX 时匹配值为 null，不能据此声称已在 Conda 中。
 
@@ -38,7 +38,7 @@ python -m pip install -e ".[solidworks]"
 
 ## 组件分组
 
-模型已打开后执行 README 的 `spatial-export` 和 `group` 命令，或让 Agent 使用 `component-grouping`。指定子装配用 `group ... --scope "完整实例路径"`；人工复核用 `--review outputs/review.json` 加新输出文件名。输入/复核文件必须在项目内，分组输出必须在 outputs 内；不覆盖原文件。旧版单次空间导出改为分页，推荐直接使用新 CLI 收齐，不把一页返回当整机结果。
+模型已打开后执行 README 的 `spatial-export` 和 `group` 命令，或让 Agent 使用 `component-grouping`。指定子装配用 `group ... --scope "完整实例路径"`；默认不传人工review文件，疑点由后续自动分析并最终报告风险。输入/复核文件必须在项目内，分组输出必须在 outputs 内；不覆盖原文件。旧版单次空间导出改为分页，推荐直接使用新 CLI 收齐，不把一页返回当整机结果。
 
 ## 配合与轴线证据
 
@@ -64,7 +64,7 @@ python -m pip install -e ".[solidworks]"
 
 按 [0.12.0 清单](MCP_ACCEPTANCE.md#0120机构链证据清单与人工复核)，给出2–50个明确叶实例和名称，让chain-evidence汇总已有分组/连接/组件近接触/面候选文件。输入不必全部齐全；缺失保持未知，不强制启动CAD或补全整机测量。
 
-chain-review只应用用户明确给出的逐对结论或现有复核文件。确认、否定、待查、冲突与原始证据分开，绑定完整清单SHA256；没有意见的对保持pending，不能仅依据几何候选自动填confirmed。原始证据partial即使人工全答完仍保留，工具不会移动零件或创建配合。
+默认不调用旧人工复核工具。旧review_flags/requires_review仅提示自动核对证据，不能成为向用户索要确认的条件；没有依据就保留未知。旧cad_apply_chain_review仍可读取已有历史文件，不能把Agent推断伪装成用户声明。
 
 ## 配置
 
@@ -126,8 +126,22 @@ Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不�
 
 诊断命令：`python -m cadkin sw sw_session_status`。结果输出到终端，不会开启 MCP 协议会话。运行产物留在 `outputs/`。
 
-用户已反馈旧版 15 工具的实测结果；新增机构链汇总/人工复核按 0.12.0 清单验证；面间隙/法向保留 0.11.0 清单；组件距离保留 0.10.0 清单；面身份核对保留 0.9.0 清单；配合状态/连接复核保留 0.8.0 清单；几何候选保留 0.7.0 清单；Conda、配合与轴线保留 0.6.0 清单；显示/超时修复与分组保留 0.5.0 复测项，启动仍按 0.4.0 清单验证。请按 [31 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
+用户已反馈旧版 15 工具的实测结果；新增模板按0.13.0清单验证；旧机构链汇总按0.12.0，人工复核段仅作历史兼容；面间隙/法向保留 0.11.0 清单；组件距离保留 0.10.0 清单；面身份核对保留 0.9.0 清单；配合状态/连接复核保留 0.8.0 清单；几何候选保留 0.7.0 清单；Conda、配合与轴线保留 0.6.0 清单；显示/超时修复与分组保留 0.5.0 复测项，启动仍按 0.4.0 清单验证。请按 [34 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
 
 官方说明：[Skills](https://opencode.ai/docs/skills/)、[MCP](https://opencode.ai/docs/mcp-servers/)、[V1/V2 兼容](https://opencode.ai/docs/migrate-v1/)。
 
 Conda 官方说明：[conda run](https://docs.conda.io/projects/conda/en/stable/commands/run.html)。
+
+## 0.13.0 参考模板
+
+模板功能无需启动SolidWorks；现有Conda安装额外依赖后直接运行：
+
+```powershell
+python -m cadkin templates --query lifting
+python -m cadkin template-extract --template-id gas_lift_bar_stool --output outputs/lift-reference.json
+python scripts/verify_reference_templates.py --output outputs/verify-0.13
+```
+
+输出用新文件名/目录。自带8个结构摘录不是完整网格模型；默认目录只返回6个reference（其中2个无关节负例），另2个留作后续匹配评测。模板轴线和行程只属于参考。比较工具需要两份原始图和真实来源绑定的对应文件；当前尚未自动生成SolidWorks对应关系。
+
+新增错误：USD_DEPENDENCY_MISSING检查当前Conda是否安装templates extra；USD_COMPOSITION_UNSUPPORTED表示输入有外部层/变体等，本版只支持独立归一化USD；NO_RIGID_BODIES不把纯视觉模型当机构；TEMPLATE_INCOMPLETE/COMPARISON_PARTIAL保留风险继续；EVIDENCE_MISMATCH重新核对来源，不能只篡改哈希。

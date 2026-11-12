@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.12.0（31 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.13.0（34 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -15,7 +15,7 @@
 | 会话与活动文档检查 | `solidworks-connect` |
 | 组件实例树 | `assembly-inventory` |
 | 实例位置、变换与近似包围盒 | `component-spatial` |
-| 叶实例角色候选与人工复核 | `component-grouping` |
+| 叶实例角色候选与自动证据核对 | `component-grouping` |
 | 固定标志与关联配合证据 | `component-constraints` |
 | 零件定义圆柱面轴线/半径候选 | `component-cylinders` |
 | 离线同轴/平行候选与来源关联 | `component-relations` |
@@ -29,7 +29,9 @@
 | 指定面局部间隙/法向探测 | `face-gap-probing` |
 | 面探测文件的离线候选复核 | `face-contact-review` |
 | 指定机构链的离线证据清单 | `chain-evidence` |
-| 明确人工连接意见的来源绑定复核 | `chain-review` |
+| 机构参考目录检索 | `mechanism-template-search` |
+| USD参考刚体/关节图提取 | `mechanism-template-extract` |
+| 已有对应关系下的图结构评分 | `mechanism-template-compare` |
 | 打开/导入或重建文档 | `solidworks-document` |
 | 标准视图/缩放 | `solidworks-view` |
 | 基准面等辅助对象显隐 | `solidworks-display` |
@@ -45,13 +47,13 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 - 保留组件实例/父子关系及错误；不得把部分结果或 API 失败写成完整空列表。STEP 文本 PRODUCT/NAUO 数量不是展开后的实例数。
 - STEP 可在 SolidWorks 打开；实际导入类型与 Mate 是否保留需核对。未知运动参数不补造。
 - 只提交指定样例及其校验来源；用户其他工程、outputs、账号凭据和密钥不提交。
-- 完整测试：先安装 `.[solidworks]`，再运行 `python -m unittest discover -s tests -v`。基础体检可单独运行 `python -m unittest discover -s tests -p test_intake.py -v`。
+- 完整测试：先安装 `.[solidworks,templates]`，再运行 `python -m unittest discover -s tests -v`。基础体检可单独运行 `python -m unittest discover -s tests -p test_intake.py -v`。
 - 明确区分测试替身、真实 stdio 协议、真实 COM 与人工窗口核对；未实测不能记为通过。
 - 每次新增或改变功能，都在 `docs/MCP_ACCEPTANCE.md` 追加对应版本的验收项：前置条件、准确工具与参数、预期返回、窗口/数据核对、失败标准和证据保存位置。完成回复必须给出更新方式和本次验收入口，不能只说“测试通过”。
 - 空间数据用列向量，矩阵平移为米；Transform2 已相对根装配，不重复乘父级。原点不等于质心，包围盒为近似轴对齐边界，不能用于精密测量或直接认定碰撞。
 - 保留第三方许可与固定来源，变更后同步 `MANIFEST.json`，排除清单自身与忽略的输出。
 
-- 空间清单采用分页，完整文件用 `spatial-export` 采集；单页不能传作完整分组输入。分组工具 `cad_group_components` 只读项目内 JSON、写 outputs 新文件，不连接 COM。名称规则和近邻只是候选证据；只在用户明确确认后写复核记录，不直接认定刚体或运动关系。
+- 空间清单采用分页，完整文件用 `spatial-export` 采集；单页不能传作完整分组输入。分组工具 `cad_group_components` 只读项目内 JSON、写 outputs 新文件，不连接 COM。名称规则和近邻只是候选证据；自动补充证据或保留未知，不等待人工复核；不将推断写成human_confirmed。
 
 - 0.6.0 配合与圆柱读取只读指定实例：IsFixed 对嵌套组件不能直接解释；MateEntity 参数保留所属装配坐标，引用名称不自动当根路径；零件定义圆柱不包含装配级切除，不凭轴线认定运动副。配置不匹配时不自动切换。
 
@@ -66,4 +68,8 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 
 - 0.11.0 面目录、局部面探测、离线面候选复核各自独立。用原始面目录哈希+索引定位记录，再解析持久引用；只探测不同实例上的解析平面/圆柱。GetClosestPointOn 必须调用有限面接口，坐标在零件定义与根装配之间只转换一次；FaceInSurfaceSense=true 要翻转底层法向。converged 或小测点间隙不证明全局最小值/接触；大测点间隙也不证明整面分离。保留种子/预算/错误及装配级切除未参与的范围，不能直接确认刚体、运动副或拆卸路径。
 
-- 0.12.0 机构链范围必须显式列出2–50个叶实例；链名不证明自动识别。离线汇总重算来源并保留全部实例对、未知、边界联系、未匹配根配合和不同几何范围。人工复核必须绑定原清单SHA256，仅记录用户明确给出的意见；未提到的对保持pending。confirmed/rejected是具名人工声明，不等于CAD验证；partial不清除，不自动生成刚体、关节或拆卸路径。存在review_flags时最终人工决定必须明确说明并确认已处理这些提示。
+- 0.12.0 机构链范围必须显式列出2–50个叶实例；链名不证明自动识别。离线汇总重算来源，保留全部实例对、未知、边界联系和几何范围。旧人工复核工具仅保留文件兼容，不属于自动拆解流程；禁止伪造用户确认或把它设为继续工作的条件。
+
+- 0.13.0 自动拆解不设置人工复核节点。Agent自行调度已有采集/计算能力，有不确定信息时继续处理可独立完成的部分，并在结论列出依据、替代解释、未知和风险。历史requires_review/review_flags表示证据待自动核对，不能解释成必须向用户提问；模型/来源错误仍应明确报告，不能悄悄变成成功。新增输出明确requires_human_review=false。
+- 模板数据在cadkin/resources/mechanisms；确定性解析/评分在cadkin/templates；项目文件/MCP边界在tools/templates。工具不读取skill。参考模板不是目标CAD真值；标签只帮助检索，缺少关节不补造。heldout不参与默认检索，若查看或用于调参不能宣称未见评测。
+- 当前只实现模板检索、结构提取、给定一对一刚体对应下的图评分；SolidWorks到模板的特征对齐/子图匹配尚未实现。禁止把自比较、合成缺边测试或参考模型限位称为目标升降机识别/实测结果。下一步先开发目标特征适配与子图匹配，不扩展为整套仿真平台。

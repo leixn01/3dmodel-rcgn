@@ -154,9 +154,17 @@ TOOLS = [
           'evidence_paths': {'type': 'array', 'maxItems': 20, 'uniqueItems': True, 'items': {'type': 'string', 'minLength': 1}},
           'grouping_path': {'type': 'string', 'minLength': 1}, 'grouping_review_path': {'type': 'string', 'minLength': 1}},
          ['inventory_path', 'occurrence_paths', 'chain_name', 'output_path'], False),
-    spec('cad_apply_chain_review', 'Apply explicit attributed human confirmed/rejected/pending/conflict declarations to an exact chain dossier SHA256, offline. Revalidates evidence and acknowledges review flags; unmentioned pairs stay pending. Human confirmation does not certify CAD geometry/joints or clear partial evidence. Writes a new file, never moves parts.',
+    spec('cad_apply_chain_review', 'Legacy optional compatibility tool, excluded from the automatic decomposition workflow. Apply explicit attributed human confirmed/rejected/pending/conflict declarations to an exact chain dossier SHA256, offline. Revalidates evidence and acknowledges review flags; unmentioned pairs stay pending. Human confirmation does not certify CAD geometry/joints or clear partial evidence. Writes a new file, never moves parts.',
          {'chain_path': {'type': 'string', 'minLength': 1}, 'review_path': {'type': 'string', 'minLength': 1}, 'output_path': {'type': 'string', 'minLength': 1}},
          ['chain_path', 'review_path', 'output_path'], False),
+    spec('cad_list_mechanism_templates', 'List bundled pinned structural reference assets; no CAD, USD import or network. Heldout evaluation assets are excluded by default. Tags are retrieval hints, not inferred joints.',
+         {'query': {'type':'string','maxLength':200}, 'include_heldout': {'type':'boolean'}}, [], True),
+    spec('cad_extract_mechanism_template', 'Extract authored rigid bodies, fixed/prismatic/revolute joints, endpoint frames and limits from one bundled template ID or standalone project USD file, offline. Writes a new JSON graph with provenance and risks. Does not infer CAD mechanisms.',
+         {'template_id': {'type':'string','minLength':1}, 'asset_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1}}, ['output_path'], False),
+    spec('cad_compare_mechanism_graphs', 'Score graph connections and typed joints using explicit hash-bound one-to-one body correspondence, offline. Retains missing/extra joints and coverage; does not infer matches or assess axes, limits, motion or physical correctness.',
+         {key: {'type':'string','minLength':1} for key in ('reference_path','candidate_path','correspondence_path','output_path')},
+         ['reference_path','candidate_path','correspondence_path','output_path'], False),
+
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -178,6 +186,11 @@ class SolidWorksTools:
             error = next(Draft202012Validator(CATALOG[name]["inputSchema"]).iter_errors(arguments), None)
             if error:
                 raise ToolFailure("INVALID_ARGUMENTS", error.message)
+            if name in ('cad_list_mechanism_templates','cad_extract_mechanism_template','cad_compare_mechanism_graphs'):
+                from cadkin.tools.templates import template_catalog, extract_template, compare_templates
+                handler = {'cad_list_mechanism_templates':template_catalog, 'cad_extract_mechanism_template':extract_template,
+                           'cad_compare_mechanism_graphs':compare_templates}[name]
+                return handler(self.root, **arguments)
             if name == "cad_group_components":
                 from cadkin.tools.grouping import group_components
                 return group_components(self.root, **arguments)

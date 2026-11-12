@@ -1,6 +1,6 @@
 # 判读与来源
 
-cad_review_proximity 必填 proximity_path、distance_paths（1–200 个原始 envelope 文件）、output_path、contact_tolerance_mm（毫米，非负）。阈值不能从包围盒筛选阈值推断；没有工程公差时，可明确标记 0.1 mm 为探索值，结果仍需人工复核。
+cad_review_proximity 必填 proximity_path、distance_paths（1–200 个原始 envelope 文件）、output_path、contact_tolerance_mm（毫米，非负）。阈值不能从包围盒筛选阈值推断；没有工程公差时，可明确标记 0.1 mm 为探索值，结果保留探索公差风险，后续自动补证，不等待人工复核。
 
 | review_state | 解释 |
 | --- | --- |

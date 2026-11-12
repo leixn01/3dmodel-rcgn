@@ -1,8 +1,8 @@
 # 测试模型拆解进度
 
-当前版本：0.12.0。对象：`examples/three_servo_lift/3X Lift Assembly.STEP`（三独立伺服升降机）。
+当前版本：0.13.0。对象：`examples/three_servo_lift/3X Lift Assembly.STEP`（三独立伺服升降机）。
 
-**项目处在“读取结构、生成角色与连接候选、补充具体面的几何证据并整理可人工复核的链级清单”阶段。尚未实现自动刚体合并、运动副确认、拆卸顺序生成或移动零件验证路径。** 软件能力的完成与这台模型的实际验收分开记录；不能把测试替身结果称为升降机的拆解结果。
+**项目处在“读取结构、生成角色与连接候选、补充具体面的几何证据并整理链级清单；已增加真实参考模板基础设施”阶段。尚未实现自动刚体合并、运动副确认、拆卸顺序生成或移动零件验证路径。** 软件能力的完成与这台模型的实际验收分开记录；不能把测试替身结果称为升降机的拆解结果。
 
 ## 模型实际做到哪一步
 
@@ -11,11 +11,12 @@
 | 输入与打开 | STEP 已随仓库保存，用户确认可打开并导入为装配；原始文件保持不变 | `sw_open_document`；独立 STEP 体检 CLI |
 | 装配结构与基础操作 | 用户实测组件树、当前文档、选择、标准视图等 API 可用；旧报告记录254个组件，未作为本版本重新测得的数量 | `sw_session_status`、`sw_active_document`、`sw_component_tree`、`sw_select_component`、`sw_clear_selection`、`sw_set_view`、`sw_zoom_to_fit`、`sw_rebuild` |
 | 实例空间与显示 | 单实例空间/可见性读取通过；旧全量空间读取和显隐设置存在超时，后来已修改实现，仍需实机复测 | `sw_component_spatial`、`sw_spatial_inventory`、`sw_get_component_visibility`、`sw_set_component_visibility`；`spatial-export` 收齐分页 |
-| 角色分组 | 工具已开发；尚未取得该升降机经人工确认的完整分组 JSON | `cad_group_components` |
+| 角色分组 | 工具已开发；尚未取得该升降机可重放的完整分组 JSON | `cad_group_components` |
 | 轴线与配合关系 | 工具已开发；尚未取得该模型可核对的配合/圆柱/具体面关联结果，无配合时不能推断无连接 | `sw_component_constraints`、`sw_component_cylinders`、`cad_component_relations`、`sw_mate_inventory`、`sw_match_mate_faces`、`cad_review_connections` |
 | 组件接近程度 | 0.10.0 已开发；该升降机真实距离/耗时待验收 | `cad_proximity_candidates`、`sw_component_distance`、`cad_review_proximity` |
 | 具体面间隙与法向 | 0.11.0 新增；该模型面身份/测点/法向待实机核对，范围为放置后的零件定义 | `sw_component_faces`、`sw_probe_face_pair`、`cad_review_face_contacts` |
-| 单条升降链的连接清单 | 0.12.0已具备离线汇总与记录人工意见；尚无这台模型的真实人工确认清单 | `cad_build_chain_evidence`、`cad_apply_chain_review` |
+| 单条升降链的连接清单 | 已具备离线汇总；尚无这台模型完整真实链级结果，默认不等待人工确认 | `cad_build_chain_evidence` |
+| 参考模板 | 0.13.0已解析8个真实资产结构摘录；其中2个无关节。尚未自动匹配到本STEP | `cad_list_mechanism_templates`、`cad_extract_mechanism_template`、`cad_compare_mechanism_graphs` |
 | 机械拆卸与运动校核 | 未开发、未完成 | 刚体合并、运动副确认、零件移动、拆卸顺序与碰撞路径工具尚无 |
 
 这里的“分组”是角色候选，并不是已确认一起运动的刚体。“近接触”是需要复核的局部证据，不是已确认机械连接。样例名称“三独立”不用于硬编码三个关节。
@@ -34,6 +35,6 @@
 
 ## 下一次应形成的模型结果
 
-先选一条升降链和2–5个相关零件，保存完整空间基准、角色候选及人工修正；对少量邻近实例获取组件距离，再读取一对具体面并保存局部测点/法向。把结果整理成“零件A—零件B、可能关系、依据、缺失项、人工结论”的连接清单。
+下一步把目标模型的真实空间、轴线、配合和局部面证据转换为实例图，利用参考结构生成一条升降链的模板匹配候选与实例对应。输出最有依据的结构假设、其他解释、缺失参数及风险，不设置人工确认节点。
 
-按 [0.12.0 验收](MCP_ACCEPTANCE.md#0120机构链证据清单与人工复核) 汇总已有来源并记录明确人工意见；面探测仍按0.11.0核对。记录真实参数、原始返回、耗时和窗口核对，保存到 outputs 新目录；不把其他用户工程或这些输出提交到公共仓库。拿到足够的人工确认连接后，再推进刚体、运动副与拆卸路径。
+本轮参考资产提取和评分控制测试已能自动执行；它们不代表升降机的自动拆解已完成。参考资产自身限位也不能当作升降机的真实行程。模型实测结果需来自本机MCP采集的原始数据，不能由测试替身补造。

@@ -17,6 +17,6 @@ face_probe_schema_version=1；sources 绑定两原始目录/哈希及实例；sa
 - FACE_REFERENCE_UNRESOLVED、FACE_GEOMETRY_MISMATCH、EVIDENCE_MISMATCH 应重新核对/采集来源，不改 ID、参数或哈希绕过。
 - UNSUPPORTED_FACE_SURFACE：本轮只支持解析平面/圆柱，其他表面不能假设为平面。
 - GEOMETRY_CHANGED/COMPONENT_CHANGED/DOCUMENT_CHANGED：丢弃混合结果，保持模型稳定后重采。
-- 小间隙/相反法向只提供候选，不能判接触面积、干涉/包含、孔轴配合、刚体或运动副。曲面体朝向和边界/接缝处局部法向需人工解释。
+- 小间隙/相反法向只提供候选，不能判接触面积、干涉/包含、孔轴配合、刚体或运动副。曲面体朝向和边界/接缝处局部法向应继续自动分析并在无法确定时报告风险。
 
 一次只测少量面；单次 COM 仍可能阻塞，超时后核对现场再重启 MCP，不盲重试。实机验证读 docs/MCP_ACCEPTANCE.md 的0.11.0章节。

@@ -1,0 +1,314 @@
+#usda 1.0
+(
+    defaultPrim = "Model"
+    doc = "Structure-only derivative of ForgeCAD/simready-assets; CC BY 4.0. See catalog.json and ATTRIBUTION.md. Visual meshes, collisions, materials, animation and simulation are omitted; source default world frames are retained."
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Model"
+{
+    def Xform "Geometry"
+    {
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+        def Xform "Fixture_plate" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            customData = {
+                dictionary cadkin = {
+                    int sourceColliderCount = 13
+                    string[] sourceGeometryMembers = ["/Model/Geometry/Fixture_plate/Round_locator/Round_locator_mesh", "/Model/Geometry/Fixture_plate/Diamond_locator/Diamond_locator_mesh", "/Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Frame/Frame_mesh", "/Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Rivets/Rivets_mesh", "/Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Screws/Screws_mesh", "/Model/Geometry/Fixture_plate/Clamp_1_riser/Riser/Riser_mesh", "/Model/Geometry/Fixture_plate/Clamp_1_riser/Screws/Screws_mesh", "/Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Frame/Frame_mesh", "/Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Rivets/Rivets_mesh", "/Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Screws/Screws_mesh", "/Model/Geometry/Fixture_plate/Clamp_2_riser/Riser/Riser_mesh", "/Model/Geometry/Fixture_plate/Clamp_2_riser/Screws/Screws_mesh", "/Model/Geometry/Fixture_plate/Plate/Plate_mesh"]
+                }
+            }
+        )
+        {
+            bool physics:kinematicEnabled = 0
+            bool physics:rigidBodyEnabled = 1
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+            def "Clamp_1_riser"
+            {
+                def "Clamp_1_frame"
+                {
+                    def Xform "Clamp_1_arm" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                        customData = {
+                            dictionary cadkin = {
+                                int sourceColliderCount = 5
+                                string[] sourceGeometryMembers = ["/Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_arm/Arm/Arm_mesh", "/Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_arm/Spindle/Spindle_mesh", "/Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_arm/Pad/Pad_mesh"]
+                            }
+                        }
+                    )
+                    {
+                        bool physics:kinematicEnabled = 0
+                        bool physics:rigidBodyEnabled = 1
+                        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, -0.191564594, 0.981480008, 0), (0, -0.981480008, -0.191564594, 0), (0, -0.032999559, 0.171181411, 1) )
+                        uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                    }
+
+                    def Xform "Clamp_1_handle" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                        customData = {
+                            dictionary cadkin = {
+                                int sourceColliderCount = 3
+                                string[] sourceGeometryMembers = ["/Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_handle/Lever/Lever_mesh", "/Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_handle/Grip/Grip_mesh", "/Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_handle/grasp_identifier_01"]
+                            }
+                        }
+                    )
+                    {
+                        bool physics:kinematicEnabled = 0
+                        bool physics:rigidBodyEnabled = 1
+                        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 0.438371147, 0.898794046, 0), (0, -0.898794046, 0.438371147, 0), (0, -0.027157304, 0.127169867, 1) )
+                        uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+                        def Xform "Clamp_1_link" (
+                            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                            customData = {
+                                dictionary cadkin = {
+                                    int sourceColliderCount = 0
+                                    string[] sourceGeometryMembers = ["/Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_handle/Clamp_1_link/Link/Link_mesh"]
+                                }
+                            }
+                        )
+                        {
+                            bool physics:kinematicEnabled = 0
+                            bool physics:rigidBodyEnabled = 1
+                            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 0.906396747, -0.422427434, 0), (0, 0.422427434, 0.906396747, 0), (0, -0.054185775, -0.033627718, 1) )
+                            uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                        }
+                    }
+                }
+            }
+
+            def "Clamp_2_riser"
+            {
+                def "Clamp_2_frame"
+                {
+                    def Xform "Clamp_2_arm" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                        customData = {
+                            dictionary cadkin = {
+                                int sourceColliderCount = 5
+                                string[] sourceGeometryMembers = ["/Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_arm/Arm/Arm_mesh", "/Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_arm/Spindle/Spindle_mesh", "/Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_arm/Pad/Pad_mesh"]
+                            }
+                        }
+                    )
+                    {
+                        bool physics:kinematicEnabled = 0
+                        bool physics:rigidBodyEnabled = 1
+                        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, -0.191564594, -0.981480008, 0), (0, 0.981480008, -0.191564594, 0), (0, 0.032999559, 0.171181411, 1) )
+                        uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                    }
+
+                    def Xform "Clamp_2_handle" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                        customData = {
+                            dictionary cadkin = {
+                                int sourceColliderCount = 3
+                                string[] sourceGeometryMembers = ["/Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_handle/Lever/Lever_mesh", "/Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_handle/Grip/Grip_mesh", "/Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_handle/grasp_identifier_01"]
+                            }
+                        }
+                    )
+                    {
+                        bool physics:kinematicEnabled = 0
+                        bool physics:rigidBodyEnabled = 1
+                        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 0.438371147, -0.898794046, 0), (0, 0.898794046, 0.438371147, 0), (0, 0.027157304, 0.127169867, 1) )
+                        uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+
+                        def Xform "Clamp_2_link" (
+                            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+                            customData = {
+                                dictionary cadkin = {
+                                    int sourceColliderCount = 0
+                                    string[] sourceGeometryMembers = ["/Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_handle/Clamp_2_link/Link/Link_mesh"]
+                                }
+                            }
+                        )
+                        {
+                            bool physics:kinematicEnabled = 0
+                            bool physics:rigidBodyEnabled = 1
+                            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 0.906396747, 0.422427434, 0), (0, -0.422427434, 0.906396747, 0), (0, 0.054185775, -0.033627718, 1) )
+                            uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+                        }
+                    }
+                }
+            }
+        }
+
+        def Xform "Workpiece" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            customData = {
+                dictionary cadkin = {
+                    int sourceColliderCount = 38
+                    string[] sourceGeometryMembers = ["/Model/Geometry/Workpiece/Block/Block_mesh", "/Model/Geometry/Workpiece/grasp_identifier_01"]
+                }
+            }
+        )
+        {
+            bool physics:kinematicEnabled = 0
+            bool physics:rigidBodyEnabled = 1
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.06, -0.205, 0, 1) )
+            uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:transform"]
+        }
+    }
+
+    def "Physics"
+    {
+        def Scope "Joints"
+        {
+            def PhysicsRevoluteJoint "clamp_1" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000174533
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Fixture_plate>
+                rel physics:body1 = </Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_handle>
+                point3f physics:localPos0 = (0.025, -0.115336, 0.041855)
+                point3f physics:localPos1 = (0.025, -0.115336, 0.041855)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 64
+                float state:angular:physics:position = 64
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "clamp_1_arm" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular", "PhysxMimicJointAPI:rotX"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000087266
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Fixture_plate>
+                rel physics:body1 = </Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_arm>
+                point3f physics:localPos0 = (0.025, -0.087, 0.072)
+                point3f physics:localPos1 = (0.025, -0.087, 0.072)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 101.044106
+                float physxMimicJoint:rotX:gearing = -1.5788141
+                float physxMimicJoint:rotX:offset = 0
+                rel physxMimicJoint:rotX:referenceJoint = </Model/Physics/Joints/clamp_1>
+                uniform token physxMimicJoint:rotX:referenceJointAxis = "rotX"
+                float state:angular:physics:position = 101.044106
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "clamp_1_link" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular", "PhysxMimicJointAPI:rotX"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000087266
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_handle>
+                rel physics:body1 = </Model/Geometry/Fixture_plate/Clamp_1_riser/Clamp_1_frame/Clamp_1_handle/Clamp_1_link>
+                point3f physics:localPos0 = (0.025, -0.101696, 0.056482)
+                point3f physics:localPos1 = (0.025, -0.101696, 0.056482)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -88.98794
+                float physics:upperLimit = 0
+                float physxMimicJoint:rotX:gearing = 1.3904365
+                float physxMimicJoint:rotX:offset = 0
+                rel physxMimicJoint:rotX:referenceJoint = </Model/Physics/Joints/clamp_1>
+                uniform token physxMimicJoint:rotX:referenceJointAxis = "rotX"
+                float state:angular:physics:position = -88.98794
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "clamp_2" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000174533
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Fixture_plate>
+                rel physics:body1 = </Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_handle>
+                point3f physics:localPos0 = (-0.025, 0.115336, 0.041855)
+                point3f physics:localPos1 = (-0.025, 0.115336, 0.041855)
+                quatf physics:localRot0 = (0, 0, 0, 1)
+                quatf physics:localRot1 = (0, 0, 0, 1)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 64
+                float state:angular:physics:position = 64
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "clamp_2_arm" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular", "PhysxMimicJointAPI:rotX"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000087266
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Fixture_plate>
+                rel physics:body1 = </Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_arm>
+                point3f physics:localPos0 = (-0.025, 0.087, 0.072)
+                point3f physics:localPos1 = (-0.025, 0.087, 0.072)
+                quatf physics:localRot0 = (0, 0, 0, 1)
+                quatf physics:localRot1 = (0, 0, 0, 1)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 101.044106
+                float physxMimicJoint:rotX:gearing = -1.5788141
+                float physxMimicJoint:rotX:offset = 0
+                rel physxMimicJoint:rotX:referenceJoint = </Model/Physics/Joints/clamp_2>
+                uniform token physxMimicJoint:rotX:referenceJointAxis = "rotX"
+                float state:angular:physics:position = 101.044106
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "clamp_2_link" (
+                apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular", "PhysxMimicJointAPI:rotX"]
+            )
+            {
+                float drive:angular:physics:damping = 0.000087266
+                float drive:angular:physics:stiffness = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_handle>
+                rel physics:body1 = </Model/Geometry/Fixture_plate/Clamp_2_riser/Clamp_2_frame/Clamp_2_handle/Clamp_2_link>
+                point3f physics:localPos0 = (-0.025, 0.101696, 0.056482)
+                point3f physics:localPos1 = (-0.025, 0.101696, 0.056482)
+                quatf physics:localRot0 = (0, 0, 0, 1)
+                quatf physics:localRot1 = (0, 0, 0, 1)
+                float physics:lowerLimit = -88.98794
+                float physics:upperLimit = 0
+                float physxMimicJoint:rotX:gearing = 1.3904365
+                float physxMimicJoint:rotX:offset = 0
+                rel physxMimicJoint:rotX:referenceJoint = </Model/Physics/Joints/clamp_2>
+                uniform token physxMimicJoint:rotX:referenceJointAxis = "rotX"
+                float state:angular:physics:position = -88.98794
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsFixedJoint "Fixture_plate_fixed_base"
+            {
+                rel physics:body0 = </Model/Geometry>
+                rel physics:body1 = </Model/Geometry/Fixture_plate>
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }
+        }
+    }
+}
