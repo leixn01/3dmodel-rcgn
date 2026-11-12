@@ -8,8 +8,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "size_bytes": 1898,
-      "sha256": "8335d7d24603a1c9220a682869fadf9fb7e9f99c89c374630f5cd307fdf78bf6"
+      "size_bytes": 2023,
+      "sha256": "c8903e29e5c045fbf3b9b3bd0bfcb512046f34d79cee1e0b07fc04e29a787c18"
     },
     {
       "path": ".gitignore",
@@ -207,6 +207,26 @@
       "sha256": "992c50c369d3f84ee5bf1b92b944bb039b46fa3a0f95d0dc125c14a120770dc6"
     },
     {
+      "path": ".opencode/skills/mechanism-joint-draft/SKILL.md",
+      "size_bytes": 1450,
+      "sha256": "ad13a813a44c334057225497936bc05989fd8559b2796973537676db419b0d56"
+    },
+    {
+      "path": ".opencode/skills/mechanism-joint-draft/references/drafts.md",
+      "size_bytes": 3007,
+      "sha256": "e8ad25f01627098e841a57696f9b4a81bffe8f080ba23ac24c16536e7c305fd1"
+    },
+    {
+      "path": ".opencode/skills/mechanism-rigid-groups/SKILL.md",
+      "size_bytes": 1110,
+      "sha256": "256aeadd4e5c03c16fc65d6c2b4f7e3503fb05a7602d2c90a7687e7c3d9a8cb1"
+    },
+    {
+      "path": ".opencode/skills/mechanism-rigid-groups/references/groups.md",
+      "size_bytes": 1811,
+      "sha256": "925ba1ab860398f92d1bc552d1a89c83d85c4c04fcbaedce5fbc1b4ae2051cf6"
+    },
+    {
       "path": ".opencode/skills/mechanism-target-graph/SKILL.md",
       "size_bytes": 1140,
       "sha256": "8955f08c987aee65e90d8a19ca4ad39f182fa59ef9c93aa2e5b6414aee127c13"
@@ -238,8 +258,8 @@
     },
     {
       "path": ".opencode/skills/mechanism-template-match/SKILL.md",
-      "size_bytes": 1385,
-      "sha256": "ff14e0d271ea85c85ebfca6db9d35180a1e46f3d2c5dab012cab5c0e21abc3c0"
+      "size_bytes": 1532,
+      "sha256": "0a00a95a90235cd1b3d81bbf8568f2ae199bfc1981408b442b8d3791ab5feea0"
     },
     {
       "path": ".opencode/skills/mechanism-template-match/references/search.md",
@@ -318,8 +338,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size_bytes": 10373,
-      "sha256": "a46a8dcbed88a010ff1493fc6799d246f0646b435928f4a3c2c690549b02bffd"
+      "size_bytes": 11197,
+      "sha256": "5efb12261f6cd3385e0183c767ab20459e835e4fa7b7b07bcbe4b406d79bec39"
     },
     {
       "path": "LICENSE.md",
@@ -328,8 +348,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 1773,
-      "sha256": "6ac66473660474667aa16c7b7399b99afefe1f2e9343b3de0550caa69fe85d4d"
+      "size_bytes": 1728,
+      "sha256": "a61afaf9e3217070ccca0b6368fe221e4b84bfa05bf23810e760e0a4804f81f8"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -343,8 +363,8 @@
     },
     {
       "path": "cadkin/__main__.py",
-      "size_bytes": 13385,
-      "sha256": "d4755de74b946cc5a3a910af0884e208f5533f8482678c4165dca0a466360a81"
+      "size_bytes": 15613,
+      "sha256": "4f0d3c0114cae4912b2c0437897e5261d221c77c05b973e3965a95b00cf27e0c"
     },
     {
       "path": "cadkin/_vendor/__init__.py",
@@ -484,7 +504,7 @@
     {
       "path": "cadkin/mcp_server.py",
       "size_bytes": 2275,
-      "sha256": "e62c17ef1cff6b134e7c5873ad2702a48c0108a3d872226eedd61239fef38bdb"
+      "sha256": "5a602847255d6f837953c69258874b80c6956fdebe596c526a113d62db24183e"
     },
     {
       "path": "cadkin/resources/mechanisms/ATTRIBUTION.md",
@@ -535,6 +555,21 @@
       "path": "cadkin/resources/mechanisms/toggle_clamp_fixture_plate.usda",
       "size_bytes": 18188,
       "sha256": "3509f252876fec07dd38b08181c2ecc3e8f308222e7ffaeebd2a8954938f3f6c"
+    },
+    {
+      "path": "cadkin/rigid/__init__.py",
+      "size_bytes": 88,
+      "sha256": "c65078f1f039489ea70e00cd2673c79f4e07901c6e9b72e33d40201df4b2dcd0"
+    },
+    {
+      "path": "cadkin/rigid/groups.py",
+      "size_bytes": 10191,
+      "sha256": "0b02a5c09d89b01e8a7fb403f7201e795f02593b0deb1ccbf247f8cb630fde80"
+    },
+    {
+      "path": "cadkin/rigid/joints.py",
+      "size_bytes": 10673,
+      "sha256": "ac7ebd95a0bc60987af0827d64f8715da13ea746c506a0cfb1ecc806191a4ee7"
     },
     {
       "path": "cadkin/templates/__init__.py",
@@ -618,8 +653,8 @@
     },
     {
       "path": "cadkin/tools/matching.py",
-      "size_bytes": 6257,
-      "sha256": "1289fe4d46bc6d648d1cd125de9947c2f43842e6ce3539fe1c91e8b5a475534c"
+      "size_bytes": 6707,
+      "sha256": "a6f6205e2d2aec610eeadc876be74827d30c80892f5d1236b12f57cd9b3f820a"
     },
     {
       "path": "cadkin/tools/mate_faces.py",
@@ -642,9 +677,14 @@
       "sha256": "21b3d2f5ef5fac01b8c2eb57f07591ec1e1283d5fd52f69c2c9fb500d022139c"
     },
     {
+      "path": "cadkin/tools/rigid.py",
+      "size_bytes": 3715,
+      "sha256": "a4d42f3b3054b78bb55397026cc9d733dcafca0a1b0aded39f74a771723a014a"
+    },
+    {
       "path": "cadkin/tools/solidworks.py",
-      "size_bytes": 27455,
-      "sha256": "5c1606495b63f6bec1fac7c600be71c16e1b237d83120b8f3678ccedf59b9a49"
+      "size_bytes": 29863,
+      "sha256": "4ce94dcb15b63d5a5dc40cd227af2a462da82fcd1c10ca0b27ef64d3e1f60c94"
     },
     {
       "path": "cadkin/tools/spatial.py",
@@ -663,8 +703,8 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "size_bytes": 10517,
-      "sha256": "b5baee8fbf0ceb3f6a2a47a4862d4fc54d075002459bd6383ed5b044efbe2a79"
+      "size_bytes": 11657,
+      "sha256": "0fd475cad37c35ec71332fee4bd7eb7571c59ef2836c41b804717ae59b8e3ef7"
     },
     {
       "path": "docs/DATA_CONTRACT.md",
@@ -673,28 +713,28 @@
     },
     {
       "path": "docs/DEVELOPMENT_PLAN.md",
-      "size_bytes": 2836,
-      "sha256": "0e302328a09ae16dd5395983b7d6b73f089be5255ef2e6b6b4602b685647f8d1"
+      "size_bytes": 2555,
+      "sha256": "5f9797dfa3515d21fed5b760e6f1c42b53da5c376c8e3051d5d49f3df2fa6d50"
     },
     {
       "path": "docs/MCP_ACCEPTANCE.md",
-      "size_bytes": 75536,
-      "sha256": "ab0f636faa4c9fd50026af8d590cff71a49c47f99226e6abdfb0c40cbd64e802"
+      "size_bytes": 80978,
+      "sha256": "7de2a670538c04c5cd30653fcbdbf46a568283818dd0f2d3f9a2e511dde2baa5"
     },
     {
       "path": "docs/MODEL_PROGRESS.md",
-      "size_bytes": 5200,
-      "sha256": "b2b2000b07d3244bb0851dd265ea132695f04ad8f2dd18ce448b26c6e3e19f87"
+      "size_bytes": 5404,
+      "sha256": "990bc01a6f7a546e1c3d1fd50adf4cff4bba2340aa2a3cd2eebf08cbd935d770"
     },
     {
       "path": "docs/OPENCODE_START.md",
-      "size_bytes": 17550,
-      "sha256": "4556fa9a6fee982917eb27987789410ab739f8d733fdc96139bbf7fd03fd1bb2"
+      "size_bytes": 17626,
+      "sha256": "6c6d4f8f292564153f3a0a4079e1c8ec7b390572dcbc2f87d39f8659f081badb"
     },
     {
       "path": "docs/ROADMAP.md",
-      "size_bytes": 8974,
-      "sha256": "927eaff7b88e988042d6fcda635ee75632dbbbb7bac3b12e75ccafe6da646b3e"
+      "size_bytes": 9028,
+      "sha256": "322ab5f2f7c5b80826a94a5691cee596c2e0bdd22f67bbdb5b784c98b0ce24d2"
     },
     {
       "path": "docs/SOURCES.md",
@@ -703,13 +743,13 @@
     },
     {
       "path": "docs/TOOL_CONTRACTS.md",
-      "size_bytes": 77236,
-      "sha256": "f3341b7438a0d9a6699834ba1339cdacab18935f3e201429c067e83185274ef2"
+      "size_bytes": 79865,
+      "sha256": "44f7faa143195694941422a0bc4fee87f73680f49dd0c719d9c489b5cf709f0b"
     },
     {
       "path": "docs/VALIDATION.md",
-      "size_bytes": 11185,
-      "sha256": "f747604b2d9bdd49fed2a0fb1c8021c1b9271c3e7a4ffeadef701b2aff19de44"
+      "size_bytes": 12787,
+      "sha256": "6e2b879f485f06a89c1006ddbfed4e690153252e491c584d58c3b64bf739ccc2"
     },
     {
       "path": "examples/three_servo_lift/3X Lift Assembly.STEP",
@@ -734,7 +774,7 @@
     {
       "path": "pyproject.toml",
       "size_bytes": 724,
-      "sha256": "3e3038df808b1dd0402b7758c2b29bfabbfc822fea3f98d32c64843dd10855c9"
+      "sha256": "c80c1885bf4424eb1e7071e664c3dfbed3bc121149ea0332c65e52faf0d38892"
     },
     {
       "path": "scripts/build_reference_templates.py",
@@ -745,6 +785,11 @@
       "path": "scripts/verify_reference_templates.py",
       "size_bytes": 5346,
       "sha256": "d307689fad8f7d07787fe8fa727f0dc653d95986e8f95e7d5b8b88ce14e38e95"
+    },
+    {
+      "path": "scripts/verify_rigid_drafts.py",
+      "size_bytes": 7938,
+      "sha256": "7fb57ad6ede7223cbdbc0b0381673796d3526409273a7bc03b095812c1a7f28e"
     },
     {
       "path": "scripts/verify_template_matching.py",
@@ -758,8 +803,8 @@
     },
     {
       "path": "tests/chain_fakes.py",
-      "size_bytes": 3939,
-      "sha256": "e312d5f19415872135b998dd46204ba78d00e60548a9e4620a902868583a49d0"
+      "size_bytes": 4078,
+      "sha256": "da65ce20d055b3551987083f176615fd9dd4794f51ace2aeb4bb7e090fbd26dc"
     },
     {
       "path": "tests/distance_fakes.py",
@@ -795,6 +840,11 @@
       "path": "tests/mcp_fixture.py",
       "size_bytes": 1508,
       "sha256": "7301f742f410770f65102818e06f890c3a2ee0aef37a9852ef8bfd0362aae86b"
+    },
+    {
+      "path": "tests/rigid_fakes.py",
+      "size_bytes": 1505,
+      "sha256": "0884421b5c6c4a227165efe07d6c9288c9d21c904f565026f74fdf1d6e9d6c67"
     },
     {
       "path": "tests/sw_fakes.py",
@@ -848,8 +898,8 @@
     },
     {
       "path": "tests/test_mcp.py",
-      "size_bytes": 38125,
-      "sha256": "a7bdbebe51caf8b28957efc8e1def1260e17dc72fcb239ab6b9877ed88070003"
+      "size_bytes": 40870,
+      "sha256": "bcfd54945c7d89f1a650b5688d4cef87099c95fd54dd4123314c2b99c09afc06"
     },
     {
       "path": "tests/test_paging.py",
@@ -865,6 +915,11 @@
       "path": "tests/test_relations.py",
       "size_bytes": 14051,
       "sha256": "8eef3a3d4470e51cc05488c5f94b40574ac31aa0611f1e38daca1ce8ef9725b6"
+    },
+    {
+      "path": "tests/test_rigid.py",
+      "size_bytes": 15926,
+      "sha256": "f222e37d05852a54c8ef804a1ffddb011217f02f564339441a1a59c9eec62cb8"
     },
     {
       "path": "tests/test_session.py",

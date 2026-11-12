@@ -1,0 +1,13 @@
+# 分组细节
+
+调用cad_build_rigid_candidates，必填target_graph_path、output_path。输入必须是cad_build_target_graph生成的原始JSON，不能使用MCP摘要。源链/采集文件需留在项目内。结果只允许写outputs新文件。
+
+可选max_group_size默认8、范围2–20；max_partitions默认8、范围1–12；include_contact_hypotheses默认true。限制不是机械公差；输出上限不代表找完所有分组。
+
+生成顺序：不合并基线 → 干净有效lock配合连通分组 → 单个lock对替代方案 → 在lock方案上增加一个弱接触桥。相同方案去重。接触桥来自组件距离候选或收敛的局部面候选；不将多个弱接触桥传递合并。单凭名称、同父级、同文件、普通配合、同轴/平行不合并。
+
+受抑制/未解析或有来源错误的成员、带flags的实例对不能用于合并。有显式运动类配合的对被阻止；lock传递组内出现此类配合时整组省略，保留独立替代方案。超大连通组整体省略，不任取前几个成员。lock特征未报错仍不等于求解器/运动验证成功。
+
+读取partitions[].groups的member_occurrence_paths、internal_pair_ids、merge_evidence_pair_ids、weak_contact_assumption。具体信号在pair_proposals，源文件绑定在target_source/input_files；被阻止的对在blocking_reasons，组级限制/冲突在omitted_groups。所有rigidity_confirmed=false。
+
+一起报告coverage.generated_partitions/returned_partitions、output_truncated、partition_space_exhaustive=false、source_errors/boundary_evidence。结果是候选集，未枚举任意多桥组合；保留不合并解释。RIGID_CANDIDATE_LIMIT为部分结果，EVIDENCE_MISMATCH表示派生或源文件变化，需重新采集/重算依赖，不手改哈希。

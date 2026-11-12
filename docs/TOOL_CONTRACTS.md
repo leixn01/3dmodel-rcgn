@@ -1,9 +1,11 @@
 # SolidWorks 工具接口
 
-版本：0.14.0。以下 36 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.15.0。以下 38 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `cad_build_rigid_candidates` | target_graph_path、output_path；可选max_group_size/max_partitions/include_contact_hypotheses | 重放目标图并生成多零件刚体候选，保留不合并基线/竞争解释，不修改CAD |
+| `cad_draft_joints` | rigid_candidates_path、output_path；可选模板、窗口、搜索预算、轴线公差 | 各分组方案下匹配，输出成员/类型/DOF及目标几何轴线草案，未知限位不填充 |
 | `cad_build_target_graph` | chain_path、output_path，可选relation_paths | 重放链及来源为实例图；轴线关系自动/显式读取，保留冲突，离线新输出 |
 | `cad_match_mechanism_templates` | target_graph_path、output_path；可选template_ids/include_heldout、窗口和预算参数 | 有预算地搜索局部参考结构，输出一对一实例映射和类型假设；不创建关节或运动 |
 | `cad_list_mechanism_templates` | 可选query、include_heldout | 查询固定参考目录；不连接CAD/网络，不导入USD |
@@ -564,3 +566,15 @@ max_faces 和 max_cylinders 是全调用预算，达到且仍有面未检查时�
 与0.13.0图评分区别：此处生成的是参考窗口到叶实例的假设对应，不是完整刚体图/真值，不能直接传给cad_compare_mechanism_graphs。名称/尺寸/参考限位不参与自动赋值，多零件刚体聚合未实现。
 
 新增错误：INVALID_TARGET_SOURCE、TARGET_SOURCE_LIMIT、TARGET_AXIS_LIMIT、INVALID_MATCH_ARGUMENTS、HELDOUT_TEMPLATE、MATCH_SEARCH_LIMIT、NO_SUPPORTED_MATCH。EVIDENCE_MISMATCH/OUTPUT_EXISTS/INVALID_PATH沿用。预算/无候选为partial并保留现有输出，不请求人工复核；输入损坏/来源不符为error。
+
+## 0.15.0 刚体候选与关节草案
+
+`cad_build_rigid_candidates`输入原始target graph；max_group_size=8（2–20）、max_partitions=8（1–12）、include_contact_hypotheses=true。输出raw rigid_candidates_schema_version=1；parameters含重放所需目标路径，input_files绑定全部来源。partitions始终含不合并基线，每方案完整且不重复归属；pair_proposals/omitted_groups/boundary_evidence保留限制。output_truncated不等同于partition_space_exhaustive，后者始终false。
+
+`cad_draft_joints`输入原始rigid candidates；template_ids默认6个reference，include_heldout=false。pattern_size=3（2–6）、max_candidates=5（1–10/方案）、max_states=20000（1–100000/全部方案共享）、beam_width=50（1–1000）、angle_tolerance_deg=10（0,45]；axis_distance_tolerance_mm=0.1（0,10]）、axis_angle_tolerance_deg=1（0,5]用于根坐标轴线去重。窗口大小不会随分组自动缩小，不足组数给skip_reason。
+
+输出joint_draft_schema_version=1。partition_results[].match保留原搜索覆盖、各模板摘要和同分；candidates[].mapping为template_body_id/group_id/member_occurrence_paths。joint_hypotheses使用group_ids及两端成员，source_occurrence_pair_ids追溯所有组间来源。方向/线来自目标圆柱；axis_line_candidate的point_on_line_root_m是无限轴线上离根原点最近的点，不是枢轴。最多每边检查128条关系、16条线候选、每线32条来源引用并标明截断。固定副草案无轴参数；limits/axis_origin_m/pitch_m_per_revolution留空。类型/DOF未验证，automatic_followup只提供建议。
+
+两工具无COM副作用，原文件不覆盖。RIGID_CANDIDATE_LIMIT、MATCH_SEARCH_LIMIT、SOURCE_INCOMPLETE、NO_SUPPORTED_MATCH保留partial结果；派生字段/来源变化拒绝EVIDENCE_MISMATCH。没有匹配不证明没有机构；各分组分数不能当分组真实性概率。
+
+Lock语义依据：[SolidWorks Lock Mate](https://help.solidworks.com/2026/English/SolidWorks/sldworks/r_Lock_Mate_SWassy.htm)；类型映射沿用现有swMateLOCK=16。读取配合活动状态不等于成功求解或真实运动验证。

@@ -100,14 +100,42 @@ def main():
     match.add_argument('--beam-width', type=int, default=50)
     match.add_argument('--angle-tolerance-deg', type=float, default=10)
     match.add_argument('--output', required=True)
+    rigid = commands.add_parser('rigid-candidates', help='Build conditional multi-occurrence body partitions')
+    rigid.add_argument('target_graph_path')
+    rigid.add_argument('--max-group-size', type=int, default=8)
+    rigid.add_argument('--max-partitions', type=int, default=8)
+    rigid.add_argument('--without-contact-hypotheses', action='store_true')
+    rigid.add_argument('--output', required=True)
+    draft = commands.add_parser('draft-joints', help='Match group partitions and draft conditional joint parameters')
+    draft.add_argument('rigid_candidates_path')
+    draft.add_argument('--template-ids', nargs='+')
+    draft.add_argument('--include-heldout', action='store_true')
+    draft.add_argument('--pattern-size', type=int, default=3)
+    draft.add_argument('--max-candidates', type=int, default=5)
+    draft.add_argument('--max-states', type=int, default=20000)
+    draft.add_argument('--beam-width', type=int, default=50)
+    draft.add_argument('--angle-tolerance-deg', type=float, default=10)
+    draft.add_argument('--axis-distance-tolerance-mm', type=float, default=0.1)
+    draft.add_argument('--axis-angle-tolerance-deg', type=float, default=1)
+    draft.add_argument('--output', required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates'}:
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints'}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
                 if args.command == "sw":
                     result = service.call(args.tool, json.loads(args.arguments))
+                elif args.command == 'rigid-candidates':
+                    result = service.call('cad_build_rigid_candidates', {
+                        'target_graph_path':args.target_graph_path, 'output_path':args.output,
+                        'max_group_size':args.max_group_size, 'max_partitions':args.max_partitions,
+                        'include_contact_hypotheses':not args.without_contact_hypotheses})
+                elif args.command == 'draft-joints':
+                    arguments = {k:getattr(args,k) for k in ('rigid_candidates_path','include_heldout','pattern_size',
+                        'max_candidates','max_states','beam_width','angle_tolerance_deg','axis_distance_tolerance_mm','axis_angle_tolerance_deg')}
+                    if args.template_ids is not None:arguments['template_ids']=args.template_ids
+                    result = service.call('cad_draft_joints',{**arguments,'output_path':args.output})
                 elif args.command == 'target-graph':
                     arguments = {'chain_path':args.chain_path,'output_path':args.output}
                     if args.relation_paths is not None:arguments['relation_paths']=args.relation_paths
@@ -178,7 +206,7 @@ def main():
             print(str(output))
         else:
             print(payload, end="")
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates'} and result["status"] == "error":
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints'} and result["status"] == "error":
             raise SystemExit(2)
     except (RuntimeError, OSError, ValueError, KeyError, zipfile.BadZipFile, URLError) as exc:
         parser.exit(2, f"Error: {exc}\n")

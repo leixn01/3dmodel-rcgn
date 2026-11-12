@@ -179,6 +179,23 @@ TOOLS = [
           'angle_tolerance_deg': {'type':'number','exclusiveMinimum':0,'maximum':45,'default':10}},
          ['target_graph_path','output_path'], False),
 
+    spec('cad_build_rigid_candidates', 'Replay a target graph into bounded alternative rigid membership hypotheses. Always retains the unmerged baseline; clean active lock mates can form groups, contact bridges remain weak alternatives. Preserves every occurrence, conflicts and omitted groups. Offline, no CAD mutation or human review.',
+         {'target_graph_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'max_group_size': {'type':'integer','minimum':2,'maximum':20,'default':8},
+          'max_partitions': {'type':'integer','minimum':1,'maximum':12,'default':8},
+          'include_contact_hypotheses': {'type':'boolean','default':True}},
+         ['target_graph_path','output_path'], False),
+    spec('cad_draft_joints', 'Replay rigid candidates and match reference windows separately for each conditional partition. A reference body may map to multiple target occurrences. Draft joint type/DOF hypotheses and target cylinder directions/lines with provenance; limits and pivot remain unknown. Shared bounded search, no motion solving or CAD edits.',
+         {'rigid_candidates_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'template_ids': {'type':'array','minItems':1,'maxItems':8,'uniqueItems':True,'items':{'type':'string','minLength':1}},
+          'include_heldout': {'type':'boolean'}, 'pattern_size': {'type':'integer','minimum':2,'maximum':6,'default':3},
+          'max_candidates': {'type':'integer','minimum':1,'maximum':10,'default':5},
+          'max_states': {'type':'integer','minimum':1,'maximum':100000,'default':20000},
+          'beam_width': {'type':'integer','minimum':1,'maximum':1000,'default':50},
+          'angle_tolerance_deg': {'type':'number','exclusiveMinimum':0,'maximum':45,'default':10},
+          'axis_distance_tolerance_mm': {'type':'number','exclusiveMinimum':0,'maximum':10,'default':0.1},
+          'axis_angle_tolerance_deg': {'type':'number','exclusiveMinimum':0,'maximum':5,'default':1}},
+         ['rigid_candidates_path','output_path'], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -208,6 +225,10 @@ class SolidWorksTools:
             if name in ('cad_build_target_graph','cad_match_mechanism_templates'):
                 from cadkin.tools.matching import build_target_graph, match_templates
                 handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
+                return handler(self.root, **arguments)
+            if name in ('cad_build_rigid_candidates','cad_draft_joints'):
+                from cadkin.tools.rigid import rigid_candidates, joint_drafts
+                handler = rigid_candidates if name == 'cad_build_rigid_candidates' else joint_drafts
                 return handler(self.root, **arguments)
             if name == "cad_group_components":
                 from cadkin.tools.grouping import group_components

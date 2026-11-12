@@ -54,15 +54,19 @@ def build_target_graph(root,chain_path,output_path,relation_paths=None):
                     'requires_human_review':False,'solidworks_modified':False},data['errors'])
 
 
-def match_templates(root,target_graph_path,output_path,template_ids=None,include_heldout=False,**parameters):
-    from cadkin.templates.catalog import catalog,find_template
-    from cadkin.templates.usd import read_template
-    from cadkin.matching.search import match_patterns
-    output=json_path(root,output_path,output=True);path=json_path(root,target_graph_path);original,digest=read_json(path)
+def replay_target(root,target_graph_path):
+    path=json_path(root,target_graph_path);original,digest=read_json(path)
     require(isinstance(original,dict) and original.get('target_graph_schema_version')==1 and original.get('algorithm_version')==1 and
             isinstance(original.get('parameters'),dict) and set(original['parameters'])=={'chain_path','relation_paths'},
             'Use an original target graph produced by cad_build_target_graph.','INVALID_TARGET_SOURCE')
     target=build_target(root,**original['parameters']);check_fields(original,target)
+    return target,{'path':str(path),'sha256':digest}
+
+
+def load_references(template_ids=None,include_heldout=False):
+    from cadkin.templates.catalog import catalog,find_template
+    from cadkin.templates.usd import read_template
+    require(type(include_heldout) is bool,'include_heldout must be boolean.','INVALID_ARGUMENTS')
     ids=template_ids if template_ids is not None else [t['id'] for t in catalog()['templates'] if include_heldout or t['split']=='reference']
     require(isinstance(ids,list) and 1<=len(ids)<=8 and all(isinstance(x,str) and x for x in ids) and len(set(ids))==len(ids),'Choose 1–8 unique template IDs.','INVALID_ARGUMENTS')
     references=[];bindings=[]
@@ -73,8 +77,17 @@ def match_templates(root,target_graph_path,output_path,template_ids=None,include
         require(graph['source']['sha256']==entry['sha256'],'Template hash changed.','EVIDENCE_MISMATCH')
         references.append((entry,graph));bindings.append({'id':template_id,'sha256':entry['sha256'],'split':entry['split'],
             'source_revision':entry['source_revision'],'asset_url':entry['asset_url'],'risks':graph['risks'],'complete':graph['complete']})
+    return references,bindings
+
+
+def match_templates(root,target_graph_path,output_path,template_ids=None,include_heldout=False,**parameters):
+    from cadkin.templates.catalog import find_template
+    from cadkin.matching.search import match_patterns
+    output=json_path(root,output_path,output=True)
+    target,binding=replay_target(root,target_graph_path)
+    references,bindings=load_references(template_ids,include_heldout)
     data=match_patterns(target,references,**parameters)
-    data.update(target_source={'path':str(path),'sha256':digest},template_sources=bindings,
+    data.update(target_source=binding,template_sources=bindings,
                 heldout_exposed=any(b['split']=='heldout' for b in bindings))
     recheck(root,target['input_files']+[data['target_source']])
     for b in bindings:find_template(b['id'])

@@ -11,12 +11,15 @@ from tests.mate_fakes import attach_features
 from tests.sw_fakes import Component, pose, runtime
 
 
-def write_chain_fixture(root):
+def write_chain_fixture(root, with_lock=False):
     root = Path(root);root.mkdir(parents=True,exist_ok=True)
     doc,part,app=probe_document()
     doc.root.children[0].Name2='base-1';doc.root.children[1].Name2='carriage-1'
     third=Component('rail-1');third.model_doc=part;third.Transform2=pose(x=.02)
-    doc.root.children.append(third);attach_features(doc)
+    doc.root.children.append(third);_, mate_records = attach_features(doc)
+    if with_lock:
+        mate_records[0].mate.Type = 16
+        mate_records[0].Name = 'SyntheticLock'
     def closest(a,b,p,q):
         p.value=tuple(a.Transform2.ArrayData[9:12]);q.value=tuple(b.Transform2.ArrayData[9:12]);return math.dist(p.value,q.value)
     doc.ClosestDistance=closest

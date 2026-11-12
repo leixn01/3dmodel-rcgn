@@ -1,6 +1,6 @@
 # 3DModel-RCGN
 
-用 OpenCode + MCP 操作 SolidWorks，逐步实现工业数模自动拆解。当前 **0.14.0 / 36 个工具**：可采集组件/几何证据、汇总机构链，并将目标实例图与8个参考资产中的局部结构匹配，输出候选映射和风险。测试STEP已在examples中。
+用 OpenCode + MCP 操作 SolidWorks，逐步实现工业数模自动拆解。当前 **0.15.0 / 38 个工具**：采集组件/几何证据、匹配参考机构，生成多零件刚体候选和关节参数草案。测试STEP已在examples中。
 
 ## 更新与使用
 
@@ -14,18 +14,18 @@ opencode mcp list
 opencode
 ```
 
-Windows + Python 3.10+ + 桌面版SolidWorks；不需要.venv。升级后重启OpenCode。操作模型时可自动启动SolidWorks；模板工具可独立离线运行。
+Windows + Python 3.10+ + 桌面版SolidWorks；不需要.venv。升级后重启OpenCode。操作模型时可自动启动SolidWorks；候选分析可使用已有来源离线运行。
 
 ## 验证这次新增功能
 
 ```powershell
-python scripts/verify_template_matching.py --output outputs/verify-0.14
+python scripts/verify_rigid_drafts.py --output outputs/verify-0.15
 ```
 
-应返回 `passed: true`、18项检查；报告及原始结果保存在指定目录。再次运行换新目录名。脚本使用明确的模拟CAD和参考派生观测，不代表升降机识别准确率。也可告诉OpenCode：
+预期`passed: true`、24项检查；报告及原始结果保存到指定目录。重复运行换新目录。脚本使用显式模拟CAD，不代表升降机识别准确率。也可告诉OpenCode：
 
-> 按docs/MCP_ACCEPTANCE.md的0.14.0步骤验收目标实例图和模板匹配功能。按任务加载对应skill，详细说明按需读取。不设置人工复核节点，不确定处在结论说明风险。
+> 按docs/MCP_ACCEPTANCE.md的0.15.0步骤，对当前升降链生成刚体候选和关节草案。按任务加载skill，详细说明按需读取。不设置人工复核节点，在结论保留竞争解释和风险。
 
-29个功能skill与工具代码隔离。**本轮可对真实来源文件生成局部机构候选；尚未取得该升降机的实机匹配结果，未实现多零件刚体合并、运动或拆卸路径验证。**
+31个功能skill与工具代码隔离。**现在可提出“哪些零件可能共同运动、组间可能是什么关节”；尚无该升降机的实机分组/关节结果，未完成刚体或运动确认、拆卸路径验证。**
 
-[详细验收](docs/MCP_ACCEPTANCE.md#0140目标实例图与模板局部匹配) · [使用与排错](docs/OPENCODE_START.md) · [模型进度](docs/MODEL_PROGRESS.md) · [下一步](docs/DEVELOPMENT_PLAN.md) · [工具接口](docs/TOOL_CONTRACTS.md) · [来源许可](THIRD_PARTY_NOTICES.md)
+[详细验收](docs/MCP_ACCEPTANCE.md#0150刚体候选与关节参数草案) · [使用与排错](docs/OPENCODE_START.md) · [模型进度](docs/MODEL_PROGRESS.md) · [下一步](docs/DEVELOPMENT_PLAN.md) · [工具接口](docs/TOOL_CONTRACTS.md) · [来源许可](THIRD_PARTY_NOTICES.md)

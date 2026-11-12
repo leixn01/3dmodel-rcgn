@@ -11,7 +11,7 @@ conda activate 你的环境名
 python -m pip install -e ".[solidworks,templates]"
 ```
 
-已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 36 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 38 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
 
 在同一个已激活 Conda 的终端启动 OpenCode；MCP 子进程通过 PATH 找到该环境的 python。先执行 `python -c "import sys; print(sys.executable)"` 记录解释器路径，再让 OpenCode 调用 `sw_session_status`，比较 `data.runtime.python_executable`，且 `matches_conda_prefix` 应为 true。运行时同时返回 python_prefix、conda_prefix、python_version；软件未运行时也能检查。没有 CONDA_PREFIX 时匹配值为 null，不能据此声称已在 Conda 中。
 
@@ -32,7 +32,7 @@ python -m pip install -e ".[solidworks,templates]"
 
 4. 检查 SolidWorks 窗口及 JSON。需要突出某个实例时，加载 `component-selection`，提供组件树中的完整 `occurrence_path`；Agent 应先读取当前文档 token，再选择和核对。
 5. 要隐藏/显示一个装配实例时加载 `component-visibility`，提供组件树中的完整实例路径；该操作不解除抑制、不移动组件。
-6. 需要重建时明确要求“加载 solidworks-document，重建当前文档”；该操作不保存。工具目前不负责移动零件、添加配合或自动推断运动关系。
+6. 需要重建时明确要求“加载 solidworks-document，重建当前文档”；该操作不保存。工具目前不负责移动零件或添加配合；离线可生成运动关系候选，尚不确认运动。
 
 用户也可以先手动打开 STEP，再从组件读取开始。若导入为多实体零件，组件树工具会返回 `NOT_ASSEMBLY`，不生成空装配结果。
 
@@ -126,7 +126,7 @@ Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不�
 
 诊断命令：`python -m cadkin sw sw_session_status`。结果输出到终端，不会开启 MCP 协议会话。运行产物留在 `outputs/`。
 
-用户已反馈旧版 15 工具的实测结果；新增目标图/匹配按0.14.0清单验证；模板读取保留0.13.0清单；旧机构链汇总按0.12.0，人工复核段仅作历史兼容；面间隙/法向保留 0.11.0 清单；组件距离保留 0.10.0 清单；面身份核对保留 0.9.0 清单；配合状态/连接复核保留 0.8.0 清单；几何候选保留 0.7.0 清单；Conda、配合与轴线保留 0.6.0 清单；显示/超时修复与分组保留 0.5.0 复测项，启动仍按 0.4.0 清单验证。请按 [36 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
+用户已反馈旧版 15 工具的实测结果；新增刚体候选/关节草案按0.15.0清单验证；目标图/匹配保留0.14.0清单；模板读取保留0.13.0清单；旧机构链汇总按0.12.0，人工复核段仅作历史兼容；面间隙/法向保留 0.11.0 清单；组件距离保留 0.10.0 清单；面身份核对保留 0.9.0 清单；配合状态/连接复核保留 0.8.0 清单；几何候选保留 0.7.0 清单；Conda、配合与轴线保留 0.6.0 清单；显示/超时修复与分组保留 0.5.0 复测项，启动仍按 0.4.0 清单验证。请按 [36 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
 
 官方说明：[Skills](https://opencode.ai/docs/skills/)、[MCP](https://opencode.ai/docs/mcp-servers/)、[V1/V2 兼容](https://opencode.ai/docs/migrate-v1/)。
 
