@@ -118,14 +118,28 @@ def main():
     draft.add_argument('--axis-distance-tolerance-mm', type=float, default=0.1)
     draft.add_argument('--axis-angle-tolerance-deg', type=float, default=1)
     draft.add_argument('--output', required=True)
+    check = commands.add_parser('check-joints', help='Replay and check a joint draft for conflicts and uncertainty')
+    check.add_argument('joint_draft_path')
+    check.add_argument('--max-findings', type=int, default=200)
+    check.add_argument('--output', required=True)
+    plan = commands.add_parser('plan-evidence', help='Plan bounded read-only evidence tasks; does not execute them')
+    plan.add_argument('draft_check_path')
+    plan.add_argument('--max-tasks', type=int, default=20)
+    plan.add_argument('--output', required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints'}:
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence'}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
                 if args.command == "sw":
                     result = service.call(args.tool, json.loads(args.arguments))
+                elif args.command == 'check-joints':
+                    result = service.call('cad_check_joint_draft', {'joint_draft_path':args.joint_draft_path,
+                        'output_path':args.output, 'max_findings':args.max_findings})
+                elif args.command == 'plan-evidence':
+                    result = service.call('cad_plan_evidence_tasks', {'draft_check_path':args.draft_check_path,
+                        'output_path':args.output, 'max_tasks':args.max_tasks})
                 elif args.command == 'rigid-candidates':
                     result = service.call('cad_build_rigid_candidates', {
                         'target_graph_path':args.target_graph_path, 'output_path':args.output,
@@ -206,7 +220,7 @@ def main():
             print(str(output))
         else:
             print(payload, end="")
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints'} and result["status"] == "error":
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence'} and result["status"] == "error":
             raise SystemExit(2)
     except (RuntimeError, OSError, ValueError, KeyError, zipfile.BadZipFile, URLError) as exc:
         parser.exit(2, f"Error: {exc}\n")

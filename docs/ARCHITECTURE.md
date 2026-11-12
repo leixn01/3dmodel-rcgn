@@ -21,6 +21,8 @@
 | 匹配来源与文件边界 | `cadkin/tools/matching.py` | 复用链级来源重放、重算目标图、校验模板/输出与错误 |
 | 刚体分组/关节草案算法 | `cadkin/rigid/groups.py`、`joints.py` | 条件划分、组间证据汇总、几何轴线草案；复用既有模板搜索 |
 | 刚体/草案文件边界 | `cadkin/tools/rigid.py` | 重放目标及分组、校验来源、独占新输出；不连接COM |
+| 草案检查/补采规划算法 | `cadkin/followup/checks.py`、`planning.py` | 纯候选一致性与有界只读调用规划，不执行计划 |
+| 检查/规划文件边界 | `cadkin/tools/followup.py` | 重放原始草案/检查，校验工具Schema和路径/哈希 |
 | 空间计算 | `cadkin/geometry.py` | 无 COM 依赖的矩阵、单位与近似包围盒转换 |
 | STA 调度 | `cadkin/adapters/sta.py` | 单线程串行调用、超时及取消后的状态处理 |
 | 开源兼容片段 | `cadkin/_vendor/sw_mcp.py` | 从固定 SW_MCP 版本提取并修改的 COM 成员访问逻辑 |
@@ -45,7 +47,7 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 2. 进入后读取简短 SKILL.md，获得输入/输出、最小流程及关键限制。
 3. 只有参数不明、需要解释字段或遇到失败时，读取入口明确链接的 references 对应文件/段落。不主动读全套参考、其他 skill 或完整开发文档；验收任务才读对应验收章节。
 
-当前 31 个入口保持简短；详细流程移到 references，配合/面核对按字段、失败分支或判读拆分。references 只含说明，执行仍在工具/适配层。已有文件足够时离线完成；缺少哪个输入才调用对应采集能力，不建立强制串联的全套流程。
+当前 33 个入口保持简短；详细流程移到 references，配合/面核对按字段、失败分支或判读拆分。references 只含说明，执行仍在工具/适配层。已有文件足够时离线完成；缺少哪个输入才调用对应采集能力，不建立强制串联的全套流程。
 
 ## 功能拆分
 
@@ -77,6 +79,8 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 | `mechanism-template-match` | 图到局部模板假设；不重新采集CAD |
 | `mechanism-rigid-groups` | 目标图到有界刚体候选，保留成员和替代方案 |
 | `mechanism-joint-draft` | 各分组方案分别匹配，输出目标几何参数草案 |
+| `joint-draft-check` | 原始草案到结构/证据冲突与覆盖缺口 |
+| `evidence-task-plan` | 检查到只读调用清单；不执行或回填 |
 | `solidworks-document` | 明确请求的打开/导入、重建操作 |
 | `solidworks-view` | 标准视图和缩放 |
 | `solidworks-display` | 基准面等类别显示过滤与总开关 |
@@ -101,7 +105,7 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 
 默认不等待人工复核；旧requires_review/review_flags指证据需继续分析，无法补全就在结论说明风险。chain-review已从自动发现目录移除，旧工具仅保留兼容。引用数据、匹配算法、工具、skill分别维护。0.14.0已独立实现目标图适配与局部匹配；旧比较工具仍要求来源绑定的body_map，不负责生成对应。匹配报告不是比较工具的真值输入。
 
-31个skill仅入口信息常驻；references按需加载。usd-core通过templates extra可选安装；目录查询无需USD，解析工具不启动CAD，生产工具也不下载参考原始大文件。
+33个skill仅入口信息常驻；references按需加载。usd-core通过templates extra可选安装；目录查询无需USD，解析工具不启动CAD，生产工具也不下载参考原始大文件。
 
 ## 0.14.0 数据流
 
@@ -114,3 +118,9 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 目标图 → 刚体候选方案 → 每方案组间图 → 参考窗口匹配与关节草案。既有0.14.0实例匹配仍可独立使用。重放目标及所有来源后重建分组，拒绝手改归属/分数；工具不读取skill，不导入测试代码。每个方案保留所有实例，组间支持取成员对最大值，不用重复观测放大分数。不会在匹配分数间自动选定真实刚体方案。
 
 下一步补采任务及一致性检查独立增加。当前automatic_followup仅建议，没有隐式COM调用。公式/公差随输出记录；规范轴线点与关节枢轴、候选DOF与求解验证分开。
+
+## 0.16.0 检查与规划
+
+joint draft → draft check → evidence task plan。工具层重放所有派生输入后才计算；纯算法不读文件、skill或COM。planner对每项调用使用生产CATALOG校验，仅允许固定只读工具。前/后document及pose守卫也计入预算；计划、原始采集、证据重算解耦。
+
+生成计划并不自动执行。需要执行时由Agent交接已有采集能力，按文档与位姿字段核对并保存原始envelope。错误/部分结果不变成完成状态，物理能力缺口不由采样次数替代。未来执行器与回填层单独实现。

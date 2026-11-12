@@ -196,6 +196,14 @@ TOOLS = [
           'axis_distance_tolerance_mm': {'type':'number','exclusiveMinimum':0,'maximum':10,'default':0.1},
           'axis_angle_tolerance_deg': {'type':'number','exclusiveMinimum':0,'maximum':5,'default':1}},
          ['rigid_candidates_path','output_path'], False),
+    spec('cad_check_joint_draft', 'Replay a joint draft and its original sources; check membership, endpoints, active-lock versus moving hypotheses, axis-fit disagreements, competing types and omitted scope. Writes traceable findings, not a physical solver verdict. Offline; no CAD or human-review gate.',
+         {'joint_draft_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'max_findings': {'type':'integer','minimum':1,'maximum':2000,'default':200}},
+         ['joint_draft_path','output_path'], False),
+    spec('cad_plan_evidence_tasks', 'Replay a draft check and produce concrete bounded read-only CAD calls with before/after document and pose guards, dependencies and new raw-envelope paths. Reuse complete evidence, preserve capability gaps and deferred tasks. Does not execute collection or reintegrate evidence.',
+         {'draft_check_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'max_tasks': {'type':'integer','minimum':3,'maximum':200,'default':20}},
+         ['draft_check_path','output_path'], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -229,6 +237,10 @@ class SolidWorksTools:
             if name in ('cad_build_rigid_candidates','cad_draft_joints'):
                 from cadkin.tools.rigid import rigid_candidates, joint_drafts
                 handler = rigid_candidates if name == 'cad_build_rigid_candidates' else joint_drafts
+                return handler(self.root, **arguments)
+            if name in ('cad_check_joint_draft','cad_plan_evidence_tasks'):
+                from cadkin.tools.followup import check_joint_draft, evidence_task_plan
+                handler = check_joint_draft if name == 'cad_check_joint_draft' else evidence_task_plan
                 return handler(self.root, **arguments)
             if name == "cad_group_components":
                 from cadkin.tools.grouping import group_components

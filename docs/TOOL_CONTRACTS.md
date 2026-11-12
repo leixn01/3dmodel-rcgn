@@ -1,9 +1,11 @@
 # SolidWorks 工具接口
 
-版本：0.15.0。以下 38 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.16.0。以下 40 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `cad_check_joint_draft` | joint_draft_path、output_path；可选max_findings | 重放原始草案，报告结构、证据冲突、竞争解释与覆盖缺口，离线新输出 |
+| `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
 | `cad_build_rigid_candidates` | target_graph_path、output_path；可选max_group_size/max_partitions/include_contact_hypotheses | 重放目标图并生成多零件刚体候选，保留不合并基线/竞争解释，不修改CAD |
 | `cad_draft_joints` | rigid_candidates_path、output_path；可选模板、窗口、搜索预算、轴线公差 | 各分组方案下匹配，输出成员/类型/DOF及目标几何轴线草案，未知限位不填充 |
 | `cad_build_target_graph` | chain_path、output_path，可选relation_paths | 重放链及来源为实例图；轴线关系自动/显式读取，保留冲突，离线新输出 |
@@ -578,3 +580,13 @@ max_faces 和 max_cylinders 是全调用预算，达到且仍有面未检查时�
 两工具无COM副作用，原文件不覆盖。RIGID_CANDIDATE_LIMIT、MATCH_SEARCH_LIMIT、SOURCE_INCOMPLETE、NO_SUPPORTED_MATCH保留partial结果；派生字段/来源变化拒绝EVIDENCE_MISMATCH。没有匹配不证明没有机构；各分组分数不能当分组真实性概率。
 
 Lock语义依据：[SolidWorks Lock Mate](https://help.solidworks.com/2026/English/SolidWorks/sldworks/r_Lock_Mate_SWassy.htm)；类型映射沿用现有swMateLOCK=16。读取配合活动状态不等于成功求解或真实运动验证。
+
+## 0.16.0 草案检查与补采规划
+
+cad_check_joint_draft输入原始joint_draft_schema_version=1，max_findings=200（1–2000）；重放rigid/target/chain及固定模板。输出draft_check_schema_version=1，findings按structural_error、evidence_conflict、coverage、uncertainty排序；id、occurrence_paths、pair_ids、candidate_refs定位问题。summary保留总发现数，output_truncated表示截断；structural_checks_passed不等于physical_consistency_verified，后者始终false。DRAFT_CONFLICTS、DRAFT_CHECK_LIMIT、SOURCE_INCOMPLETE保留partial；篡改来源/派生字段拒绝EVIDENCE_MISMATCH。
+
+cad_plan_evidence_tasks输入原始draft check，max_tasks=20（3–200，包含全部前后保护调用）。输出evidence_task_plan_schema_version=1；tasks给出id/tool/arguments/phase/depends_on/save_envelope_path/expected_context/executed=false，capture阶段另有finding_ids/priority/integration。限定sw_active_document、sw_component_spatial及五个已有只读采集工具；每项按生产Schema校验。采集结果尚不存在，计划不创建或执行它们。
+
+预算按完整任务及共享保护调用分配，deferred_tasks保留延期请求；check截断传播到plan，EVIDENCE_PLAN_LIMIT保留partial。完整已有圆柱/面/距离/根配合复用；unresolved_findings保留求解缺口与不能直接解决的矛盾。单实例constraints是上下文，不直接进入chain。recompute_handoffs是后续能力交接说明，不是已经执行或参数完整的回填计划。
+
+执行时原token、文档身份/dirty和实例身份/根变换需前后比对，缺少字段不可通过。变更则重采快照，不替换旧token/哈希。后置校验失败的返回只作诊断；保存仍要独占新建。guard调用数在total_tool_calls中，预算不代表耗时上限或所有几何原子快照。本轮不提供任务执行器、结果回填和前后差异自动判定。

@@ -1,18 +1,65 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前38个工具（含7个模板/匹配/刚体草案离线工具），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前40个工具（包含参考匹配、刚体草案及检查/补采规划离线工具），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
 1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks,templates]`，退出并重启 OpenCode。先完成 0.6.0 的 Conda 环境核对；SolidWorks 未运行时再按 0.4.0 启动，无需手动提前打开。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 38 个工具。客户端可能给工具名添加服务器前缀。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 40 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
 
+## 0.16.0：草案检查与补采规划
+
+当前40个工具、33个独立skill。本轮两个工具只读取来源文件、保存新结果；不会连接SolidWorks或执行计划，不设置人工复核。
+
+### 一键自动验收
+
+在已有Windows Conda环境、仓库根目录执行，更新后重启OpenCode：
+
+```powershell
+git pull --ff-only
+python -m pip install -e ".[solidworks,templates]"
+python scripts/verify_evidence_planning.py --output outputs/verify-0.16
+```
+
+预期`passed: true`、`checks: 24`、退出码0。重复运行换新目录。目录保留参数、原始envelope、来源、草案、检查和计划；使用显式模拟CAD数据，不代表升降机实测。报告中的计划调用未执行。
+
+### 用真实模型已有草案验证
+
+前置：已有0.15.0原始关节草案及其绑定的全部文件和固定版本参考资产，保留原路径及内容。缺失来源时重新采集和计算，不手改token/哈希/候选。只在文件存在时用下面示例路径，否则替换成真实路径。
+
+| 工具 | 最小参数 | 核对结果 |
+| --- | --- | --- |
+| cad_check_joint_draft | `{"joint_draft_path":"outputs/joints-0.15.json","output_path":"outputs/check-0.16.json"}` | 结构错误、证据冲突、竞争解释与覆盖缺口分别记录；每项保留实例/实例对与候选引用 |
+| cad_plan_evidence_tasks | `{"draft_check_path":"outputs/check-0.16.json","output_path":"outputs/plan-0.16.json"}` | 具体只读tool/arguments、依赖、优先级、前后校验、原始返回保存路径；executed=false |
+
+等价CLI：
+
+```powershell
+python -m cadkin check-joints outputs/joints-0.15.json --output outputs/check-0.16.json
+python -m cadkin plan-evidence outputs/check-0.16.json --output outputs/plan-0.16.json
+```
+
+核对以下行为：
+
+1. 检查前重放草案、分组、目标图、链与原始来源；修改派生评分/归属/发现或任何源哈希，后续调用应拒绝EVIDENCE_MISMATCH。不可删除风险后再生成计划。
+2. `structural_checks_passed=true`只表示成员/端点等结构检查通过；`physical_consistency_verified=false`始终保留。活动lock与转动/移动假设标记冲突；被抑制/错误lock不当作可靠锁定。不同候选的转动/移动解释是竞争假设，不是同时施加的约束。
+3. `max_findings`默认200、范围1–2000。先统计全部发现再截断，返回DRAFT_CHECK_LIMIT；有冲突返回partial/DRAFT_CONFLICTS，完整原始检查仍落盘。规划仅消费已返回发现，不能把省略范围当作已检查。
+4. `max_tasks`默认20、范围3–200，包含全部文档和实例位姿前后检查；`summary.total_tool_calls`不得超限。预算不足整项采集及其新增校验一起延期，deferred_tasks保留原因；高开销根配合任务延期后允许较小独立任务入选。
+5. 完整已有根配合、圆柱、面或距离观测复用；空圆柱扫描、分离距离同样是观测，不盲目重复扫描。无法确认DOF/枢轴/行程/螺距/运动等项保留unresolved_findings。单实例约束仅补充上下文，尚未被链清单消费。
+6. 任务使用原始document_token和实例路径。真正执行前须比较文档token/路径/类型/配置/dirty，及实例文件/父级/配置/解析状态/根变换；缺失或不一致停止依赖采集，重新采快照和重算。后置校验失败时新采集只能作诊断，不回填旧快照。JSON哈希不能证明CAD原子快照。
+7. 计划只含已有只读工具，参数符合生产目录schema，依赖无环且先于被依赖项；不生成移动/配合编辑/任意脚本，不伪造face_id或投影种子。原始envelope保存路径不得已存在；计划阶段不创建采集文件。将来执行时仍须独占写入，避免覆盖。
+8. 输出包含heldout_exposed、reused_evidence、deferred_tasks、unresolved_findings和recompute_handoffs。handoff只是后续重算说明；本轮没有自动执行、回填或前后候选比较器。采集成功不等于发现已解决。
+
+失败标准：来源篡改被接受；竞争候选被称同时冲突；省略范围/延期任务被吞掉；预算漏算校验；计划自动执行CAD；复制或伪造参数；把结构通过/没有发现称物理验证；等待人工确认。
+
+开发环境未连接用户SolidWorks，尚无升降机实机草案检查结果。下一步增加独立只读执行记录、上下文校验与证据回填，再比较候选变化。
+
 ## 0.15.0：刚体候选与关节参数草案
 
-当前38个工具、31个独立skill。两个新增工具均只处理文件，不连接SolidWorks、不移动零件、不确认刚体或运动副，不设置人工复核节点。
+0.15.0当时为38个工具、31个独立skill。两个新增工具均只处理文件，不连接SolidWorks、不移动零件、不确认刚体或运动副，不设置人工复核节点。
 
 ### 一键自动验收
 
@@ -64,7 +111,7 @@ python -m cadkin draft-joints outputs/rigid-0.15.json --output outputs/joints-0.
 
 ## 0.14.0：目标实例图与模板局部匹配
 
-当前36个MCP工具、29个功能skill。本轮新增两个独立离线工具：目标图适配与局部模板搜索。默认自动运行，不设置人工复核。原STEP保持不变。
+0.14.0当时为36个MCP工具、29个功能skill。本轮新增两个独立离线工具：目标图适配与局部模板搜索。默认自动运行，不设置人工复核。原STEP保持不变。
 
 ### 一键自动验收
 
@@ -483,7 +530,7 @@ python -m cadkin review-connections outputs/relations.json outputs/mates.json --
 
 ## 0.7.0：组件关系候选
 
-0.7.0 新增第 20 个工具 `cad_component_relations`，流程独立于角色分组和 COM 读取。先按下方 Conda 命令更新并重新启动 OpenCode，核对版本 **0.12.0 / 31 个工具**（本节保留 0.7.0 新增项）。软件启动/显示修复、空间和圆柱的实机核对仍分别执行原有清单。
+0.7.0 新增第 20 个工具 `cad_component_relations`，流程独立于角色分组和 COM 读取。先按下方 Conda 命令更新并重新启动 OpenCode，核对版本 **0.16.0 / 40 个工具**（本节保留 0.7.0 新增项）。软件启动/显示修复、空间和圆柱的实机核对仍分别执行原有清单。
 
 ### 采集与调用
 
@@ -534,7 +581,7 @@ opencode mcp list
 opencode
 ```
 
-当前版本应为 0.12.0，工具数 31（本节保留 0.6.0 新增项）。升级后要从同一已激活终端重新启动 OpenCode。调用 `sw_session_status({})`，核对 runtime.python_executable 与终端打印路径一致、matches_conda_prefix=true；软件未运行时 connected=false 也应带这些字段。与目标 Conda 不符即本项失败，不继续把其他环境的测试当作通过。配置不硬编码环境名称或机器路径。
+当前版本应为 0.16.0，工具数 40（本节保留 0.6.0 新增项）。升级后要从同一已激活终端重新启动 OpenCode。调用 `sw_session_status({})`，核对 runtime.python_executable 与终端打印路径一致、matches_conda_prefix=true；软件未运行时 connected=false 也应带这些字段。与目标 Conda 不符即本项失败，不继续把其他环境的测试当作通过。配置不硬编码环境名称或机器路径。
 
 ### 两个新工具逐项验收
 
@@ -568,7 +615,7 @@ python -m pip install -e ".[solidworks,templates]"
 python -c "from importlib.metadata import version; print(version('3dmodel-rcgn'))"
 ```
 
-本节保留 0.5.0 的修复验收项；当前更新应显示 0.12.0、31 个工具（0.5.0 时为 17 个）。退出并重新启动 OpenCode，确认含 `cad_group_components`。若仍为 15 个工具或仍报旧的 60 秒上限，先核对所用目录、解释器与 MCP 进程。使用已有打开的测试装配，记录 SHA、软件版本、PID、当前文档/配置/token，以及修改前的选择/显隐/dirty。不要为测试关闭有未保存工程的会话。
+本节保留 0.5.0 的修复验收项；当前更新应显示 0.16.0、40 个工具（0.5.0 时为 17 个）。退出并重新启动 OpenCode，确认含 `cad_group_components`。若仍为 15 个工具或仍报旧的 60 秒上限，先核对所用目录、解释器与 MCP 进程。使用已有打开的测试装配，记录 SHA、软件版本、PID、当前文档/配置/token，以及修改前的选择/显隐/dirty。不要为测试关闭有未保存工程的会话。
 
 每次工具调用保存准确参数、原始返回、开始/结束时间与人工窗口结论到 `outputs/acceptance-0.5-<时间>/`。回读、耗时、窗口效果分别记录；没有窗口证据不填写视觉通过。
 
@@ -711,8 +758,8 @@ Copy-Item -LiteralPath 'examples/three_servo_lift/3X Lift Assembly.STEP' -Destin
 
 可直接告诉 OpenCode：
 
-> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 31 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
+> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 40 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和可观测的窗口现象及不确定项；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
 
-当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 38 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
+当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 40 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
 
 后续每次功能变更都在此追加对应版本的操作、预期返回、人工核对和失败标准。每条记录注明提交 SHA、工具参数、原始返回文件、窗口核对者与结论；没有证据不沿用上版“通过”。

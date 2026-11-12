@@ -1,0 +1,17 @@
+# 计划细节
+
+cad_plan_evidence_tasks必填draft_check_path、output_path；max_tasks默认20、范围3–200，包含所有前后document/pose校验调用。工具重放check及其全部来源，按现有生产工具Schema校验每个参数；只写计划JSON，不连接COM、不预创建采集结果。
+
+可提出的采集工具只有sw_mate_inventory、sw_component_constraints、sw_component_cylinders、sw_component_faces、sw_component_distance。保护步骤是sw_active_document与sw_component_spatial。没有启动/打开/重建/选中/隐藏/保存、任意脚本、移动或配合编辑调用。已有完整圆柱/面/距离/根配合来源复用，即使扫描为空或测得分离；不靠反复采集证明运动副。
+
+每项有id、phase、tool、arguments、depends_on、save_envelope_path、expected_context、executed=false。采集任务还有finding_ids、priority、integration。顺序为文档校验 → 各相关实例位姿校验 → 独立采集 → 各实例位姿复核 → 文档复核。guard任务和采集任务共享预算；大范围root mate任务可能延期，但较小独立任务仍能排入。延期任务没有获得执行授权或完成标记，只是预算未覆盖。
+
+执行时必须核对当前document_token/path/document_type/configuration/dirty与计划document；再将sw_component_spatial的data.component.occurrence_path/file_path/parent_occurrence_path/referenced_configuration和transform.to_root，与expected_context中的id/file_path/parent_id/configuration/to_root_column_vectors_m比对，要求已解析、未抑制。缺少身份/位姿字段不能当校验通过。原始bbox读取错误与所需身份/位姿字段分开判断，不用近似包围盒判接触。
+
+文档、配置、dirty或位姿变化时停止依赖采集，重新收齐空间快照并重算依赖。不要把旧token替换为新token继续混合快照。前后校验仍不能证明几何原子快照或期间没有变化，保持模型不变的采集范围与风险。postflight失败时已采结果只作诊断，不回填旧快照。
+
+保存每次原始MCP envelope到指定的新文件；调用失败保留错误，身份/位姿不明就停止依赖任务，可继续校验通过的独立分支。超时不盲目重试；本计划不会自动提高预算。工具不会检查计划创建后路径是否被别人占用，执行保存时仍需独占新建。
+
+补采建议不保证减少歧义。约束单实例读取是补充上下文，当前chain不直接消费它；面目录不自动选择配对面或种子，也不证明接触。缺少自由度/行程/螺距/运动求解能力时unresolved_findings保留，不能用几何扫描替代。recompute_handoffs说明后续现有工具、来源与阈值要求，不是已生成/已执行的回填流程。
+
+EVIDENCE_PLAN_LIMIT为部分计划，报告延期任务及check截断；INVALID_DRAFT_STRUCTURE不应继续采集填补结构造假；EVIDENCE_MISMATCH应重建改变来源后的依赖。检查完整性与机械一致性是不同问题，执行完所有计划也不能宣布模型拆解完成。

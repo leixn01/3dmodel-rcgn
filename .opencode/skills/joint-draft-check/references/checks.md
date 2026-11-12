@@ -1,0 +1,13 @@
+# 检查细节
+
+工具cad_check_joint_draft必填joint_draft_path、output_path；max_findings默认200、范围1–2000。输出raw draft_check_schema_version=1，不是MCP envelope摘要。先重放chain/target/rigid/draft和模板来源，拒绝手改分数/归属/结论或变更来源文件。
+
+检查范围是保留的分组方案与已返回的局部候选，不覆盖被搜索预算或top-K省略的候选。summary保留全部发现数和严重度计数，再按结构错误、证据冲突、覆盖缺口、不确定性排序裁剪。output_truncated时不能称所有问题都已列出。
+
+PARTITION_MEMBERSHIP_INVALID、CANDIDATE_MEMBERSHIP_INVALID、JOINT_ENDPOINT_INVALID为结构问题。ACTIVE_LOCK_VS_MOVING_HYPOTHESIS是有效lock特征与相对移动/转动假设的冲突；未抑制且无特征报错仍不等于求解验证。SOURCE_PAIR_FLAGS保留原始阈值/几何范围差异；REFERENCE_AXIS_RELATION_MISMATCH表示参考关系拟合差异，不自动判定模型物理不可能。
+
+JOINT_KIND_ALTERNATIVES仅表示返回候选存在不同类型；AXIS_LINES_AMBIGUOUS、JOINT_DIRECTION_UNKNOWN、JOINT_LINK_UNSUPPORTED、RIGID_GROUP_UNVERIFIED仍是假设缺口。多个关节落在同一组间对需进一步分析，不直接判不可能。边界、未匹配组、未搜索方案及截断分别列出；JOINT_PHYSICS_UNVERIFIED始终说明DOF、枢轴、限位、螺距与运动未验证。
+
+DRAFT_CONFLICTS和SOURCE_INCOMPLETE保留partial报告；DRAFT_CHECK_LIMIT说明发现列表截断。EVIDENCE_MISMATCH必须重算变化来源之后的依赖，不编辑哈希来绕过。输出新建，重复路径OUTPUT_EXISTS。
+
+后续前后报告比较只能说“新出现/仍存在/本次未观察到”；预算、候选输出范围或分组变化会改变发现列表，不可仅因条目消失就宣布机械问题解决。

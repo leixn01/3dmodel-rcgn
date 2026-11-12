@@ -23,6 +23,7 @@ jobs:
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_reference_templates.py --output outputs/ci-reference-0.13
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_template_matching.py --output outputs/ci-matching-0.14
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_rigid_drafts.py --output outputs/ci-rigid-0.15
+      - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_evidence_planning.py --output outputs/ci-planning-0.16
       - name: Verify bundled test model
         shell: pwsh
         run: |

@@ -11,7 +11,7 @@ from tests.mate_fakes import attach_features
 from tests.sw_fakes import Component, pose, runtime
 
 
-def write_chain_fixture(root, with_lock=False):
+def write_chain_fixture(root, with_lock=False, return_app=False):
     root = Path(root);root.mkdir(parents=True,exist_ok=True)
     doc,part,app=probe_document()
     doc.root.children[0].Name2='base-1';doc.root.children[1].Name2='carriage-1'
@@ -50,6 +50,7 @@ def write_chain_fixture(root, with_lock=False):
             'right':{'face_inventory_path':'faces1.json','body_index':0,'face_index':1},'seed_points_root_mm':[[0,500,500]]}))
         call('cad_review_face_contacts',{'probe_paths':['probe.json'],'output_path':'outputs/face-review.json','contact_tolerance_mm':.1,'angle_tolerance_deg':5})
     finally:service.close()
-    return {'inventory_path':'inventory.json','occurrence_paths':['base-1','carriage-1','rail-1'],'chain_name':'Synthetic lift chain',
+    arguments = {'inventory_path':'inventory.json','occurrence_paths':['base-1','carriage-1','rail-1'],'chain_name':'Synthetic lift chain',
             'grouping_path':'outputs/groups.json','evidence_paths':['outputs/connections.json','outputs/proximity-review.json','outputs/face-review.json'],
             'output_path':'outputs/chain.json'}
+    return (arguments, app) if return_app else arguments
