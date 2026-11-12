@@ -129,6 +129,24 @@ TOOLS = [
           'distance_paths': {'type': 'array', 'minItems': 1, 'maxItems': 200, 'uniqueItems': True, 'items': {'type': 'string', 'minLength': 1}},
           'contact_tolerance_mm': {'type': 'number', 'minimum': 0}},
          ['proximity_path', 'distance_paths', 'output_path', 'contact_tolerance_mm'], False),
+    spec('sw_component_faces', 'Read a bounded face catalog for one resolved part occurrence: plane/cylinder parameters, area, UV bounds, face sense and verified persistent IDs. Other surfaces are catalogued but not probed. Definition geometry excludes assembly-level features; does not change selection.',
+         {'expected_document_token': TOKEN, 'occurrence_path': {'type': 'string', 'minLength': 1},
+          'max_bodies': {'type': 'integer', 'minimum': 1, 'maximum': 100, 'default': 20},
+          'max_faces': {'type': 'integer', 'minimum': 1, 'maximum': 1000, 'default': 200}},
+         ['expected_document_token', 'occurrence_path']),
+    spec('sw_probe_face_pair', 'Probe one source-bound plane/cylinder face on each of two occurrences using finite-face closest-point queries from explicit root-frame seeds. Returns sampled gaps and oriented point normals, NOT a certified global minimum or contact. Uses part definitions placed by occurrence transforms; no assembly cuts, selection changes or model edits.',
+         {'expected_document_token': TOKEN,
+          'left': {'type': 'object', 'additionalProperties': False, 'properties': {'face_inventory_path': {'type': 'string', 'minLength': 1}, 'body_index': {'type': 'integer', 'minimum': 0}, 'face_index': {'type': 'integer', 'minimum': 0}}, 'required': ['face_inventory_path', 'body_index', 'face_index']},
+          'right': {'type': 'object', 'additionalProperties': False, 'properties': {'face_inventory_path': {'type': 'string', 'minLength': 1}, 'body_index': {'type': 'integer', 'minimum': 0}, 'face_index': {'type': 'integer', 'minimum': 0}}, 'required': ['face_inventory_path', 'body_index', 'face_index']},
+          'seed_points_root_mm': {'type': 'array', 'minItems': 1, 'maxItems': 8, 'items': {'type': 'array', 'minItems': 3, 'maxItems': 3, 'items': {'type': 'number'}}},
+          'max_iterations': {'type': 'integer', 'minimum': 1, 'maximum': 50, 'default': 20},
+          'convergence_tolerance_mm': {'type': 'number', 'exclusiveMinimum': 0, 'maximum': 1, 'default': 0.001}},
+         ['expected_document_token', 'left', 'right', 'seed_points_root_mm']),
+    spec('cad_review_face_contacts', 'Review saved local face probes offline using explicit gap/angle thresholds and verified raw source hashes. Recomputes coordinates, normals and gaps; never treats a large sampled gap as proof of separation. Writes a new outputs JSON; no CAD connection or automatic contact/joint confirmation.',
+         {'probe_paths': {'type': 'array', 'minItems': 1, 'maxItems': 100, 'uniqueItems': True, 'items': {'type': 'string', 'minLength': 1}},
+          'output_path': {'type': 'string', 'minLength': 1}, 'contact_tolerance_mm': {'type': 'number', 'minimum': 0},
+          'angle_tolerance_deg': {'type': 'number', 'minimum': 0, 'maximum': 90}},
+         ['probe_paths', 'output_path', 'contact_tolerance_mm', 'angle_tolerance_deg'], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -168,6 +186,12 @@ class SolidWorksTools:
             if name == 'cad_review_proximity':
                 from cadkin.tools.proximity_review import proximity_review
                 return proximity_review(self.root, **arguments)
+            if name == 'sw_probe_face_pair':
+                from cadkin.tools.face_sources import load_probe_sources
+                arguments = load_probe_sources(self.root, **arguments)
+            if name == 'cad_review_face_contacts':
+                from cadkin.tools.face_contacts import face_contact_review
+                return face_contact_review(self.root, **arguments)
             return self.worker.call(name, arguments)
         except Exception as exc:
             return failure(exc)

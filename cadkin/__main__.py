@@ -56,9 +56,14 @@ def main():
     near_review.add_argument('--distances', dest='distance_paths', nargs='+', required=True)
     near_review.add_argument('--output', required=True)
     near_review.add_argument('--contact-tolerance-mm', type=float, required=True)
+    faces_review = commands.add_parser('review-face-contacts', help='Review local face probes offline, without global minimum/contact claims')
+    faces_review.add_argument('--probes', dest='probe_paths', nargs='+', required=True)
+    faces_review.add_argument('--output', required=True)
+    faces_review.add_argument('--contact-tolerance-mm', type=float, required=True)
+    faces_review.add_argument('--angle-tolerance-deg', type=float, required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity'}:
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts'}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
@@ -81,6 +86,9 @@ def main():
                     if args.grouping_path is not None:
                         arguments["grouping_path"] = args.grouping_path
                     result = service.call("cad_component_relations", arguments)
+                elif args.command == 'review-face-contacts':
+                    result = service.call('cad_review_face_contacts', {'probe_paths': args.probe_paths,
+                        'output_path': args.output, 'contact_tolerance_mm': args.contact_tolerance_mm, 'angle_tolerance_deg': args.angle_tolerance_deg})
                 elif args.command == 'proximity':
                     arguments = {k: getattr(args, k) for k in ('inventory_path', 'max_box_gap_mm', 'max_pairs', 'max_candidates')}
                     arguments['output_path'] = args.output
@@ -110,7 +118,7 @@ def main():
             print(str(output))
         else:
             print(payload, end="")
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity'} and result["status"] == "error":
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts'} and result["status"] == "error":
             raise SystemExit(2)
     except (RuntimeError, OSError, ValueError, KeyError, zipfile.BadZipFile, URLError) as exc:
         parser.exit(2, f"Error: {exc}\n")

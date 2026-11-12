@@ -1,18 +1,88 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 26 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 29 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
 1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks]`，退出并重启 OpenCode。先完成 0.6.0 的 Conda 环境核对；SolidWorks 未运行时再按 0.4.0 启动，无需手动提前打开。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 26 个工具。客户端可能给工具名添加服务器前缀。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 29 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
 
+## 0.11.0：具体面间隙与法向
+
+当前 **0.11.0 / 29 个工具 / 23 个 skill**。在已有 Conda 环境更新安装并重启 OpenCode。本轮验证有限平面/圆柱面上的局部测点间隙和法向，**不验证全局最小面间距或确认真实接触**。模型总体状态见 [拆解进度](MODEL_PROGRESS.md)。
+
+### 前置与准确调用
+
+1. 选择当前装配中两个已解析叶零件，先用少量、可在界面看清楚的平面测试，再试圆柱面。结束在位编辑；记录 SHA、版本、PID、token、配置、dirty、选择、显隐和实例位姿。保持模型/配置不变，不重建或移动。不使用有未知装配级切除差异的面作本轮通过基准。
+2. 分别调用 **sw_component_faces**。完整 occurrence_path 换为真实值，首次建议限制为少量面；若目标面不在前缀内，再明确扩大预算重新采集新文件：
+
+```json
+{"expected_document_token":"实际24字符token","occurrence_path":"实际完整零件路径A","max_bodies":5,"max_faces":30}
+```
+
+另一个实例同样调用。保存完整 envelope 为 outputs/faces-a-0.11.json、outputs/faces-b-0.11.json（或未使用的新名字），保留 status/data/errors。核对 body_index/face_index 对应的 descriptor、face_reference、预算与错误，不用数字索引代替持久 CAD 身份。
+
+3. 从两个目录各选一个已识别的 plane 或 cylinder 面。由用户指定测量位置、已有组件距离最近点或已读取模型位置确定1–8个种子；**必须使用根装配模型坐标，单位毫米**，保存坐标来源。普通起始点只用于启动查询，无须已在面上；不能默认填零或拿局部坐标直接输入。
+4. 调用 **sw_probe_face_pair**：下面 source 路径、索引和坐标均须替换为实际数据；[100,200,300] 只是参数格式示例，不是升降机已知测点。
+
+```json
+{
+  "expected_document_token": "实际24字符token",
+  "left": {"face_inventory_path":"outputs/faces-a-0.11.json","body_index":0,"face_index":0},
+  "right": {"face_inventory_path":"outputs/faces-b-0.11.json","body_index":0,"face_index":1},
+  "seed_points_root_mm": [[100,200,300]],
+  "max_iterations": 20,
+  "convergence_tolerance_mm": 0.001
+}
+```
+
+保存完整原始 envelope 为 outputs/face-probe-0.11.json。convergence_tolerance_mm 只检查迭代点位置稳定，不是接触公差；converged=true 也不证明找到了全局最小值。返回的 part_m、root_m/mm、原始法向和修正法向分别保留，不再追加实例变换。
+
+5. 调用 **cad_review_face_contacts**。0.1 mm / 5° 为首次**探索值**，按实际工程需求另定并记录；不能称为通用合格标准：
+
+```json
+{
+  "probe_paths": ["outputs/face-probe-0.11.json"],
+  "output_path": "outputs/face-contacts-0.11.json",
+  "contact_tolerance_mm": 0.1,
+  "angle_tolerance_deg": 5
+}
+```
+
+已有完整来源文件时纯离线执行，不启动 SolidWorks；同一来源绑定面对应只传一个快照。等价 CLI：
+
+```powershell
+python -m cadkin review-face-contacts --probes outputs/face-probe-0.11.json --contact-tolerance-mm 0.1 --angle-tolerance-deg 5 --output outputs/face-contacts-cli-0.11.json
+```
+
+### 每项怎么验证
+
+| 新增项 | 核对与通过标准 | 失败或未测试标准 |
+| --- | --- | --- |
+| 面目录与身份 | 对可在窗口核对的平面/圆柱检查实例、面积/类型/参数；引用捕获回读成功，重复实例分别绑定完整路径。 | 索引/相同轴线不能当作面身份。无可核对面时记未测试；引用失败保留该面几何与 partial，不能写成完整空目录。 |
+| 有限面测点 | 人工核对返回点确在所选有限面上；尤其测试面边界附近或两个底层平面接近但实际裁剪区域相隔的例子。根坐标两点的间距与 gap_m/mm 一致。 | 无限平面距离/圆柱轴线中心距不能代替本结果。UV 矩形不能证明点在有孔或被裁剪的面内。没有可核对实例则记未测试。 |
+| 坐标与重复/嵌套实例 | 比较窗口的根模型坐标与 root_mm，检查各自 part_m 和变换关系；重复文件的不同实例不得混用位姿。 | 点再乘父变换或两次实例变换为失败。界面爆炸位置不等于模型坐标，不用其截图距离判定 API 错误。 |
+| 局部法向 | 从简单平面开始核对朝向：FaceInSurfaceSense=true 时相对底层曲面法向翻转，旋转后法向保持单位长度。近似相反法向的 opposition_error_deg 接近0。 | 单凭同向/平行不能称相向；曲面体不能默认具有实体外法向。圆柱面边界/接缝处法向仅为该曲面局部方向。 |
+| 局部探测范围 | 每个种子的 iterations/converged/errors 保留。不同种子可返回不同有效点对；交换左右面后分别核对点归属和法向。 | 不要求局部算法在不同种子/左右顺序下必得同一全局最小值；大测点间隙不能证明整面分离。 |
+| 离线分类 | 阈值内且两端为实体面、法向相反、非零点差方向也相向时为 near_face_contact_candidate；方向不明为 near_points_orientation_unconfirmed；测点间距较大为 sample_gap_above_tolerance；全失败为 unresolved。 | 零间隙仍不区分接触、穿透或包含。所有结果 global_minimum_proven=false、contact_confirmed=false、mechanical_relation_confirmed=false。 |
+| 预算与失败 | 有多面时 max_faces=1 应 partial/truncated；通常 max_iterations=1 无法验证迭代稳定，应保留点和 FACE_PROBE_ITERATION_LIMIT。点读取失败 metrics=null；法向失败可保留点距。 | 失败补零、丢弃错误后写 complete=true、把未读面视为无接触均为失败。恰好读完无需截断。 |
+| 源绑定与恢复 | 用 Get-FileHash 核对目录与探测文件；混用旧位姿/配置、改写源 JSON 应拒绝 EVIDENCE_MISMATCH；同来源对应重复文件拒绝 DUPLICATE_FACE_PROBE。错误后正常查询仍可用。 | 不改哈希/ID/参数绕过。离线 JSON 副本负例不算真实几何 API 验收；致命 data=null 文件只保存为错误记录。 |
+| 只读与变化 | 比较前后 dirty、选择、显隐、位姿、原文件哈希；稳定模式下成功，检测到身份/参数/位姿变化时拒绝混合结果。 | 不自动选择、移动、解析、切配置、重建或保存。无原子几何版本保证；单次 COM 超时仍需先核对现场再重启 MCP。 |
+
+保存准确参数、种子来源、原始返回、源哈希、耗时、界面读数/截图与逐项结论到 `outputs/acceptance-0.11-<时间>/`。可以通过界面“测量”的点到点模式核对已知点对；界面全局最小值只是另一个对照量，局部值不相等不自动判错，但不能把局部值冒充全局最小值。无法直接核验某点或法向时记录未测试。
+
+本轮读取零件定义并按实例放置，**不含装配级切除、全表面类型、全局干涉检查或接触区域识别**。自动测试/模拟后端不能替代以上实机核对。
+
+可直接告诉 OpenCode：
+
+> 按0.11.0清单验收：选两个可核对的真实零件，读取少量面，从实际根坐标位置探测一对平面或圆柱面的局部间隙与法向，再按探索值0.1 mm/5°离线复核。按需加载独立 skill；记录种子来源、原始返回、partial和未知区域，列出我需要在窗口核对的面和点，不确认全局最小距离、接触或运动副。
+
 ## 0.10.0：组件距离与近接触候选
 
-当前 **0.10.0 / 26 个工具 / 20 个 skill**。继续使用已有 Conda 环境，更新安装并重启 OpenCode。三项新能力不要求 STEP 有配合：离线准备待测对、在线单对测量、离线复核。先验收少量组件，不一次跑完整装配的全部组合。
+本节保留 **0.10.0 新增能力**；当前版本与工具数量按上方 0.11.0 检查。继续使用已有 Conda 环境，更新安装并重启 OpenCode。三项新能力不要求 STEP 有配合：离线准备待测对、在线单对测量、离线复核。先验收少量组件，不一次跑完整装配的全部组合。
 
 ### 前置与准确调用
 
@@ -93,7 +163,7 @@ python -m cadkin review-proximity outputs/proximity-cli-0.10.json --distances ou
 
 ## 0.9.0：配合引用面核对
 
-本节保留 **0.9.0 新增能力**；当前版本与工具数量按上方 0.10.0 检查。在已有 Conda 环境运行 `git pull --ff-only`、`python -m pip install -e ".[solidworks]"`，退出并重启 OpenCode；调用会话工具核对 Python 解释器和 Conda 前缀。
+本节保留 **0.9.0 新增能力**；当前版本与工具数量按上方 0.11.0 检查。在已有 Conda 环境运行 `git pull --ff-only`、`python -m pip install -e ".[solidworks]"`，退出并重启 OpenCode；调用会话工具核对 Python 解释器和 Conda 前缀。
 
 ### 前置与准确调用
 
@@ -143,7 +213,7 @@ python -m cadkin review-connections outputs/relations-0.9.json outputs/mate-face
 
 ## 0.8.0：配合状态与连接复核
 
-本节保留 0.8.0 引入的两项能力：只读根配合采集与离线关联。当前安装版本/工具数量按上方 0.10.0 检查，skill 参考文件仍按需加载。
+本节保留 0.8.0 引入的两项能力：只读根配合采集与离线关联。当前安装版本/工具数量按上方 0.11.0 检查，skill 参考文件仍按需加载。
 
 ### 前置与调用
 
@@ -179,7 +249,7 @@ python -m cadkin review-connections outputs/relations.json outputs/mates.json --
 
 ## 0.7.0：组件关系候选
 
-0.7.0 新增第 20 个工具 `cad_component_relations`，流程独立于角色分组和 COM 读取。先按下方 Conda 命令更新并重新启动 OpenCode，核对版本 **0.10.0 / 26 个工具**（本节保留 0.7.0 新增项）。软件启动/显示修复、空间和圆柱的实机核对仍分别执行原有清单。
+0.7.0 新增第 20 个工具 `cad_component_relations`，流程独立于角色分组和 COM 读取。先按下方 Conda 命令更新并重新启动 OpenCode，核对版本 **0.11.0 / 29 个工具**（本节保留 0.7.0 新增项）。软件启动/显示修复、空间和圆柱的实机核对仍分别执行原有清单。
 
 ### 采集与调用
 
@@ -230,7 +300,7 @@ opencode mcp list
 opencode
 ```
 
-当前版本应为 0.10.0，工具数 26（本节保留 0.6.0 新增项）。升级后要从同一已激活终端重新启动 OpenCode。调用 `sw_session_status({})`，核对 runtime.python_executable 与终端打印路径一致、matches_conda_prefix=true；软件未运行时 connected=false 也应带这些字段。与目标 Conda 不符即本项失败，不继续把其他环境的测试当作通过。配置不硬编码环境名称或机器路径。
+当前版本应为 0.11.0，工具数 29（本节保留 0.6.0 新增项）。升级后要从同一已激活终端重新启动 OpenCode。调用 `sw_session_status({})`，核对 runtime.python_executable 与终端打印路径一致、matches_conda_prefix=true；软件未运行时 connected=false 也应带这些字段。与目标 Conda 不符即本项失败，不继续把其他环境的测试当作通过。配置不硬编码环境名称或机器路径。
 
 ### 两个新工具逐项验收
 
@@ -264,7 +334,7 @@ python -m pip install -e ".[solidworks]"
 python -c "from importlib.metadata import version; print(version('3dmodel-rcgn'))"
 ```
 
-本节保留 0.5.0 的修复验收项；当前更新应显示 0.10.0、26 个工具（0.5.0 时为 17 个）。退出并重新启动 OpenCode，确认含 `cad_group_components`。若仍为 15 个工具或仍报旧的 60 秒上限，先核对所用目录、解释器与 MCP 进程。使用已有打开的测试装配，记录 SHA、软件版本、PID、当前文档/配置/token，以及修改前的选择/显隐/dirty。不要为测试关闭有未保存工程的会话。
+本节保留 0.5.0 的修复验收项；当前更新应显示 0.11.0、29 个工具（0.5.0 时为 17 个）。退出并重新启动 OpenCode，确认含 `cad_group_components`。若仍为 15 个工具或仍报旧的 60 秒上限，先核对所用目录、解释器与 MCP 进程。使用已有打开的测试装配，记录 SHA、软件版本、PID、当前文档/配置/token，以及修改前的选择/显隐/dirty。不要为测试关闭有未保存工程的会话。
 
 每次工具调用保存准确参数、原始返回、开始/结束时间与人工窗口结论到 `outputs/acceptance-0.5-<时间>/`。回读、耗时、窗口效果分别记录；没有窗口证据不填写视觉通过。
 
@@ -407,8 +477,8 @@ Copy-Item -LiteralPath 'examples/three_servo_lift/3X Lift Assembly.STEP' -Destin
 
 可直接告诉 OpenCode：
 
-> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 26 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
+> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 29 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
 
-当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 26 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
+当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 29 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
 
 后续每次功能变更都在此追加对应版本的操作、预期返回、人工核对和失败标准。每条记录注明提交 SHA、工具参数、原始返回文件、窗口核对者与结论；没有证据不沿用上版“通过”。

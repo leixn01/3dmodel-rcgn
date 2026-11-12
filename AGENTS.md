@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.10.0（26 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.11.0（29 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -25,6 +25,9 @@
 | 近似包围盒待测组件对 | `component-proximity` |
 | 两个零件实例的最小距离/最近点 | `component-distance` |
 | 距离文件的离线近接触候选复核 | `proximity-review` |
+| 单实例有限面目录/持久引用 | `component-faces` |
+| 指定面局部间隙/法向探测 | `face-gap-probing` |
+| 面探测文件的离线候选复核 | `face-contact-review` |
 | 打开/导入或重建文档 | `solidworks-document` |
 | 标准视图/缩放 | `solidworks-view` |
 | 基准面等辅助对象显隐 | `solidworks-display` |
@@ -58,3 +61,5 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 - 0.9.0 面身份核对独立于几何候选：sw_component_cylinders 可选 include_face_references=true；sw_match_mate_faces 用持久 ID 解析→实例映射→IsSame 核对。body/face 索引仅定位哈希源文件，不能跨次当 CAD ID。cad_review_connections 只有获得两端准确面的来源绑定证据才提升为 candidate_face_pair；面身份、配合状态、求解/运动关系分别保存。旧圆柱重新采集后需重算关系文件。
 
 - 0.10.0 邻近候选、单对距离、离线复核分别独立。近似 GetBox 只安排测量，未列出/缺失/截断仍未知；sw_component_distance 用根文档 ClosestDistance 接收两个已解析零件实例，拒绝子装配聚合和在位编辑。米制原始值与毫米显示值分开，最近点不再变换。小/零距离不能区分接触、穿透、包含，也不指向某一对圆柱面；不得据此确认接触、刚体或运动副。每次只测一对，保留 API 失败与原始 envelope。
+
+- 0.11.0 面目录、局部面探测、离线面候选复核各自独立。用原始面目录哈希+索引定位记录，再解析持久引用；只探测不同实例上的解析平面/圆柱。GetClosestPointOn 必须调用有限面接口，坐标在零件定义与根装配之间只转换一次；FaceInSurfaceSense=true 要翻转底层法向。converged 或小测点间隙不证明全局最小值/接触；大测点间隙也不证明整面分离。保留种子/预算/错误及装配级切除未参与的范围，不能直接确认刚体、运动副或拆卸路径。

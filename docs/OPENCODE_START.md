@@ -11,7 +11,7 @@ conda activate 你的环境名
 python -m pip install -e ".[solidworks]"
 ```
 
-已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 26 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32 及 SDK 依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 29 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32 及 SDK 依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
 
 在同一个已激活 Conda 的终端启动 OpenCode；MCP 子进程通过 PATH 找到该环境的 python。先执行 `python -c "import sys; print(sys.executable)"` 记录解释器路径，再让 OpenCode 调用 `sw_session_status`，比较 `data.runtime.python_executable`，且 `matches_conda_prefix` 应为 true。运行时同时返回 python_prefix、conda_prefix、python_version；软件未运行时也能检查。没有 CONDA_PREFIX 时匹配值为 null，不能据此声称已在 Conda 中。
 
@@ -54,6 +54,12 @@ python -m pip install -e ".[solidworks]"
 
 已有两条实例路径时可独立测量，不必先读配合或圆柱。需要筛选时只读已有空间文件；只有缺少输入才补采，不强制加载三套 skill。partial、未测和缺失包围盒保留未知，不能写成零距离或确认机械连接。
 
+## 具体面的局部间隙与法向
+
+按 [0.11.0 清单](MCP_ACCEPTANCE.md#0110具体面间隙与法向)，component-faces 读取单实例面目录，face-gap-probing 解析选定面并从明确根坐标种子获取有限面测点/法向，face-contact-review 离线判读。三者分别按需加载，已有文件时不重走采集流程。
+
+本轮支持解析平面/圆柱，只取零件定义并按实例放置，不含装配级切除；不以圆柱轴线距离代替面点间距。收敛不等于全局最优，大测点间隙不能排除其他区域接近，零/小间隙也不自动确认接触。模型实际进度和已用工具见 [拆解进度](MODEL_PROGRESS.md)。
+
 ## 配置
 
 根目录 `opencode.json` 使用 V1 格式，V2 官方兼容说明支持该格式；无需为了加载 skill 迁移配置。服务启动命令为 `python -m cadkin.mcp_server`，必须在已激活目标 Conda 的终端、仓库根目录启动 OpenCode。
@@ -91,7 +97,11 @@ Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不�
 | NOT_PART_COMPONENT / COMPONENT_CONFIGURATION_MISMATCH | 选择已解析叶零件并核对配置，不自动解析、切配置或聚合子装配 |
 | PROXIMITY_PAIR_LIMIT / PROXIMITY_CANDIDATE_LIMIT / UNRANKED_OCCURRENCES | 查看覆盖与未知范围，缩小范围或补齐包围盒；预算前缀不是整机全局最近邻 |
 | DUPLICATE_DISTANCE_SOURCE / DISTANCE_OUTSIDE_SCOPE | 每对仅传一个原始距离文件，反序仍是同一对；范围外测量需匹配工作清单或独立报告 |
-| 缺少新增工具 | 更新仓库并安装依赖，退出并重新启动 OpenCode；核对 MCP 工具目录应为 26 个 |
+| UNSUPPORTED_FACE_SURFACE | 面目录可以保留 other 表面，本轮探测仅支持解析平面/圆柱，不近似改成平面 |
+| FACE_PROBE_ITERATION_LIMIT | 保留已有有效测点及 partial；点迭代稳定不等于全局最小距离，不无预算扩大整机扫描 |
+| FACE_POINT_NOT_ON_FACE / INVALID_FACE_POINT / INVALID_FACE_NORMAL | 保留原始错误；点失败不补零，法向失败时仍可保留点间隙，不能推断相向接触 |
+| INVALID_FACE_PROBE_SOURCE / DUPLICATE_FACE_PROBE | 使用原始源目录与探测文件，每个来源绑定面对应只传一个快照；不能改哈希/坐标绕过 |
+| 缺少新增工具 | 更新仓库并安装依赖，退出并重新启动 OpenCode；核对 MCP 工具目录应为 29 个 |
 | `DISPLAY_CONSTANTS_UNAVAILABLE` | 检查报错中的类型库原因；需要当前 SolidWorks 安装目录的 swconst.tlb，不靠猜测常量替代 |
 | `DISPLAY_BLOCKED` / `PARENT_HIDDEN` | 总开关或父装配仍隐藏；根据用户要求处理，不擅自显示其他对象 |
 | `DISPLAY_MISMATCH` | 设置后回读不一致，保留错误并核对窗口，不能报成功 |
@@ -105,7 +115,7 @@ Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不�
 
 诊断命令：`python -m cadkin sw sw_session_status`。结果输出到终端，不会开启 MCP 协议会话。运行产物留在 `outputs/`。
 
-用户已反馈旧版 15 工具的实测结果；新增组件距离按 0.10.0 清单验证；面身份核对保留 0.9.0 清单；配合状态/连接复核保留 0.8.0 清单；几何候选保留 0.7.0 清单；Conda、配合与轴线保留 0.6.0 清单；显示/超时修复与分组保留 0.5.0 复测项，启动仍按 0.4.0 清单验证。请按 [26 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
+用户已反馈旧版 15 工具的实测结果；新增面间隙/法向按 0.11.0 清单验证；组件距离保留 0.10.0 清单；面身份核对保留 0.9.0 清单；配合状态/连接复核保留 0.8.0 清单；几何候选保留 0.7.0 清单；Conda、配合与轴线保留 0.6.0 清单；显示/超时修复与分组保留 0.5.0 复测项，启动仍按 0.4.0 清单验证。请按 [29 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
 
 官方说明：[Skills](https://opencode.ai/docs/skills/)、[MCP](https://opencode.ai/docs/mcp-servers/)、[V1/V2 兼容](https://opencode.ai/docs/migrate-v1/)。
 

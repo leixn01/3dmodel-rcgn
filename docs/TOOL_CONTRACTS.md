@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.10.0。以下 26 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.11.0。以下 29 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -30,10 +30,58 @@
 | `cad_proximity_candidates` | inventory_path、output_path、max_box_gap_mm；可选 occurrence_paths、max_pairs、max_candidates | 离线近似包围盒筛选待测对，保留未知/预算；不证明接触 |
 | `sw_component_distance` | expected_document_token、left_occurrence_path、right_occurrence_path | 只读两个零件实例的最小距离和最近点，不修改选择 |
 | `cad_review_proximity` | proximity_path、distance_paths、output_path、contact_tolerance_mm | 离线整理距离候选，校验来源与位姿，不确认机械连接 |
+| `sw_component_faces` | expected_document_token、occurrence_path；可选 max_bodies、max_faces | 只读有限面目录、描述符和持久引用，零件定义范围 |
+| `sw_probe_face_pair` | expected_document_token、left、right、seed_points_root_mm；可选 max_iterations、convergence_tolerance_mm | 指定两面的局部测点间隙和法向，不证明全局最小距离 |
+| `cad_review_face_contacts` | probe_paths、output_path、contact_tolerance_mm、angle_tolerance_deg | 离线校验/复核面探测来源，写 outputs 新文件，不确认接触 |
 
 `view` 支持 front/back/left/right/top/bottom/isometric/trimetric/dimetric。接口用枚举值访问视图，不依赖中英文界面的视图名称。
 
 先读取文档或组件树，使用返回的 `document_token` 操作。该值关联进程、文档路径/标题及活动配置；目标不匹配返回 `DOCUMENT_CHANGED`，不会操作新目标。它不是不可变几何版本号；模型重建或编辑后重新读取组件清单。工具执行期间不要在界面切换文档、配置或修改模型，COM 读取不是事务快照。
+
+## 0.11.0：面目录、局部面探测与候选复核
+
+三项工具与配合、圆柱轴线、组件距离独立；不要求先执行这些链路。面目录/探测的原始 envelope 由调用方保存到新文件；复核工具直接写 outputs 新文件。全部保持模型只读，离线工具不连接 CAD。
+
+### sw_component_faces
+
+必填 expected_document_token、occurrence_path；max_bodies 默认20/范围1–100，max_faces 默认200/范围1–1000。只读取已解析、已加载且配置匹配的叶零件；在位编辑拒绝 IN_CONTEXT_EDIT_ACTIVE，不自动修改状态。
+
+data.face_inventory_schema_version=1，geometry_scope=referenced_part_definition，assembly_instance_features_evaluated=false。target 保存完整实例/父路径/源文件/引用配置/源零件/根变换。faces 每行保存 body_index、face_index、descriptor、face_reference、errors；face_count、reported_body_count、inspected_body_count、complete/truncated 描述实际覆盖。BODY_LIMIT/FACE_LIMIT 及逐面失败保留 partial。
+
+descriptor 包含 surface_type（plane/cylinder/other）、surface_parameters_part（平面6值/圆柱7值/其他null）、area_part_m2、uv_bounds（umin,umax,vmin,vmax）、body_type（0实体/1曲面体）、face_in_surface_sense（true表示与底层法向相反）。UV范围不是裁剪轮廓；描述符不是完整拓扑哈希。面持久引用经过 GetPersistReference3 → GetObjectByPersistReference3 → IsSame 回读；仅用于解析真实对象，不把 ID 字节相等当跨上下文身份结论。
+
+### sw_probe_face_pair
+
+必填 expected_document_token、left、right、seed_points_root_mm。left/right 各为 {face_inventory_path,body_index,face_index}，从原始面目录中选记录；两面必须属于不同实例。种子为1–8个根装配毫米坐标[x,y,z]，无默认值；需保存用户指定或读取的模型位置来源。max_iterations 默认20/范围1–50，convergence_tolerance_mm 默认0.001/范围(0,1]，仅作数值稳定阈值。
+
+只支持解析平面/圆柱；other 返回 UNSUPPORTED_FACE_SURFACE。读取来源文件哈希，检查同一文档/配置、当前实例上下文与持久面描述符。源几何不含装配级切除。每次将根点逆变换到零件坐标，调用 **IFace2.GetClosestPointOn**（返回XYZ+UV）在实际有限面查询，再正变换一次；交替查询左右面，保留每个种子的结果。对最终点做同面回读核对，误差超过1e-8 m拒绝 FACE_POINT_NOT_ON_FACE；此数值一致性检查不是工程公差。
+
+法向由 ISurface.EvaluateAtPoint 返回11值中的前三值取得；FaceInSurfaceSense=true 时翻转，再按实例变换的逆转置方向归一化。保存原始评价数组和根单位法向。法向失败仍可保留点距；点失败 metrics=null；不得写成零间隙。曲面体法向不解释为实体外法向。
+
+data.face_probe_schema_version=1；method=bounded_alternating_IFace2.GetClosestPointOn；geometry_scope=placed_part_definition_faces。sources 绑定两个目录及SHA256、实例和面记录，parameters 保留种子/预算，samples 每项包括 seed_index、iterations、converged、left/right 的 part_m/UV/root_m、normal_left/right、metrics 和 errors。metrics 包括根坐标点、gap_m/mm、根法向、opposition_error_deg（相反方向误差）和 gap_alignment_error_deg（两法向朝向点差的误差；零间隙为null）。best_seed_index 选有效种子结果中的最小测点间距；无有效点时null，measurement_status=unavailable，否则sampled。
+
+- FACE_PROBE_ITERATION_LIMIT：保留已验证的点，整体partial。稳定迭代不证明最小值，也不代表全面检查。
+- EVIDENCE_MISMATCH、FACE_GEOMETRY_MISMATCH、FACE_REFERENCE_UNRESOLVED：来源/当前几何不匹配，先核对重采。
+- INVALID_FACE_POINT、INVALID_FACE_NORMAL：保留错误与可用字段，不补造。
+- COMPONENT_CHANGED、DOCUMENT_CHANGED、GEOMETRY_CHANGED：检测到上下文/面变化，拒绝整次混合结果。
+- API查询均在同一STA中串行，COM对象不返回客户端；单次调用仍可能阻塞。
+
+### cad_review_face_contacts
+
+必填 probe_paths（1–100个不重复原始探测 envelope 文件）、output_path、contact_tolerance_mm（有限非负）、angle_tolerance_deg（0–90）。阈值须显式给出并说明工程依据或探索用途。每个来源绑定面对应只取一个快照，反序仍判重复。源目录必须仍存在且哈希一致；工具重算点坐标、法向翻转和测点间距，拒绝派生值被改写。
+
+| review_state | 精确范围 |
+| --- | --- |
+| near_face_contact_candidate | 有阈值内测点对；实体面的局部法向相反，非零点差方向也与两端外法向相向，仅为候选 |
+| near_points_orientation_unconfirmed | 测点接近，但法向失败/方向不满足或属于曲面体 |
+| sample_gap_above_tolerance | 当前测点间隙高于阈值；不能证明整面分离 |
+| unresolved | 所有种子均无有效点对 |
+
+输出 face_contact_review_schema_version=1、scope=provided_local_face_probes_only、pairs、counts、complete/errors；每对包含原始文件哈希、具体面、最佳测点、局部法向和converged状态。原始 partial 继续保留；EVIDENCE_MISMATCH、INVALID_FACE_PROBE_SOURCE、DUPLICATE_FACE_PROBE 拒绝写成功结果。
+
+所有结果保持 requires_review=true、global_minimum_proven=false、contact_confirmed=false、mechanical_relation_confirmed=false。**局部大间隙不能排除其他区域接触；小间隙和相向法向不能确认接触区域、干涉、包含、孔轴配合、刚体或运动副。** 法向是面边界/接缝处的局部曲面方向，不是接触拓扑分析。工具不会自动并入配合面或同轴候选结论。
+
+官方依据：[IFace2.GetClosestPointOn](https://help.solidworks.com/2025/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IFace2~GetClosestPointOn.html)、[FaceInSurfaceSense](https://help.solidworks.com/2025/English/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IFace2~FaceInSurfaceSense.html)、[EvaluateAtPoint](https://help.solidworks.com/2024/english/api/sldworksapi/solidworks.interop.sldworks~solidworks.interop.sldworks.isurface~evaluateatpoint.html)、[GetUVBounds](https://help.solidworks.com/2025/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IFace2~GetUVBounds.html)、[PlaneParams](https://help.solidworks.com/2026/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ISurface~PlaneParams.html)。
 
 ## 0.10.0：邻近工作清单、距离与离线复核
 
