@@ -11,7 +11,7 @@ conda activate 你的环境名
 python -m pip install -e ".[solidworks,templates]"
 ```
 
-已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 44 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 45 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
 
 在同一个已激活 Conda 的终端启动 OpenCode；MCP 子进程通过 PATH 找到该环境的 python。先执行 `python -c "import sys; print(sys.executable)"` 记录解释器路径，再让 OpenCode 调用 `sw_session_status`，比较 `data.runtime.python_executable`，且 `matches_conda_prefix` 应为 true。运行时同时返回 python_prefix、conda_prefix、python_version；软件未运行时也能检查。没有 CONDA_PREFIX 时匹配值为 null，不能据此声称已在 Conda 中。
 
@@ -172,3 +172,9 @@ MATCH_SEARCH_LIMIT为有预算结果，NO_SUPPORTED_MATCH表示本范围内没�
 ## 0.18.0 继续补采前
 
 执行receipt完整且guard通过后，用cad_index_evidence将当前check与观测关联。再调用cad_plan_evidence_tasks并传evidence_index_path；只对collect计划执行，stop则报告剩余风险。约束/面目录索引不替代兼容回填或有限面测量。独立入口为evidence-observation-index，按需交接已有规划/执行/回填/比较。模拟验收：`python scripts/verify_observation_reuse.py --output outputs/verify-0.18`，预期26项passed；实机按[MCP验收](MCP_ACCEPTANCE.md#0180证据关联复用与停止)。
+
+## 自动安排具体面探测（0.19.0）
+
+已有草案check和最新evidence index时，按需加载face-probe-plan，提供组件距离筛选与解析残差阈值，调用cad_plan_face_probes。collect交给evidence-task-execute；完整且guards_passed后交给evidence-observation-index，再携带新索引继续。缺目录时先补目录，已有目录时生成来源绑定的面候选和实际最近点种子。
+
+面探测结果交给独立face-contact-review；按明确阈值解释局部候选，不认定接触或关节。stop时保留风险，不改预算或删索引绕过历史。具体命令与数据检查见[0.19.0验收](MCP_ACCEPTANCE.md#0190自动面候选与有限面探测任务)。

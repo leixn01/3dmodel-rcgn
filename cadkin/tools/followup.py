@@ -106,6 +106,9 @@ def replay_plan(root, plan_path):
     path = json_path(root, plan_path)
     original, digest = read_json(path)
     version = original.get('algorithm_version') if isinstance(original, dict) else None
+    if version == 3:
+        from cadkin.tools.face_planning import replay_face_plan
+        return replay_face_plan(root, path, original, digest)
     keys = {'draft_check_path', 'max_tasks'} | ({'evidence_index_path'} if version == 2 else set())
     require(isinstance(original, dict) and original.get('evidence_task_plan_schema_version') == 1 and
             version in (1, 2) and isinstance(original.get('parameters'), dict) and set(original['parameters']) == keys,

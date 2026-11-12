@@ -5,10 +5,12 @@ from tests.chain_fakes import write_chain_fixture
 from tests.sw_fakes import runtime
 
 
-def write_execution_fixture(root, degraded=False, pattern_size=2, missing_distances=False):
+def write_execution_fixture(root, degraded=False, pattern_size=2, missing_distances=False, include_face_review=True):
     missing=('cylinder0.json','cylinder1.json','cylinder2.json','mates.json') if degraded else ()
     if missing_distances:missing+=('distance0.json','distance1.json','distance2.json')
     args,app=write_chain_fixture(root,with_lock=True,return_app=True,incomplete_sources=missing)
+    if not include_face_review:
+        args['evidence_paths'] = [p for p in args['evidence_paths'] if p != 'outputs/face-review.json']
     service=SolidWorksTools(root)
     try:
         for name,arguments in [

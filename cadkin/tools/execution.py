@@ -10,6 +10,21 @@ from cadkin.tools.matching import recheck
 from cadkin.followup.execution import assess, skip_reason, execution_state
 
 
+def assess_saved(root, task, envelope, document):
+    state, codes, fatal = assess(task, envelope, document)
+    if task['tool'] == 'sw_probe_face_pair':
+        if set(codes) & {'EVIDENCE_MISMATCH', 'GEOMETRY_CHANGED', 'FACE_GEOMETRY_MISMATCH', 'FACE_REFERENCE_UNRESOLVED'}:
+            fatal = True
+        if state in ('passed', 'partial'):
+            from cadkin.tools.face_contacts import review_probe
+            try:
+                # Recompute saved geometry; zero thresholds here are validation-only, not a contact verdict.
+                review_probe(root, envelope, 0, 0)
+            except ToolFailure as exc:
+                return 'failed', codes + [exc.code], True
+    return state, codes, fatal
+
+
 def record_data(plan_binding, plan, records, previous=None):
     return {'evidence_execution_schema_version':1,'algorithm_version':1,
             'plan_source':plan_binding,'previous_execution_source':previous,'records':records,
@@ -41,7 +56,7 @@ def replay_execution(root, execution_path, loaded_plan=None):
             file=json_path(root,binding['path']);total+=file.stat().st_size
             require(total<=128*1024*1024,'Execution sources exceed 128 MiB.','EXECUTION_SOURCE_LIMIT')
             envelope,sha=read_json(file);require(sha==binding.get('sha256'),'Execution observation changed.','EVIDENCE_MISMATCH')
-            state,codes,fatal=assess(task,envelope,plan['document'])
+            state,codes,fatal=assess_saved(root,task,envelope,plan['document'])
             expected={'task_id':task['id'],'state':state,'reason':None,'codes':codes,'fatal':fatal,'envelope_source':binding}
             bindings.append(binding)
         require(row==expected,'Execution state differs from original envelopes.','EVIDENCE_MISMATCH');records.append(expected)
@@ -86,7 +101,7 @@ def execute_task(root, call, plan_path, output_path, previous_execution_path=Non
                     except Exception as exc: envelope=failure(exc)
                     json.dump(envelope,capture,ensure_ascii=False,indent=2,allow_nan=False);capture.write('\n')
                 _,sha=read_json(envelope_path)
-                state,codes,fatal=assess(task,envelope,plan['document'])
+                state,codes,fatal=assess_saved(root,task,envelope,plan['document'])
                 records.append({'task_id':task['id'],'state':state,'reason':None,'codes':codes,'fatal':fatal,
                                 'envelope_source':{'path':str(envelope_path),'sha256':sha}})
             # Materialize blocked successors without queuing another API call.

@@ -7,6 +7,8 @@ description: 对两个不同实例上的指定平面或圆柱面，从明确根�
 
 输入：两个原始面目录中的记录、当前 token、1–8 个有依据的根装配毫米坐标种子。输出：sw_probe_face_pair 原始 envelope。
 
+已有check与最新索引、需要自动筛选待测面时，先交接face-probe-plan。已有计划由evidence-task-execute执行，不跳过其前后校验直接重复探测。
+
 1. 从源文件选择 body_index/face_index，使用 left/right 的 face_inventory_path 绑定；不凭旧索引或名字猜面身份。
 2. 用已有测点、模型位置或用户指定位置作为 seed_points_root_mm，记录来源；不能把零件局部坐标当根坐标。缺少合理种子时只补所需空间/距离信息。
 3. 调用 sw_probe_face_pair，一次一对面；保留完整返回和每个种子的错误/迭代状态，失败不补零。

@@ -108,7 +108,8 @@ def reintegrate(root, execution_path, output_path):
         if task_id not in used:
             reason={'sw_component_constraints':'CONSTRAINTS_CONTEXT_ONLY','sw_component_faces':'FACE_CATALOG_REQUIRES_PAIR_SELECTION_AND_PROBING',
                     'sw_component_distance':'NO_MATCHING_BOUND_WORKLIST','sw_component_cylinders':'NO_EXISTING_RELATION_BASIS',
-                    'sw_mate_inventory':'NO_EXISTING_CONNECTION_BASIS'}[capture['tool']]
+                    'sw_mate_inventory':'NO_EXISTING_CONNECTION_BASIS',
+                    'sw_probe_face_pair':'FACE_PROBE_REQUIRES_EXPLICIT_CONTACT_REVIEW'}[capture['tool']]
             supplemental.append({'task_id':task_id,'tool':capture['tool'],'source':capture['source'],'reason':reason})
     data={'evidence_reintegration_schema_version':1,'algorithm_version':1,'execution_source':eb,
           'before_check_source':plan['check_source'],'after_check_source':binding(final_check) if final_check else None,

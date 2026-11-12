@@ -64,6 +64,16 @@ def assess(task, envelope, document):
             valid = (data.get('component_distance_schema_version')==1 and len(targets)==2 and
                      {t.get('occurrence_path') for t in targets}==set(expected) and
                      all(pose_matches(t,expected.get(t.get('occurrence_path'))) for t in targets))
+        elif name == 'sw_probe_face_pair':
+            sources = data.get('sources')
+            valid = (data.get('face_probe_schema_version') == 1 and sources == task.get('expected_face_sources') and
+                     isinstance(sources, list) and len(sources) == 2 and
+                     {s['target']['occurrence_path'] for s in sources} == set(expected) and
+                     all(pose_matches(s['target'], expected.get(s['target']['occurrence_path'])) for s in sources) and
+                     data.get('parameters') == {k: task['arguments'][k] for k in
+                         ('seed_points_root_mm', 'max_iterations', 'convergence_tolerance_mm')} and
+                     data.get('global_minimum_proven') is False and data.get('contact_confirmed') is False and
+                     data.get('mechanical_relation_confirmed') is False)
         else:
             valid = (data.get('mate_inventory_schema_version')==1 and data.get('scope')=='active_root_assembly' and
                      isinstance(data.get('component_contexts'),list) and

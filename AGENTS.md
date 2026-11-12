@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.18.0（44 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.19.0（45 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -37,6 +37,7 @@
 | 多零件刚体候选分组 | `mechanism-rigid-groups` |
 | 条件分组的模板匹配与关节草案 | `mechanism-joint-draft` |
 | 草案结构/证据一致性检查 | `joint-draft-check` |
+| 最近点引导的面候选与有限面探测规划 | `face-probe-plan` |
 | 有预算的只读补采任务规划 | `evidence-task-plan` |
 | 单步只读补采执行与原始记录 | `evidence-task-execute` |
 | 兼容补采来源回填与重算 | `evidence-reintegration` |
@@ -96,4 +97,6 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 
 - 0.18.0 cad_index_evidence重放完整且guard通过的执行链，按当前check关联组件/组件对/发现/关节上下文。完整观测可复用，失败和partial保留尝试。名字不推根实例，面目录不推接触；fixed提示只描述当前配置，不确认物理关节。
 - 后续规划必须携带最新evidence_index_path；algorithm_version=2计划返回collect/stop，stop时tasks为空，执行器以NO_CAPTURE_TASKS拒绝且不调用CAD。单条显式链最多4轮，原始文件不覆盖，不删索引绕过次数/尝试，也不自动扩预算。仅来源中的历史可知，不能假称知道其他会话的采集记录。
-- 下一步自动安排有身份依据的面配对/有限面测量，继续保留源哈希、预算与候选竞争解释；暂不宣称实机拆解、运动或路径验证。
+- 0.19.0 cad_plan_face_probes将已测组件最近点与完整面目录结合，生成algorithm_version=3计划；缺目录时先采集再索引续轮。解析残差只筛选无限曲面，不判断裁剪面成员；实际sw_probe_face_pair才解析持久引用并测有限面。
+- 面探测执行复用单步执行器，绑定原目录/参数/前后上下文并重算原始数值。face_probes索引保留完整与失败尝试，反向/换种子/提高迭代次数不自动重试，与通用补采共享4轮。目录或距离快照冲突时保留未知；不任取最后一份。
+- 面探测交独立face-contact-review明确阈值解释，暂不自动回填草案。下一步沿用原面复核阈值回填兼容链/目标图、比较具体证据；继续保留源哈希/预算/竞争解释，不宣称实机拆解、运动或路径验证。

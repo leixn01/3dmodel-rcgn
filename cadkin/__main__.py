@@ -127,6 +127,18 @@ def main():
     plan.add_argument('--max-tasks', type=int, default=20)
     plan.add_argument('--evidence-index', dest='evidence_index_path')
     plan.add_argument('--output', required=True)
+    face_plan = commands.add_parser('plan-face-probes', help='Plan witness-guided finite-face probes from a current check and latest index')
+    face_plan.add_argument('draft_check_path')
+    face_plan.add_argument('--evidence-index', dest='evidence_index_path', required=True)
+    face_plan.add_argument('--max-component-gap-mm', type=float, required=True)
+    face_plan.add_argument('--surface-tolerance-mm', type=float, required=True)
+    face_plan.add_argument('--max-component-pairs', type=int, default=20)
+    face_plan.add_argument('--max-face-candidates', type=int, default=20)
+    face_plan.add_argument('--max-face-pairs', type=int, default=100)
+    face_plan.add_argument('--max-tasks', type=int, default=20)
+    face_plan.add_argument('--max-iterations', type=int, default=20)
+    face_plan.add_argument('--convergence-tolerance-mm', type=float, default=0.001)
+    face_plan.add_argument('--output', required=True)
     execute = commands.add_parser('execute-evidence', help='Execute a bounded read-only plan serially, saving every receipt')
     execute.add_argument('plan_path')
     execute.add_argument('--output', required=True)
@@ -144,7 +156,7 @@ def main():
     index.add_argument('--output', required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence'}:
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence', 'plan-face-probes'}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
@@ -168,6 +180,9 @@ def main():
                 elif args.command == 'index-evidence':
                     result = service.call('cad_index_evidence', {'draft_check_path':args.draft_check_path,
                         'execution_path':args.execution_path, 'output_path':args.output, 'max_contexts':args.max_contexts})
+                elif args.command == 'plan-face-probes':
+                    arguments = {k: v for k, v in vars(args).items() if k not in ('command', 'output')}
+                    result = service.call('cad_plan_face_probes', {**arguments, 'output_path': args.output})
                 elif args.command == 'rigid-candidates':
                     result = service.call('cad_build_rigid_candidates', {
                         'target_graph_path':args.target_graph_path, 'output_path':args.output,
@@ -248,7 +263,7 @@ def main():
             print(str(output))
         else:
             print(payload, end="")
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence'} and result["status"] == "error":
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence', 'plan-face-probes'} and result["status"] == "error":
             raise SystemExit(2)
     except (RuntimeError, OSError, ValueError, KeyError, zipfile.BadZipFile, URLError) as exc:
         parser.exit(2, f"Error: {exc}\n")

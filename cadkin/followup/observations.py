@@ -10,7 +10,7 @@ def require(condition, message, code):
 
 FAMILIES = {'sw_component_constraints': 'constraints', 'sw_component_faces': 'faces',
             'sw_component_cylinders': 'cylinders', 'sw_component_distance': 'distance',
-            'sw_mate_inventory': 'root_mates'}
+            'sw_mate_inventory': 'root_mates', 'sw_probe_face_pair': 'face_probes'}
 MAX_ROUNDS = 4
 
 
@@ -21,6 +21,12 @@ def request_key(tool, paths):
 
 def describe_capture(tool, data):
     """Summarize only verified complete observations, retaining the original source elsewhere."""
+    if tool == 'sw_probe_face_pair':
+        best = data['best_seed_index']
+        return {'best_seed_index': best, 'sampled_metrics': None if best is None else data['samples'][best]['metrics'],
+                'saved_probe_identity_checks_passed': True, 'global_minimum_proven': False,
+                'contact_confirmed': False, 'available_for_existing_reintegration': False,
+                'next_tool': 'cad_review_face_contacts'}
     if tool == 'sw_component_constraints':
         fixed, mates = data.get('fixed_state'), data.get('mates')
         require(isinstance(fixed, dict) and type(fixed.get('value')) is bool and
@@ -87,10 +93,16 @@ def associate(observations, target, check, draft, max_contexts):
                     'all_endpoint_members_fixed': all_fixed,
                     'signals': ['FIXED_MEMBERS_VS_MOVING_HYPOTHESIS'] if all_fixed is True and joint['hypothesis_kind'] in ('prismatic', 'revolute') else [],
                     'meaning': 'Configured fixed flags constrain this snapshot; no solver verdict, physical grouping or joint rejection is asserted.'})
-    return {'node_observations': by_node,
-            'pair_contexts': [{'pair_id': p['id'], 'occurrence_paths': p['node_ids'],
+    pairs = [{'pair_id': p['id'], 'occurrence_paths': p['node_ids'],
                                'endpoint_observation_ids': [references([n]) for n in p['node_ids']],
-                               'face_pair_selected': False, 'connection_confirmed': False} for p in target['pairs']],
+                               'face_pair_selected': False, 'connection_confirmed': False} for p in target['pairs']]
+    for pair in pairs:
+        probes = [o for o in observations if o['family'] == 'face_probes' and set(o['occurrence_paths']) == set(pair['occurrence_paths'])]
+        if probes:
+            pair.update(face_pair_selected=True, probe_observation_ids=[o['id'] for o in probes],
+                        usable_probe_observation_ids=[o['id'] for o in probes if o['usable']],
+                        selection_meaning='Specific candidates were attempted; this does not identify a mating/contact pair.')
+    return {'node_observations': by_node, 'pair_contexts': pairs,
             'finding_contexts': [{'finding_id': f['id'], 'observation_ids': references(f['occurrence_paths']),
                                   'resolved': False} for f in check['findings']],
             'joint_contexts': joints, 'joint_contexts_found': total, 'joint_contexts_truncated': total > len(joints),
@@ -98,13 +110,13 @@ def associate(observations, target, check, draft, max_contexts):
 
 
 def reuse_facts(index):
-    facts = {'constraints': {}, 'faces': {}, 'cylinders': {}, 'distance': {}, 'root_mates': [],
+    facts = {'constraints': {}, 'faces': {}, 'cylinders': {}, 'distance': {}, 'root_mates': [], 'face_probes': {},
              'attempted_requests': {}, 'rounds_completed': index['rounds_completed']}
     for row in index['observations']:
         facts['attempted_requests'].setdefault(request_key(row['tool'], row['occurrence_paths']), []).append(row)
         if not row['usable']: continue
         family = row['family']
         if family == 'root_mates': facts[family].append(row['source'])
-        elif family == 'distance': facts[family].setdefault(tuple(row['occurrence_paths']), []).append(row['source'])
+        elif family in ('distance', 'face_probes'): facts[family].setdefault(tuple(row['occurrence_paths']), []).append(row['source'])
         else: facts[family].setdefault(row['occurrence_paths'][0], []).append(row['source'])
     return facts

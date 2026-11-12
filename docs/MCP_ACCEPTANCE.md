@@ -1,14 +1,61 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前44个工具（含补采执行、回填、比较及证据关联复用），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前45个工具（含补采执行、回填、比较及证据关联复用），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
 1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks,templates]`，退出并重启 OpenCode。先完成 0.6.0 的 Conda 环境核对；SolidWorks 未运行时再按 0.4.0 启动，无需手动提前打开。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 44 个工具。客户端可能给工具名添加服务器前缀。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 45 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
+
+## 0.19.0：自动面候选与有限面探测任务
+
+前置：更新仓库，在已有Conda环境安装`.[solidworks,templates]`并重启OpenCode；当前45工具、38个功能skill。
+
+```powershell
+python scripts/verify_face_planning.py --output outputs/verify-0.19
+```
+
+预期`passed: true`、30项检查、退出码0；重复运行换新目录。该脚本在显式模拟CAD中走“有预算的初始补采→补齐缺失目录→自动面探测→索引→停止”，保留原始调用和receipt。它不连接用户SolidWorks，不能作为升降机实测通过证据。
+
+### 本机真实执行
+
+已有有效draft check、最新evidence index及全部原始来源；当前SolidWorks文档、配置、dirty、实例位姿仍与来源一致。至少一对范围内实例已有完整sw_component_distance原始结果；缺失时先交接对应距离/补采能力，不从包围盒填测点。尚未取得来源时按读取、链清单、草案、检查、补采顺序生成，不能拿模拟文件替代。
+
+1. 调用`cad_plan_face_probes`，必需参数为`draft_check_path`、`evidence_index_path`、`output_path`、`max_component_gap_mm`、`surface_tolerance_mm`。可选预算见[接口](TOOL_CONTRACTS.md#0190面探测任务计划)。距离筛选与解析曲面残差是两个不同阈值，使用已有配置或说明工作假设，不能由参考模板直接定为目标公差。
+2. 先看`continuation.action`。collect时按evidence-task-execute逐次调用`sw_execute_evidence_task`；同一plan_path、新output_path，后续传上一receipt路径为previous_execution_path，直到execution_complete。每次最多一个CAD读取。
+3. 只有`guards_passed=true`才用`cad_index_evidence`建立新索引；下一轮`cad_plan_face_probes`必须携带该索引并保持阈值/预算。缺目录的计划先采目录，索引后才生成具体面任务。stop时不调用执行器、不反复扫描或增预算。
+4. 将最新索引中`family=face_probes`且`usable=true`的`source.path`列表交给`cad_review_face_contacts`，显式给`contact_tolerance_mm`和`angle_tolerance_deg`，独占写新文件。失败/partial探测保留诊断；尚不自动回填草案。
+
+CLI与MCP共用实现。以下路径换成当前真实文件，30mm/.1mm是演示数值，使用时明确自己的阈值依据：
+
+```powershell
+python -m cadkin plan-face-probes outputs/check.json --evidence-index outputs/index.json --max-component-gap-mm 30 --surface-tolerance-mm 0.1 --output outputs/face-plan-0.19.json
+# 只在计划action=collect时继续
+python -m cadkin execute-evidence outputs/face-plan-0.19.json --output outputs/face-run-0.19.json
+# 只在完整执行且guards_passed=true时继续
+python -m cadkin index-evidence outputs/check.json outputs/face-run-0.19.json --output outputs/face-index-0.19.json
+```
+
+逐项核对原始JSON，保存提交SHA、本机版本、耗时和错误；SolidWorks视图、选择、dirty、零件位置应保持原样，不需人工确认才能推进。
+
+| 验收项 | 预期 | 失败标准 |
+| --- | --- | --- |
+| 计划来源 | algorithm_version=3；check/index绑定与input_files哈希一致 | 接受手改计划/来源或不同check的索引 |
+| 候选依据 | 每对保留真实目录哈希、body/face定位、距离来源、两端残差 | 从名称、面类型或同轴直接认定配合面 |
+| 种子 | 来自距离端点和去重中点，根装配毫米 | 使用局部点、包围盒或虚构点冒充已测最近点 |
+| 缺目录 | 仅安排缺失实例的目录；索引后再规划面探测 | 未采集即猜面索引/持久引用 |
+| 共面/分割面 | 保留竞争面及同分截断；finite_face_membership_tested=false | 用无限曲面残差冒充裁剪面成员测试 |
+| 实际探测 | 原始sources/parameters与任务一致，有限面GetClosestPointOn、正常解析身份，数值重放一致 | 错面/错误参数/单位/间隙仍被标为可复用 |
+| 上下文变化 | 前后检查失败后结果不复用；身份/几何变化停止后续调用 | 变化后沿用旧来源或改token凑通过 |
+| 失败与复用 | 普通失败仍执行可独立进行的任务/后置检查；partial/failed留档且不自动重试 | 增加迭代次数、换种子或反向配对绕过尝试历史 |
+| 预算 | 组件对、每端面候选、面配对、工具调用各有限制，保护调用计数；共享4轮上限 | 预算未计保护、隐藏遗漏或自动扩预算 |
+| 停止 | stop时tasks=[]，调用执行器得到NO_CAPTURE_TASKS且无新receipt | 把停止写成风险已解决或继续只有保护检查的空轮 |
+| 面候选复核 | 明确接触候选/角度阈值，保留局部范围；contact_confirmed=false | 小间隙认定接触/运动副，大局部间隙认定整面分离 |
+
+本阶段仅针对放置后的零件定义平面/圆柱面；装配级切除、其他曲面、未检面、接触斑和运动/拆卸路径仍未验证。
 
 ## 0.18.0：证据关联、复用与停止
 
@@ -855,6 +902,6 @@ Copy-Item -LiteralPath 'examples/three_servo_lift/3X Lift Assembly.STEP' -Destin
 
 > 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 44 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和可观测的窗口现象及不确定项；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
 
-当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 44 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
+当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 45 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
 
 后续每次功能变更都在此追加对应版本的操作、预期返回、人工核对和失败标准。每条记录注明提交 SHA、工具参数、原始返回文件、窗口核对者与结论；没有证据不沿用上版“通过”。

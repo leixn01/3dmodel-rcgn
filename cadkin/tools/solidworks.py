@@ -217,6 +217,17 @@ TOOLS = [
          {'draft_check_path': {'type':'string','minLength':1}, 'execution_path': {'type':'string','minLength':1},
           'output_path': {'type':'string','minLength':1}, 'max_contexts': {'type':'integer','minimum':1,'maximum':2000,'default':200}},
          ['draft_check_path','execution_path','output_path'], False),
+    spec('cad_plan_face_probes', 'Replay a draft check and latest observation index; use existing component-distance witnesses to rank saved plane/cylinder face candidates and derive seeds. Schedule missing catalogs or guarded finite-face probes within explicit budgets. Preserve competing/omitted faces and previous attempts. Offline; analytic residuals do not establish finite-face membership, live identity, contact or mechanical joints.',
+         {'draft_check_path': {'type': 'string', 'minLength': 1}, 'evidence_index_path': {'type': 'string', 'minLength': 1},
+          'output_path': {'type': 'string', 'minLength': 1}, 'max_component_gap_mm': {'type': 'number', 'minimum': 0},
+          'surface_tolerance_mm': {'type': 'number', 'minimum': 0},
+          'max_component_pairs': {'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 20},
+          'max_face_candidates': {'type': 'integer', 'minimum': 1, 'maximum': 100, 'default': 20},
+          'max_face_pairs': {'type': 'integer', 'minimum': 1, 'maximum': 2000, 'default': 100},
+          'max_tasks': {'type': 'integer', 'minimum': 3, 'maximum': 200, 'default': 20},
+          'max_iterations': {'type': 'integer', 'minimum': 1, 'maximum': 50, 'default': 20},
+          'convergence_tolerance_mm': {'type': 'number', 'exclusiveMinimum': 0, 'maximum': 1, 'default': 0.001}},
+         ['draft_check_path', 'evidence_index_path', 'output_path', 'max_component_gap_mm', 'surface_tolerance_mm'], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -269,6 +280,9 @@ class SolidWorksTools:
             if name == 'cad_index_evidence':
                 from cadkin.tools.observation_index import index_evidence
                 return index_evidence(self.root, **arguments)
+            if name == 'cad_plan_face_probes':
+                from cadkin.tools.face_planning import face_task_plan
+                return face_task_plan(self.root, **arguments)
             if name == "cad_group_components":
                 from cadkin.tools.grouping import group_components
                 return group_components(self.root, **arguments)

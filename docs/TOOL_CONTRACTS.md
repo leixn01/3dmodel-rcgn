@@ -1,9 +1,10 @@
 # SolidWorks 工具接口
 
-版本：0.18.0。以下 44 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.19.0。以下 45 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `cad_plan_face_probes` | draft_check_path、evidence_index_path、output_path、max_component_gap_mm、surface_tolerance_mm；可选分层预算/迭代参数 | 离线安排缺目录补采或最近点引导的有限面探测，保留竞争面和历史 |
 | `sw_execute_evidence_task` | plan_path、output_path；可选previous_execution_path | 每次至多一个已有只读CAD调用，保存原始返回和receipt，自动上下文校验 |
 | `cad_reintegrate_evidence` | execution_path、output_path | 离线回填兼容完整观测，保留旧源、阈值与预算，重算草案检查 |
 | `cad_index_evidence` | draft_check_path、execution_path、output_path；可选max_contexts | 离线关联已采集观测与当前候选，供后续规划复用及停止 |
@@ -636,3 +637,35 @@ cad_plan_evidence_tasks输入原始draft check，max_tasks=20（3–200，包含
 错误：INVALID_EVIDENCE_INDEX、EXECUTION_NOT_COMPLETE、EXECUTION_GUARDS_FAILED、EVIDENCE_MISMATCH、EVIDENCE_CYCLE、EVIDENCE_DEPTH_LIMIT、OBSERVATION_ROUND_LIMIT、OBSERVATION_SOURCE_LIMIT。部分结果：OBSERVATIONS_NOT_REUSABLE、ASSOCIATION_CONTEXT_LIMIT、AUTOMATIC_CAPTURE_BLOCKED。OUTPUT_EXISTS不覆盖旧文件。
 
 CLI：`index-evidence <check> <receipt> --output <index> [--max-contexts N]`；`plan-evidence <check> --evidence-index <index> --output <plan> [--max-tasks N]`。已有sw/stdio使用同一处理实现，不引入新COM后端。
+
+## 0.19.0：面探测任务计划
+
+`cad_plan_face_probes`只规划；原始计划由`sw_execute_evidence_task`执行，`cad_index_evidence`续轮，`cad_review_face_contacts`独立解释结果。
+
+| 参数 | 约束/默认值 | 含义 |
+| --- | --- | --- |
+| draft_check_path / evidence_index_path / output_path | 必需字符串；输出为outputs中新文件 | 当前check、精确绑定该check的最新索引、输出 |
+| max_component_gap_mm | 必需、有限、≥0 | 以完整已测组件距离筛选组件对 |
+| surface_tolerance_mm | 必需、有限、≥0 | 最近点到无限解析曲面的残差上限，不检验trim成员 |
+| max_component_pairs | 1–200；20 | 按组件距离、路径取有完整来源的组件对 |
+| max_face_candidates | 1–100；20 | 每端按残差/索引保留的面候选，报告同分截断 |
+| max_face_pairs | 1–2000；100 | 经过端点预算后的未尝试面配对输出上限 |
+| max_tasks | 3–200；20 | 含前后文档/位姿检查；两实例1次探测至少7次调用 |
+| max_iterations | 1–50；20 | 每个种子的交替有限面投影上限 |
+| convergence_tolerance_mm | 有限、(0,1]；0.001 | 点迭代稳定阈值，不是接触公差 |
+
+输出沿用evidence_task_plan_schema_version=1，algorithm_version=3、plan_kind=witness_guided_face_probes。旧algorithm 1/2重放不变。
+
+- face_candidates：source-bound selections、两端目录sha256、surface_residuals_mm、witness_source、witness_points_root_mm、seed_points_root_mm及derivation。offline身份/有限面成员/连接确认均为false。
+- coverage：可筛/已检组件对、端点候选与遗漏、组合数、历史已尝试数、未尝试数和返回数。依次有组件对/端点面/配对/调用限制；未检部分不能当作不存在。
+- pair_contexts：距离筛选、缺测点、缺目录、来源冲突、各端候选数和同分截断。只有完整且同上下文观测可参与。
+- tasks：先后文档/实例guard及只读目录/面探测；探测任务带expected_face_sources绑定原始目录记录。deferred_tasks保留预算/轮次阻止项；prior_face_attempts记录同对保存引用键的历史来源。
+- continuation：collect/stop、原因、rounds_completed/max_rounds=4与剩余发现。stop没有任务。remaining_findings仍保存check返回的全部发现，另保留check截断。
+
+解析残差先把根点逆变换至零件定义计算，再按绝对缩放转回根毫米；平面取法向点距，圆柱取点到轴距离与半径的差。不能将UV方框当裁剪面。两端实际距离端点及中点去重后生成1–3种子。配对按最大残差、残差和、组件距离及稳定定位符排序，不是概率或机械关系判定。
+
+同一实例多个完整目录/距离记录若不同，保留冲突而不采用最后一份。已尝试配对按两端实例/文件/配置/保存引用键去重，不按种子/迭代参数去重；键相同仅用于防重复，在线仍解析持久ID并核对对象。所有原始来源和索引都需重放，不扫描文件夹猜历史。
+
+执行器对新面探测绑定原始sources和parameters，再重算坐标/法向/间隙；超时或身份/几何变化停止。普通失败与partial保留为尝试，索引family=face_probes；完整结果details包括sampled_metrics，仍global_minimum_proven=false、contact_confirmed=false。pair_contexts.face_pair_selected表示候选曾被选来尝试；usable_probe_observation_ids仅引用完整且保护检查通过的结果，不代表已确定配合面。现有cad_reintegrate_evidence将面探测标为FACE_PROBE_REQUIRES_EXPLICIT_CONTACT_REVIEW，不直接改变草案。
+
+错误包括INVALID_ARGUMENTS、EVIDENCE_MISMATCH、OUTPUT_EXISTS；截断为FACE_PLAN_LIMIT，停止计划执行为NO_CAPTURE_TASKS。执行/索引原有错误与4轮来源上限继续适用。
