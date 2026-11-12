@@ -1,13 +1,24 @@
 # 回填细节
 
-cad_reintegrate_evidence必填execution_path、output_path。输出evidence_reintegration_schema_version=1及同名`-derived`新目录。CLI：`python -m cadkin reintegrate-evidence outputs/run.json --output outputs/updated.json`。
+cad_reintegrate_evidence必填execution_path、output_path；可选face_review_path。输出evidence_reintegration_schema_version=1、algorithm_version=2及同名`-derived`新目录。CLI：`python -m cadkin reintegrate-evidence outputs/run.json --output outputs/updated.json`；需补充面复核依据时加`--face-review outputs/face-review.json`。
 
 必须execution_complete=true、guards_passed=true；重放receipt、全部原始capture和原计划，拒绝手改执行状态/发现/哈希。未完成报EXECUTION_NOT_COMPLETE，校验未通过报EXECUTION_GUARDS_FAILED。离线运行，不连接SolidWorks，不改原始文件。
 
 仅完整passed观测进入自动回填：圆柱替换/补充已有relation来源，根配合替换已有connection来源，距离只回填原worklist中已有候选对。沿用原inventory、角色分组、公差、模板集合、分组/搜索预算，依次重算关系/复核、chain、target、rigid、joints、check。保持来源数量上限；没有兼容基础或公差时不补造。旧新路径在superseded_sources列出；旧文件继续保留。
 
-单实例约束尚未直接关联到根实例对，面目录尚未自动选面/测点，因此分别作为CONSTRAINTS_CONTEXT_ONLY和FACE_CATALOG_REQUIRES_PAIR_SELECTION_AND_PROBING保留。回填报告本身不是规划输入；0.18.0起将执行receipt和当前有效check交接evidence-observation-index，规划时传该索引。不能因为风险没有降低就重采同一数据；面配对/有限面测量仍是独立后续能力。
+单实例约束与面目录分别作为CONSTRAINTS_CONTEXT_ONLY和FACE_CATALOG_REQUIRES_PAIR_SELECTION_AND_PROBING保留；目录交接独立face-probe-plan，不由回填工具生成测点。回填报告本身不是规划输入；将执行receipt和当前有效check交接evidence-observation-index，规划时传该索引，不能因为风险没有降低就重采同一数据。
 
-recomputation_complete表示成功产出新check，不表示发现消失或物理验证。原有partial/冲突/搜索覆盖会在DERIVATION_REMAINS_PARTIAL中保留；CAPTURES_NOT_INTEGRATED说明补充/诊断观测，PLAN_SCOPE_INCOMPLETE保留原计划延期/截断。pipeline_error时after_check_source=null，applied_capture_ids为空，attempted_capture_ids与中间步骤仅供诊断；原始文件始终保留。
+## 面测量回填
+
+只处理当前receipt中的完整且guard通过的sw_probe_face_pair，不遍历目录或把索引历史全部重新应用。每轮完成后先回填/比较，再用当前有效check建立新索引后续轮；旧receipt引用的原check不会被自动替换。
+
+- 原链已有face_contact复核覆盖该组件对：保留全部旧probe和原contact_tolerance_mm/angle_tolerance_deg，添加不同面定位符的新probe。多个复核使用不同阈值时保留AMBIGUOUS_FACE_REVIEW_THRESHOLDS；不得用新参数覆盖旧依据。同阈值多个来源按路径稳定选择，保留其他来源。
+- 原链尚未覆盖该组件对：可将当前完整probe交接face-contact-review，使用已有配置或有说明的工作假设生成原始复核。将其路径传face_review_path。工具重放它与原空间清单；仅复制其中与当前guarded probe哈希和面定位一致的行，其他历史/未保护的行不会自动加入链。没有依据时保留NO_MATCHING_FACE_REVIEW，不等待人工确认或猜一个默认接触公差。
+- 同一目录哈希+体/面记录已经观察过：同probe哈希记ALREADY_INTEGRATED；不同probe快照记FACE_PAIR_ALREADY_OBSERVED，不静默替换。当前receipt同定位符重复记DUPLICATE_GUARDED_FACE_PAIR。
+- 单复核最多100条，链最多20个来源；超出保留FACE_REVIEW_CAPACITY_LIMIT/CHAIN_EVIDENCE_CAPACITY_LIMIT，不自动扩预算。
+
+face_updates记录旧/新复核、阈值、保留/新增条数；face_routing逐项说明去向。已有面观测的文件哈希/索引只是该次保存目录中的定位，不是跨目录CAD身份。小局部间隙不确认接触，大局部间隙不证明整面分离。
+
+recomputation_complete表示成功产出新check，不表示发现消失或物理验证。原有partial/冲突/搜索覆盖会在DERIVATION_REMAINS_PARTIAL中保留；CAPTURES_NOT_INTEGRATED说明补充/诊断观测，PLAN_SCOPE_INCOMPLETE保留原计划延期/截断。pipeline_error时after_check_source=null，applied_capture_ids为空，attempted_capture_ids、face_updates与中间步骤仅供诊断；原始文件始终保留。
 
 已有精确配合面匹配可能绑定旧圆柱来源；改变圆柱后，无法复用的身份绑定应重新通过对应独立能力采集，不能改哈希绕过。回填文件并不证明CAD原子快照、刚体或运动副，也不会自动重试或自动开始下一轮补采。

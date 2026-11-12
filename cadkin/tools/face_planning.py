@@ -11,7 +11,7 @@ from cadkin.tools.chain_sources import require, check_fields
 from cadkin.tools.comparison import replay_check
 from cadkin.tools.face_contacts import review_probe, same_derived
 from cadkin.tools.face_sources import face_source
-from cadkin.tools.files import json_path, read_json
+from cadkin.tools.files import json_path, read_json, replay_reads
 from cadkin.tools.matching import recheck
 from cadkin.tools.observation_index import replay_index, unique_bindings
 from cadkin.tools.proximity import write_result
@@ -100,6 +100,7 @@ def face_facts(root, target, index):
     return facts
 
 
+@replay_reads
 def build_face_plan(root, draft_check_path, evidence_index_path, output_path, max_component_gap_mm, surface_tolerance_mm,
                     max_component_pairs=20, max_face_candidates=20, max_face_pairs=100, max_tasks=20,
                     max_iterations=20, convergence_tolerance_mm=0.001, check_destinations=True):

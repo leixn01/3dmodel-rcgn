@@ -9,7 +9,7 @@ description: 用已有组件最近点和来源绑定面目录，自动筛选平�
 
 1. 调用cad_plan_face_probes；参数与阈值含义先读[规划细节](references/planning.md)。使用当前check对应的最新索引，不扫描目录猜历史，也不手写面索引或种子。
 2. 读取continuation、coverage、pair_contexts和face_candidates。缺目录时计划先安排sw_component_faces；已有目录时使用真实距离端点和中点生成种子。保留共面/同轴竞争解释、缺失来源、截断和剩余发现。
-3. collect交接evidence-task-execute；完整执行且guards_passed后交接evidence-observation-index。使用新索引再规划，沿用原阈值与预算，最多4轮；stop时结束自动采集并报告风险。
-4. 具体面探测完成后，仅将可复用face_probes的原始文件交接face-contact-review，使用明确的接触候选/角度阈值。面探测暂不自动回填关节草案。
+3. collect交接evidence-task-execute；目录采集完成且guards_passed后交接evidence-observation-index，再用新索引规划。沿用原阈值与预算，最多4轮；stop时结束自动采集并报告风险。
+4. 具体面探测完成后交接evidence-reintegration沿用原复核阈值。尚无兼容依据的组件对，将完整probe交接face-contact-review生成明确阈值的复核，再供回填使用。回填成功后独立比较，并用新check和当前receipt建立索引，才继续规划；失败时保留原有效check和诊断。
 
 解析曲面残差不检验有限面的裁剪边界；持久引用须在实际探测时解析核对。近测点、收敛或停止都不表示机械关系已确认，不设置人工复核节点。

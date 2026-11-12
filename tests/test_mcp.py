@@ -50,6 +50,19 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                     r = await session.call_tool('cad_review_face_contacts', {'probe_paths': probes, 'output_path': 'outputs/probe-review.json',
                         'contact_tolerance_mm': .1, 'angle_tolerance_deg': 5})
                     self.assertFalse(r.isError, r); self.assertFalse(r.structuredContent['data']['contact_confirmed'])
+                    r = await session.call_tool('cad_reintegrate_evidence', {'execution_path': previous,
+                        'face_review_path': 'outputs/probe-review.json', 'output_path': 'outputs/face-updated.json'})
+                    self.assertFalse(r.isError, r); update = r.structuredContent['data']
+                    self.assertTrue(update['recomputation_complete']); self.assertEqual(len(update['applied_capture_ids']), 12)
+                    r = await session.call_tool('cad_compare_draft_checks', {'before_check_path': 'outputs/check.json',
+                        'after_check_path': update['after_check_source']['path'], 'output_path': 'outputs/face-comparison.json'})
+                    self.assertFalse(r.isError, r); self.assertEqual(r.structuredContent['data']['face_evidence']['summary']['newly_observed_ids'], 12)
+                    r = await session.call_tool('cad_index_evidence', {'draft_check_path': update['after_check_source']['path'],
+                        'execution_path': previous, 'output_path': 'outputs/updated-index.json'})
+                    self.assertFalse(r.isError, r); self.assertEqual(r.structuredContent['data']['rounds_completed'], 3)
+                    r = await session.call_tool('cad_plan_face_probes', {**args, 'draft_check_path': update['after_check_source']['path'],
+                        'evidence_index_path': 'outputs/updated-index.json', 'output_path': 'outputs/updated-stop.json'})
+                    self.assertFalse(r.isError, r); self.assertEqual(r.structuredContent['data']['tasks'], [])
                     r = await session.call_tool('sw_execute_evidence_task', {'plan_path': 'outputs/stopped.json', 'output_path': 'outputs/rejected.json'})
                     self.assertTrue(r.isError); self.assertEqual(r.structuredContent['errors'][0]['code'], 'NO_CAPTURE_TASKS')
                     self.assertFalse((root/'outputs/rejected.json').exists())
@@ -68,7 +81,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             fixture=StdioServerParameters(command=sys.executable,args=['-m','tests.execution_mcp_fixture','--root',str(root)])
             async with stdio_client(fixture) as (read,write):
                 async with ClientSession(read,write) as session:
-                    init=await session.initialize();self.assertEqual(init.serverInfo.version,'0.19.0')
+                    init=await session.initialize();self.assertEqual(init.serverInfo.version,'0.20.0')
                     previous=None
                     for index in range(20):
                         args={'plan_path':'outputs/plan.json','output_path':f'outputs/protocol-step-{index}.json'}
@@ -120,7 +133,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             server=StdioServerParameters(command=sys.executable,args=['-m','cadkin.mcp_server','--root',str(root)])
             async with stdio_client(server) as (read,write):
                 async with ClientSession(read,write) as session:
-                    init=await session.initialize();self.assertEqual(init.serverInfo.version,'0.19.0')
+                    init=await session.initialize();self.assertEqual(init.serverInfo.version,'0.20.0')
                     checked=await session.call_tool('cad_check_joint_draft',{'joint_draft_path':'outputs/drafts.json','output_path':'outputs/check.json'})
                     self.assertFalse(checked.isError);self.assertEqual(checked.structuredContent['status'],'partial')
                     args={'draft_check_path':'outputs/check.json','output_path':'outputs/plan.json'}
@@ -183,7 +196,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             parameters=StdioServerParameters(command=sys.executable,args=['-m','cadkin.mcp_server','--root',str(root)])
             async with stdio_client(parameters) as (read,write):
                 async with ClientSession(read,write) as session:
-                    init=await session.initialize();self.assertEqual(init.serverInfo.version,'0.19.0')
+                    init=await session.initialize();self.assertEqual(init.serverInfo.version,'0.20.0')
                     chain=await session.call_tool('cad_build_chain_evidence',chain_args)
                     self.assertFalse(chain.isError)
                     target=await session.call_tool('cad_build_target_graph',{'chain_path':'outputs/chain.json','output_path':'outputs/target.json'})
@@ -214,7 +227,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             parameters=StdioServerParameters(command=sys.executable,args=['-m','cadkin.mcp_server','--root',str(base)])
             async with stdio_client(parameters) as (read,write):
                 async with ClientSession(read,write) as session:
-                    init=await session.initialize();self.assertEqual(init.serverInfo.version,'0.19.0')
+                    init=await session.initialize();self.assertEqual(init.serverInfo.version,'0.20.0')
                     listed=await session.call_tool('cad_list_mechanism_templates',{})
                     self.assertEqual(listed.structuredContent['data']['count'],6)
                     extracted=await session.call_tool('cad_extract_mechanism_template',{'template_id':'bench_vise','output_path':'outputs/graph.json'})
@@ -246,7 +259,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             parameters = StdioServerParameters(command=sys.executable, args=['-m', 'cadkin.mcp_server', '--root', str(base)])
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
-                    init = await session.initialize(); self.assertEqual(init.serverInfo.version, '0.19.0')
+                    init = await session.initialize(); self.assertEqual(init.serverInfo.version, '0.20.0')
                     result = await session.call_tool('cad_build_chain_evidence', args)
                     self.assertEqual(result.structuredContent['status'], 'ok', result)
                     self.assertEqual(result.structuredContent['data']['coverage']['possible_pairs'], 3)
@@ -277,7 +290,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.19.0')
+                    self.assertEqual(init.serverInfo.version, '0.20.0')
                     token = (await session.call_tool('sw_active_document')).structuredContent['data']['document_token']
                     selections = []
                     for i, occurrence in enumerate(('plate-1', 'plate-2')):
@@ -315,7 +328,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.19.0')
+                    self.assertEqual(init.serverInfo.version, '0.20.0')
                     active = await session.call_tool('sw_active_document')
                     token = active.structuredContent['data']['document_token']
                     spatial = await session.call_tool('sw_spatial_inventory', {'expected_document_token': token})
@@ -376,7 +389,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.19.0')
+                    self.assertEqual(init.serverInfo.version, '0.20.0')
                     capture = await session.call_tool('sw_component_cylinders', {
                         'expected_document_token': args['expected_document_token'], 'occurrence_path': 'shaft-1', 'include_face_references': True})
                     self.assertFalse(capture.isError, capture)
@@ -551,7 +564,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.19.0')
+                    self.assertEqual(init.serverInfo.version, '0.20.0')
                     doc = (await session.call_tool('sw_active_document')).structuredContent['data']
                     args = {'expected_document_token': doc['document_token'], 'page_size': 2}
                     page = (await session.call_tool('sw_spatial_inventory', args)).structuredContent
@@ -655,7 +668,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.19.0')
+                    self.assertEqual(init.serverInfo.version, '0.20.0')
                     result = await session.call_tool('cad_review_connections', args)
                     self.assertFalse(result.isError, result)
                     self.assertEqual(result.structuredContent['data']['counts']['has_unsuppressed_mate_evidence'], 1)

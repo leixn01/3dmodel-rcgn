@@ -14,4 +14,4 @@ description: 将已完成且前后校验通过的补采记录关联到当前组�
 
 索引不改变候选分数、不证明刚体/关节或问题解决，不要求人工复核。
 
-索引中的face_probes保留具体面探测与样本量测；pair_contexts.face_pair_selected仅表示曾选定候选去尝试，不表示找到配合/接触面。完整可复用探测交接face-contact-review，不能用catalog或failed记录替代。
+索引中的face_probes保留具体面探测与样本量测；pair_contexts.face_pair_selected仅表示曾选定候选去尝试，不表示找到配合/接触面。完整可复用探测可交接face-contact-review解释；当前receipt的兼容探测交接evidence-reintegration更新草案，再重建绑定新check的索引。不能用catalog或failed记录替代，也不能把历史索引当当前receipt批量回填。

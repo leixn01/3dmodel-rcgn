@@ -10,6 +10,42 @@
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
 
+## 0.20.0：面证据回填与变化比较
+
+更新方式见README：已有Conda中`git pull --ff-only`、`python -m pip install -e ".[solidworks,templates]"`，重启OpenCode。仍45工具、38功能skill。
+
+```powershell
+python scripts/verify_face_reintegration.py --output outputs/verify-0.20
+```
+
+预期`passed: true`、28项检查、退出码0；输出目录必须未存在。报告、调用返回与原始数据位于该目录。合成CAD提供观测，生产离线工具完成回填/比较/索引；不作为升降机实测通过证据。脚本检查11条新probe、原观测保留、原阈值优先、明确依据补充、来源重放、独占输出、比较和停止。
+
+### 本机已有面测量时
+
+前置：0.19.0生成的本轮执行receipt完整且guards_passed；原check、原计划及全部绑定来源仍可读取。receipt中的probe必须来自真实SolidWorks。处理当前轮再续轮，不能把历史索引冒充本轮执行记录。以下名称为示例，替换成真实路径。
+
+| 工具 | 参数 | 预期核对 |
+| --- | --- | --- |
+| `cad_reintegrate_evidence` | execution_path、output_path；可选face_review_path | recomputation_complete=true才有after_check_source。已有组件对保留旧行/原阈值；未覆盖对仅导入明确复核中匹配当前guarded probe的行 |
+| `cad_compare_draft_checks` | before_check_path、after_check_path、output_path | face_evidence逐对区分新增、旧测量变化与provenance_changed_ids；保留阈值覆盖、旧新支持/冲突。局部测量仍不确认连接 |
+| `cad_index_evidence` | draft_check_path=成功回填后的check、execution_path=同一本轮receipt、output_path | 新索引绑定新check，保留历史与轮数；若回填失败使用原有效check |
+| `cad_plan_face_probes` | 新check、新索引及原有阈值/预算、新output_path | 已尝试对不重复；无新任务或预算用尽时stop，仍列剩余风险 |
+
+```powershell
+# 原链已有兼容复核依据时可省略 --face-review；参数不能覆盖已有组件对阈值。
+python -m cadkin reintegrate-evidence outputs/face-run.json --face-review outputs/face-review.json --output outputs/update-0.20.json
+python -m cadkin compare-checks outputs/check.json outputs/update-0.20-derived/check.json --output outputs/compare-0.20.json
+python -m cadkin index-evidence outputs/update-0.20-derived/check.json outputs/face-run.json --output outputs/index-0.20.json
+```
+
+没有兼容面复核时，Agent把当前完整probe交给独立`cad_review_face_contacts`，按项目配置或明示工作假设生成复核，再传face_review_path。其完整参数见[接口](TOOL_CONTRACTS.md#0200面回填和证据比较)。30mm/.1mm等模拟阈值不能复制成目标真值，不设置人工复核。
+
+验收数据：逐项检查face_routing、face_updates、applied_capture_ids、reused_capture_ids、supplemental_captures和excluded_captures对应原始哈希、复核阈值及具体面。旧文件字节不变，新文件独占创建。所有这些离线步骤不改变SolidWorks窗口/模型。
+
+失败标准：改写旧阈值或旧probe、导入未通过guard的行、手改复核仍通过、回填失败却返回有效after_check、文件重写被说成测量变化、重复采集已尝试面、把小间隙称为真实连接。正常保留项：无依据、阈值歧义、同面已有另一快照、100条复核/20个来源上限、partial/失败。它们不是必须人工批准的节点。
+
+保存完整receipt、原始probe/目录/距离、复核、回填报告及-derived目录、比较、新索引与续轮计划在outputs中；记录提交SHA与软件版本。`pipeline_error`后的中间文件仅供诊断，不能用于新的有效草案。
+
 ## 0.19.0：自动面候选与有限面探测任务
 
 前置：更新仓库，在已有Conda环境安装`.[solidworks,templates]`并重启OpenCode；当前45工具、38个功能skill。

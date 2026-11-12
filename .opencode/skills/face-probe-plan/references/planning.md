@@ -30,7 +30,7 @@ python -m cadkin index-evidence outputs/check.json outputs/face-run.json --outpu
 
 计划schema_version=1、algorithm_version=3、plan_kind=witness_guided_face_probes。face_candidates保留两端源哈希/记录定位、残差、原始距离来源、实际端点/中点种子。live_face_identity_verified=false、finite_face_membership_tested=false；这些在离线计划阶段尚未验证。
 
-sw_execute_evidence_task仍每次最多一个CAD调用。sw_probe_face_pair解析持久引用并核对描述符，查询有限面GetClosestPointOn；执行器再验证来源、参数、单位变换、测点与法向派生量。保存原始envelope和新receipt。独立face-contact-review负责候选分类，不由规划器或索引替代。
+sw_execute_evidence_task仍每次最多一个CAD调用。sw_probe_face_pair解析持久引用并核对描述符，查询有限面GetClosestPointOn；执行器再验证来源、参数、单位变换、测点与法向派生量。保存原始envelope和新receipt。独立face-contact-review负责候选分类，不由规划器或索引替代。0.20.0起交接evidence-reintegration回填兼容面证据；新组件对可传明确复核依据，旧组件对仍沿用原参数。重算成功交接joint-draft-compare，再基于after_check_source.path和同一receipt建立索引；后续计划的check/index须一致。
 
 失败/partial尝试也进入索引；面配对去重包含两端实例、零件配置和保存引用键，反向顺序、换种子或增加迭代次数不绕过已尝试记录。此键用于防重复，不以字节相同宣称CAD实体相同。已有来源中的面探测也阻止自动重复。
 

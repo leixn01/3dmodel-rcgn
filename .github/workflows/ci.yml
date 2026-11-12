@@ -28,6 +28,7 @@ jobs:
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_evidence_execution.py --output outputs/ci-execution-0.17
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_observation_reuse.py --output outputs/ci-observation-0.18
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_face_planning.py --output outputs/ci-face-planning-0.19
+      - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_face_reintegration.py --output outputs/ci-face-reintegration-0.20
       - name: Verify bundled test model
         shell: pwsh
         run: |

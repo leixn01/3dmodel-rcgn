@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from cadkin.errors import success, failure, ToolFailure
-from cadkin.tools.files import json_path, read_json
+from cadkin.tools.files import json_path, read_json, replay_reads
 from cadkin.tools.followup import replay_plan
 from cadkin.tools.chain_sources import require, check_fields
 from cadkin.tools.matching import recheck
@@ -36,6 +36,7 @@ def record_data(plan_binding, plan, records, previous=None):
                 'Hashes validate file consistency, not source authorship or proof that a file came from real SolidWorks.']}
 
 
+@replay_reads
 def replay_execution(root, execution_path, loaded_plan=None):
     path = json_path(root,execution_path); raw,digest = read_json(path)
     require(isinstance(raw,dict) and raw.get('evidence_execution_schema_version')==1 and raw.get('algorithm_version')==1 and

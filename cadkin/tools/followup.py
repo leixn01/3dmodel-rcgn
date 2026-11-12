@@ -1,6 +1,6 @@
 """Replay and validate draft-check and evidence-plan file boundaries."""
 from cadkin.errors import success
-from cadkin.tools.files import json_path, read_json
+from cadkin.tools.files import json_path, read_json, replay_reads
 from cadkin.tools.proximity import write_result
 from cadkin.tools.chain_sources import require, check_fields
 from cadkin.tools.matching import recheck
@@ -10,6 +10,7 @@ from cadkin.followup.planning import plan_tasks, READ_TOOLS
 from cadkin.tools.replay_guard import bounded_replay
 
 
+@replay_reads
 def build_check(root, joint_draft_path, max_findings=200):
     draft, rigid, target, binding = replay_draft(root, joint_draft_path)
     data = check_draft(target, rigid, draft, max_findings)
@@ -54,6 +55,7 @@ def source_facts(root, target):
     return facts
 
 
+@replay_reads
 def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinations=True, evidence_index_path=None):
     from jsonschema import Draft202012Validator
     from cadkin.tools.solidworks import CATALOG
@@ -101,6 +103,7 @@ def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinat
     return data, check, target
 
 
+@replay_reads
 @bounded_replay
 def replay_plan(root, plan_path):
     path = json_path(root, plan_path)

@@ -1,6 +1,6 @@
 # 差异解释
 
-cad_compare_draft_checks必填before_check_path、after_check_path、output_path。输出draft_comparison_schema_version=1。CLI：`python -m cadkin compare-checks outputs/check.json outputs/updated-derived/check.json --output outputs/comparison.json`。
+cad_compare_draft_checks必填before_check_path、after_check_path、output_path。输出draft_comparison_schema_version=1、algorithm_version=2。CLI：`python -m cadkin compare-checks outputs/check.json outputs/updated-derived/check.json --output outputs/comparison.json`。
 
 两份check及其完整draft/rigid/target/chain来源重新计算；修改派生状态或来源会被拒绝。文档、配置或共有实例的文件/父级/位姿不同，不能作为仅补证据的更新比较。允许不同分析范围但报告COMPARISON_SCOPE_CHANGED，不将变化归因于补采。
 
@@ -9,3 +9,9 @@ cad_compare_draft_checks必填before_check_path、after_check_path、output_path
 参数、公差、模板、分组预算相同，也不保证证据改变后遍历到同一候选空间。检查截断报COMPARISON_FINDINGS_LIMIT；搜索/输出覆盖和旧新计数一起解释。no_longer_observed只能表述本次返回范围没有再观察到，不能写“已经解决”。resolved_findings_asserted与mechanically_verified始终false。
 
 没有自动开始下一轮补采，不因为不确定项仍存在反复调用相同扫描。运动、副类型、行程、自由度、碰撞和拆卸可行性仍需对应后续能力。
+
+## 面证据变化
+
+face_evidence逐组件对列出before_observations/after_observations及newly_observed_ids、still_observed_ids、no_longer_observed_ids、changed_ids、provenance_changed_ids。定位基于保存的面目录哈希、实例、body/face索引与复核阈值，不推断跨目录CAD身份。阈值改变会产生新的解释标识，旧解释列为本次未观察到；同时列出before_thresholds/after_thresholds和threshold_profiles_equal。
+
+changed_ids比较测量、收敛、法向适用性、原始错误及复核状态；provenance_changed_ids只描述复核/探测文件路径或哈希改变。旧行原封保留到新复核中会产生来源变化，不应写成几何测量改变。before_link_support/after_link_support是已有排序权重，before_flags/after_flags保留目标图冲突；不是接触概率，仍connection_confirmed=false。新测量可能支持已有候选，也可能保留大局部间隙/法向不确定，不能把条目增加或减少解释成必然更可靠。

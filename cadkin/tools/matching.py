@@ -1,7 +1,7 @@
 """Source replay and file boundaries for target adaptation and reference hypothesis search."""
 from pathlib import Path
 from cadkin.errors import success
-from cadkin.tools.files import json_path, read_json
+from cadkin.tools.files import json_path, read_json, replay_reads
 from cadkin.tools.proximity import write_result
 from cadkin.tools.chain import build_chain
 from cadkin.tools.chain_sources import ChainSources, require, check_fields
@@ -13,6 +13,7 @@ def recheck(root,bindings):
         require(read_json(json_path(root,b['path']))[1]==b['sha256'],'Source changed during graph processing.','EVIDENCE_MISMATCH')
 
 
+@replay_reads
 def build_target(root,chain_path,relation_paths=None):
     path=json_path(root,chain_path);original,digest=read_json(path)
     require(isinstance(original,dict) and original.get('chain_dossier_schema_version')==1 and original.get('algorithm_version')==1,
@@ -54,6 +55,7 @@ def build_target_graph(root,chain_path,output_path,relation_paths=None):
                     'requires_human_review':False,'solidworks_modified':False},data['errors'])
 
 
+@replay_reads
 def replay_target(root,target_graph_path):
     path=json_path(root,target_graph_path);original,digest=read_json(path)
     require(isinstance(original,dict) and original.get('target_graph_schema_version')==1 and original.get('algorithm_version')==1 and

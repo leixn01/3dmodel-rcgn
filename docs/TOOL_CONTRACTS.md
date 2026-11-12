@@ -1,12 +1,12 @@
 # SolidWorks 工具接口
 
-版本：0.19.0。以下 45 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.20.0。以下 45 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
 | `cad_plan_face_probes` | draft_check_path、evidence_index_path、output_path、max_component_gap_mm、surface_tolerance_mm；可选分层预算/迭代参数 | 离线安排缺目录补采或最近点引导的有限面探测，保留竞争面和历史 |
 | `sw_execute_evidence_task` | plan_path、output_path；可选previous_execution_path | 每次至多一个已有只读CAD调用，保存原始返回和receipt，自动上下文校验 |
-| `cad_reintegrate_evidence` | execution_path、output_path | 离线回填兼容完整观测，保留旧源、阈值与预算，重算草案检查 |
+| `cad_reintegrate_evidence` | execution_path、output_path；可选face_review_path | 离线回填兼容完整观测，保留旧源、阈值与预算，重算草案检查 |
 | `cad_index_evidence` | draft_check_path、execution_path、output_path；可选max_contexts | 离线关联已采集观测与当前候选，供后续规划复用及停止 |
 | `cad_compare_draft_checks` | before_check_path、after_check_path、output_path | 离线比较返回候选/发现与覆盖，不声明物理问题解决 |
 | `cad_check_joint_draft` | joint_draft_path、output_path；可选max_findings | 重放原始草案，报告结构、证据冲突、竞争解释与覆盖缺口，离线新输出 |
@@ -666,6 +666,30 @@ CLI：`index-evidence <check> <receipt> --output <index> [--max-contexts N]`；`
 
 同一实例多个完整目录/距离记录若不同，保留冲突而不采用最后一份。已尝试配对按两端实例/文件/配置/保存引用键去重，不按种子/迭代参数去重；键相同仅用于防重复，在线仍解析持久ID并核对对象。所有原始来源和索引都需重放，不扫描文件夹猜历史。
 
-执行器对新面探测绑定原始sources和parameters，再重算坐标/法向/间隙；超时或身份/几何变化停止。普通失败与partial保留为尝试，索引family=face_probes；完整结果details包括sampled_metrics，仍global_minimum_proven=false、contact_confirmed=false。pair_contexts.face_pair_selected表示候选曾被选来尝试；usable_probe_observation_ids仅引用完整且保护检查通过的结果，不代表已确定配合面。现有cad_reintegrate_evidence将面探测标为FACE_PROBE_REQUIRES_EXPLICIT_CONTACT_REVIEW，不直接改变草案。
+执行器对新面探测绑定原始sources和parameters，再重算坐标/法向/间隙；超时或身份/几何变化停止。普通失败与partial保留为尝试，索引family=face_probes；完整结果details包括sampled_metrics，仍global_minimum_proven=false、contact_confirmed=false。pair_contexts.face_pair_selected表示候选曾被选来尝试；usable_probe_observation_ids仅引用完整且保护检查通过的结果，不代表已确定配合面。0.19.0当时将面探测保留为补充；0.20.0起可按兼容复核依据回填，见下一节。
 
 错误包括INVALID_ARGUMENTS、EVIDENCE_MISMATCH、OUTPUT_EXISTS；截断为FACE_PLAN_LIMIT，停止计划执行为NO_CAPTURE_TASKS。执行/索引原有错误与4轮来源上限继续适用。
+
+
+## 0.20.0：面回填和证据比较
+
+`cad_reintegrate_evidence(execution_path, output_path, face_review_path=None)`：必填参数不变，可选face_review_path为已有`cad_review_face_contacts`原始输出。面复核参数仍为probe_paths（1–100个完整原始envelope）、output_path、contact_tolerance_mm（≥0）、angle_tolerance_deg（0–90）。工具不猜阈值；Agent可使用项目依据或明确标注的工作假设。
+
+只消费当前receipt的eligible_capture_ids，必须完整执行且guards_passed；部分/失败不进入回填。原链face_contact复核已经覆盖的组件对，沿用其参数并保留全部旧probe；多个来源阈值冲突时保留补充。未覆盖组件对可使用face_review_path，它必须通过原空间清单的来源重放，且只导入其中与本轮guarded probe哈希及面定位完全匹配的行，不引入其他未保护观测。新基础不能覆盖旧对的阈值。
+
+输出保留evidence_reintegration_schema_version=1，algorithm_version=2。新增：
+
+- face_routing：逐task_id、probe来源/哈希、组件对、面定位符、basis_source、parameters、reason。
+- face_updates：basis_source、output_source、basis_kind、parameters、capture_ids、retained_previous_probes、added_probes。basis_kind为existing_chain_review或provided_review_for_uncovered_pairs。
+- reused_capture_ids：完全相同probe已在原链；supplied_face_review_source及input_files保留显式依据与来源。
+- applied_capture_ids仅在全流程重算成功后非空；pipeline_error时after_check_source=null、face_updates和attempted_capture_ids只作诊断。
+
+去向reason包括READY_FOR_RECOMPUTATION、ALREADY_INTEGRATED、NO_MATCHING_FACE_REVIEW、FACE_PAIR_ALREADY_OBSERVED、DUPLICATE_GUARDED_FACE_PAIR、AMBIGUOUS_FACE_REVIEW_THRESHOLDS、FACE_REVIEW_CAPACITY_LIMIT、CHAIN_EVIDENCE_CAPACITY_LIMIT。单复核100条/链20来源上限不扩大；已有同目录哈希/索引的另一probe快照不静默替换。错误基础/来源变化在创建派生目录前拒绝；流水线后续错误保留诊断。
+
+`cad_compare_draft_checks`参数不变，输出draft_comparison_schema_version=1、algorithm_version=2，新增face_evidence：逐组件对的before_observations/after_observations、newly_observed_ids/still_observed_ids/no_longer_observed_ids/changed_ids/provenance_changed_ids、before_thresholds/after_thresholds、threshold_profiles_equal、before_link_support/after_link_support、before_flags/after_flags。summary提供数量。
+
+face observation标识由两端实例、保存目录哈希、body/face定位符与复核阈值组成，不假定跨目录CAD身份。changed比较局部数值/法向/收敛/状态/错误；provenance_changed只比较来源路径/哈希。阈值改变会产生新旧解释标识；新增来源覆盖另行报告，不把文件重写当测量改进。link_support是原排序权重，connection_confirmed与resolved_findings_asserted保持false。
+
+完成后用after_check_source.path及同一receipt调用cad_index_evidence，后续规划必须使用新check/新索引；只回填本轮，不能索引历史全量重应用或删除历史绕过4轮上限。离线工具不修改SolidWorks窗口/模型。
+
+重放读取优化仅在一次纯只读调用内复用不可变JSON字节及路径；每次解析返回独立对象，结束前重新解析输入路径并校验SHA256。512文件/128MiB缓存容量之外仍正常读取，不跨调用使用旧内容；不用于CAD调用、写入或跳过来源重放。

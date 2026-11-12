@@ -3,7 +3,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from cadkin.errors import success
-from cadkin.tools.files import json_path, read_json
+from cadkin.tools.files import json_path, read_json, replay_reads
 from cadkin.tools.proximity import write_result
 from cadkin.tools.chain_sources import require, check_fields
 from cadkin.tools.matching import recheck
@@ -34,6 +34,7 @@ def unique_bindings(root, bindings):
     return [result[k] for k in sorted(result)]
 
 
+@replay_reads
 def build_index(root, draft_check_path, execution_path, max_contexts=200):
     require(type(max_contexts) is int and 1 <= max_contexts <= 2000,
             'max_contexts must be 1–2000.', 'INVALID_ARGUMENTS')
@@ -93,6 +94,7 @@ def build_index(root, draft_check_path, execution_path, max_contexts=200):
     return data
 
 
+@replay_reads
 @bounded_replay
 def replay_index(root, name):
     path = json_path(root, name); raw, digest = read_json(path)

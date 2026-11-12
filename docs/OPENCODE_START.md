@@ -178,3 +178,9 @@ MATCH_SEARCH_LIMIT为有预算结果，NO_SUPPORTED_MATCH表示本范围内没�
 已有草案check和最新evidence index时，按需加载face-probe-plan，提供组件距离筛选与解析残差阈值，调用cad_plan_face_probes。collect交给evidence-task-execute；完整且guards_passed后交给evidence-observation-index，再携带新索引继续。缺目录时先补目录，已有目录时生成来源绑定的面候选和实际最近点种子。
 
 面探测结果交给独立face-contact-review；按明确阈值解释局部候选，不认定接触或关节。stop时保留风险，不改预算或删索引绕过历史。具体命令与数据检查见[0.19.0验收](MCP_ACCEPTANCE.md#0190自动面候选与有限面探测任务)。
+
+## 把面测量用于更新草案（0.20.0）
+
+每轮面探测完成且保护检查通过后，将当前receipt交接evidence-reintegration；原链已覆盖组件对沿用原阈值，未覆盖对可使用face-contact-review的明确依据。回填完成再独立比较，使用新check与同一receipt建立索引后续轮。缺依据或冲突保留风险，不设置人工确认；不要把旧索引绑定到新check，也不要把历史观测全部当本轮回填。
+
+本次一键验证：`python scripts/verify_face_reintegration.py --output outputs/verify-0.20`，预期28项通过。具体真实文件、命令与失败标准见[0.20.0验收](MCP_ACCEPTANCE.md#0200面证据回填与变化比较)。

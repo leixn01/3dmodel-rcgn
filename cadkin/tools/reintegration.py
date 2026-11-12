@@ -13,9 +13,12 @@ from cadkin.tools.proximity_review import proximity_review
 from cadkin.tools.chain import chain_dossier
 from cadkin.tools.matching import build_target_graph, recheck
 from cadkin.tools.followup import check_joint_draft
+from cadkin.tools.face_contacts import face_contact_review
+from cadkin.tools.face_reintegration import route_face_captures
+from cadkin.tools.observation_index import unique_bindings
 
 
-def reintegrate(root, execution_path, output_path):
+def reintegrate(root, execution_path, output_path, face_review_path=None):
     output=json_path(root,output_path,output=True)
     execution,plan,check,target,eb=replay_execution(root,execution_path)
     require(execution['execution_complete'],'Finish all planned guards and tasks first.','EXECUTION_NOT_COMPLETE')
@@ -37,6 +40,10 @@ def reintegrate(root, execution_path, output_path):
     mates=[(i,c['source']['path']) for i,c in captures.items() if c['tool']=='sw_mate_inventory']
     distances={tuple(sorted(t['occurrence_path'] for t in c['data']['targets'])):(i,c['source']['path']) for i,c in captures.items() if c['tool']=='sw_component_distance'}
     require(len(mates)<=1,'Plan contains multiple root mate snapshots.','INVALID_EXECUTION')
+    routed = route_face_captures(root, chain, target, captures, face_review_path)
+    face_jobs = {j['source']['path']: j for j in routed['jobs'] if j['existing']}
+    face_reasons = {e['task_id']: e['reason'] for e in routed['entries']}
+    reused = set(routed['reused_capture_ids']); face_updates = []
     steps=[];used=set();superseded=[];relation_map={};evidence=[];final_check=None;pipeline_error=None
     folder.mkdir(parents=True,exist_ok=False)
 
@@ -48,6 +55,16 @@ def reintegrate(root, execution_path, output_path):
     def binding(path):
         p=json_path(root,str(path));_,sha=read_json(p);return {'path':str(p),'sha256':sha}
     def dest(name):return str(folder/(name+'.json'))
+    def update_faces(job, index):
+        new = run('cad_review_face_contacts', face_contact_review, {'probe_paths': job['probe_paths'],
+            'output_path': dest(f'faces-{index:02d}'), **job['parameters']})
+        used.update(job['capture_ids'])
+        face_updates.append({'basis_source': job['source'], 'output_source': binding(new),
+            'basis_kind': 'existing_chain_review' if job['existing'] else 'provided_review_for_uncovered_pairs',
+            'parameters': job['parameters'], 'capture_ids': job['capture_ids'],
+            'retained_previous_probes': len(job['probe_paths']) - len(job['capture_ids']),
+            'added_probes': len(job['capture_ids'])})
+        return new
 
     try:
         for index,source in enumerate(target['relation_sources']):
@@ -89,7 +106,11 @@ def reintegrate(root, execution_path, output_path):
                     new=run('cad_review_proximity',proximity_review,{'proximity_path':old['sources']['proximity']['path'],
                         'distance_paths':[paths[p] for p in sorted(paths)],'contact_tolerance_mm':old['contact_tolerance_mm'],
                         'output_path':dest(f'proximity-{index:02d}')})
+            elif source['kind']=='face_contact' and source['path'] in face_jobs:
+                new = update_faces(face_jobs[source['path']], index)
             evidence.append(new)
+        for job in routed['jobs']:
+            if not job['existing']: evidence.append(update_faces(job, len(evidence)))
         new_chain=run('cad_build_chain_evidence',chain_dossier,{**chain['parameters'],'evidence_paths':evidence,'output_path':dest('chain')})
         new_target=run('cad_build_target_graph',build_target_graph,{'chain_path':new_chain,
             'relation_paths':sorted(set(relation_map.values())),'output_path':dest('target')})
@@ -99,22 +120,27 @@ def reintegrate(root, execution_path, output_path):
             **draft['parameters'],'output_path':dest('joints')})
         final_check=run('cad_check_joint_draft',check_joint_draft,{'joint_draft_path':new_draft,
             'max_findings':check['parameters']['max_findings'],'output_path':dest('check')})
-        recheck(root,plan['input_files']+[plan['check_source'],execution['plan_source'],eb]+[c['source'] for c in captures.values()])
+        recheck(root,plan['input_files']+[plan['check_source'],execution['plan_source'],eb]+[c['source'] for c in captures.values()]+routed['input_files'])
     except Exception as exc:
         pipeline_error=failure(exc)['errors'][0]
         final_check=None
     supplemental=[]
     for task_id,capture in captures.items():
-        if task_id not in used:
+        if task_id not in used and task_id not in reused:
             reason={'sw_component_constraints':'CONSTRAINTS_CONTEXT_ONLY','sw_component_faces':'FACE_CATALOG_REQUIRES_PAIR_SELECTION_AND_PROBING',
                     'sw_component_distance':'NO_MATCHING_BOUND_WORKLIST','sw_component_cylinders':'NO_EXISTING_RELATION_BASIS',
                     'sw_mate_inventory':'NO_EXISTING_CONNECTION_BASIS',
-                    'sw_probe_face_pair':'FACE_PROBE_REQUIRES_EXPLICIT_CONTACT_REVIEW'}[capture['tool']]
+                    'sw_probe_face_pair':face_reasons.get(task_id, 'NO_MATCHING_FACE_REVIEW')}[capture['tool']]
             supplemental.append({'task_id':task_id,'tool':capture['tool'],'source':capture['source'],'reason':reason})
-    data={'evidence_reintegration_schema_version':1,'algorithm_version':1,'execution_source':eb,
+    inputs = unique_bindings(root, plan['input_files'] + [execution['plan_source'], eb] + routed['input_files'] +
+        [r['envelope_source'] for r in execution['records'] if r['envelope_source']] +
+        ([execution['previous_execution_source']] if execution['previous_execution_source'] else []))
+    data={'evidence_reintegration_schema_version':1,'algorithm_version':2,'execution_source':eb,
           'before_check_source':plan['check_source'],'after_check_source':binding(final_check) if final_check else None,
           'recomputation_complete':final_check is not None,'applied_capture_ids':sorted(used) if final_check else [],
           'attempted_capture_ids':sorted(used),'supplemental_captures':supplemental,'excluded_captures':excluded,
+          'reused_capture_ids': sorted(reused), 'face_routing': routed['entries'], 'face_updates': face_updates,
+          'supplied_face_review_source': routed['supplied_review_source'], 'input_files': inputs,
           'superseded_sources':superseded,'steps':steps,'pipeline_error':pipeline_error,
           'deferred_plan_tasks':plan['deferred_tasks'],'check_output_truncated':plan['check_output_truncated'],
           'remaining_findings_summary':read_json(json_path(root,final_check))[0]['summary'] if final_check else None,
@@ -123,6 +149,8 @@ def reintegrate(root, execution_path, output_path):
           'limitations':['Only complete captures under passed guards enter existing compatible derivations. Partial and failed results remain diagnostic.',
               'Original thresholds, inventory, grouping options, template set and search budgets are preserved; raw originals are never edited.',
               'Cylinders/root mates/component distances require existing compatible relation/review bases; no thresholds or face pairs are invented.',
+              'Face probes retain existing review thresholds for covered component pairs; an explicit replayed face review can supply thresholds only for uncovered pairs and its matching guarded probes. Existing probe rows are never replaced silently.',
+              'Face thresholds with multiple interpretations, already-observed face snapshots and capacity limits remain supplemental. Local near points still do not confirm contact or joints.',
               'Constraints and face catalogs remain supplemental; they do not directly establish joints or resolve findings. Use cad_index_evidence to associate guarded observations and pass its index to subsequent planning; this report alone is not an index.',
               'Completed recomputation is not physical confirmation. Compare before/after checks separately; disappeared findings do not prove resolution.']}
     write_result(output,data)

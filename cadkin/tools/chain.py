@@ -6,7 +6,7 @@ import json
 
 from cadkin.errors import success
 from cadkin.tools.chain_sources import ChainSources, require
-from cadkin.tools.files import json_path
+from cadkin.tools.files import json_path, replay_reads
 from cadkin.tools.proximity import write_result
 
 
@@ -43,6 +43,7 @@ def review_flags(evidence):
     return flags
 
 
+@replay_reads
 def build_chain(root, inventory_path, occurrence_paths, chain_name, evidence_paths=None, grouping_path=None, grouping_review_path=None):
     require(isinstance(chain_name,str) and 1 <= len(chain_name.strip()) <= 100, 'Provide a descriptive chain name.', 'INVALID_ARGUMENTS')
     require(isinstance(occurrence_paths,list) and 2 <= len(occurrence_paths) <= 50 and

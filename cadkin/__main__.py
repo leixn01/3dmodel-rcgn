@@ -144,6 +144,7 @@ def main():
     execute.add_argument('--output', required=True)
     reintegrate = commands.add_parser('reintegrate-evidence', help='Recompute compatible evidence after passed execution guards')
     reintegrate.add_argument('execution_path')
+    reintegrate.add_argument('--face-review', dest='face_review_path')
     reintegrate.add_argument('--output', required=True)
     compare = commands.add_parser('compare-checks', help='Compare source-replayed draft checks without asserting resolution')
     compare.add_argument('before_check_path')
@@ -166,7 +167,9 @@ def main():
                     from .tools.execution import run_plan
                     result = run_plan(service,args.plan_path,args.output)
                 elif args.command == 'reintegrate-evidence':
-                    result = service.call('cad_reintegrate_evidence',{'execution_path':args.execution_path,'output_path':args.output})
+                    arguments = {'execution_path': args.execution_path, 'output_path': args.output}
+                    if args.face_review_path is not None: arguments['face_review_path'] = args.face_review_path
+                    result = service.call('cad_reintegrate_evidence', arguments)
                 elif args.command == 'compare-checks':
                     result = service.call('cad_compare_draft_checks',{'before_check_path':args.before_check_path,
                         'after_check_path':args.after_check_path,'output_path':args.output})

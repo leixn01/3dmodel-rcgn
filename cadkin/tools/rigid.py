@@ -1,6 +1,6 @@
 """Replay file boundaries for independent rigid grouping and joint drafting tools."""
 from cadkin.errors import success
-from cadkin.tools.files import json_path, read_json
+from cadkin.tools.files import json_path, read_json, replay_reads
 from cadkin.tools.chain_sources import check_fields, require
 from cadkin.tools.matching import replay_target, recheck, load_references
 from cadkin.tools.proximity import write_result
@@ -8,6 +8,7 @@ from cadkin.rigid.groups import candidate_partitions
 from cadkin.rigid.joints import draft_partitions
 
 
+@replay_reads
 def build_rigid(root, target_graph_path, **parameters):
     target, binding = replay_target(root, target_graph_path)
     data = candidate_partitions(target, **parameters)
@@ -29,6 +30,7 @@ def rigid_candidates(root, target_graph_path, output_path, **parameters):
                     'requires_human_review': False, 'rigidity_confirmed': False, 'solidworks_modified': False}, errors)
 
 
+@replay_reads
 def build_draft(root, rigid_candidates_path, template_ids=None, include_heldout=False, **parameters):
     from cadkin.templates.catalog import find_template
     path = json_path(root, rigid_candidates_path)
@@ -48,6 +50,7 @@ def build_draft(root, rigid_candidates_path, template_ids=None, include_heldout=
     return data, rigid, target
 
 
+@replay_reads
 def replay_draft(root, joint_draft_path):
     path = json_path(root, joint_draft_path)
     original, digest = read_json(path)
