@@ -223,6 +223,8 @@ class SolidWorksTools:
             from cadkin.adapters.solidworks import SolidWorksAdapter
             factory = lambda: SolidWorksAdapter(root=self.root)
         self.worker = StaWorker(factory, timeout=timeout)
+        from cadkin.tools.plan_cache import PlanReplayCache
+        self.plan_cache = PlanReplayCache()
 
     def call(self, name, arguments=None):
         try:
@@ -252,7 +254,7 @@ class SolidWorksTools:
                 return handler(self.root, **arguments)
             if name == 'sw_execute_evidence_task':
                 from cadkin.tools.execution import execute_task
-                return execute_task(self.root, self.call, **arguments)
+                return execute_task(self.root, self.call, plan_cache=self.plan_cache, **arguments)
             if name == 'cad_reintegrate_evidence':
                 from cadkin.tools.reintegration import reintegrate
                 return reintegrate(self.root, **arguments)

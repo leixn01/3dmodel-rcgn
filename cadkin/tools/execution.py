@@ -58,9 +58,10 @@ def replay_execution(root, execution_path, loaded_plan=None):
     return expected,plan,check,target,{'path':str(path),'sha256':digest}
 
 
-def execute_task(root, call, plan_path, output_path, previous_execution_path=None):
+def execute_task(root, call, plan_path, output_path, previous_execution_path=None, *, plan_cache=None):
     output=json_path(root,output_path,output=True)
-    loaded=replay_plan(root,plan_path);plan,check,target,pb=loaded
+    loaded=plan_cache.load(root,plan_path) if plan_cache is not None else replay_plan(root,plan_path)
+    plan,check,target,pb=loaded
     previous=None;records=[]
     if previous_execution_path is not None:
         old,_,_,_,previous=replay_execution(root,previous_execution_path,loaded)

@@ -698,8 +698,8 @@
     },
     {
       "path": "cadkin/tools/execution.py",
-      "size_bytes": 8458,
-      "sha256": "2e2187a997a147e0498c0ef9e6d142bc781fa507945d3d1fd64a9e287a424c57"
+      "size_bytes": 8545,
+      "sha256": "ac65c3224687ecb0af19b4bd273a2b41b7278d5bb3aa18a0babd51c15541f9ca"
     },
     {
       "path": "cadkin/tools/face_contacts.py",
@@ -752,6 +752,11 @@
       "sha256": "757aa52efc9e031e766597573fc3b5a2e0ad790883beb5dbd205622f23462059"
     },
     {
+      "path": "cadkin/tools/plan_cache.py",
+      "size_bytes": 1945,
+      "sha256": "78ce805795676dc7c283e78cda03c7b34badc81d437b8308149ed21b002ff54e"
+    },
+    {
       "path": "cadkin/tools/proximity.py",
       "size_bytes": 8079,
       "sha256": "622a23f3ac8df864fa382392006c5fe70051eda0161e2e5ddd07ed1c762cf058"
@@ -778,8 +783,8 @@
     },
     {
       "path": "cadkin/tools/solidworks.py",
-      "size_bytes": 33519,
-      "sha256": "0cc5fdc16286792189da093781b3efcfc101ae6669273ede47657b7b8dcc4e56"
+      "size_bytes": 33651,
+      "sha256": "c8a668f6736c6bd8bbf7a60774e3b06950ab040017ffcd636785663146ff023a"
     },
     {
       "path": "cadkin/tools/spatial.py",
@@ -843,8 +848,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "size_bytes": 16990,
-      "sha256": "40daf069ab25a8ee369533c67962fea59d1b98c5c557a9b2407f0c595799c019"
+      "size_bytes": 17409,
+      "sha256": "9f57905b7f812abd04b9e23d111d7a9d1021095bd765b0cabfa4e36ac08b2d9c"
     },
     {
       "path": "examples/three_servo_lift/3X Lift Assembly.STEP",
@@ -988,8 +993,8 @@
     },
     {
       "path": "tests/test_execution.py",
-      "size_bytes": 17449,
-      "sha256": "2dab4efb30c0928b326a2b10f5588ae55e5fc8b0bfc2f5250e66ff860e5b56a8"
+      "size_bytes": 19223,
+      "sha256": "1bdc08e26f026018637528ab0382891904601d57c32ba4ad0bef82db77bef245"
     },
     {
       "path": "tests/test_face_matches.py",

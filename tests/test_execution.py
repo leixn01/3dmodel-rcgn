@@ -142,6 +142,30 @@ class ExecutionTests(unittest.TestCase):
             execute_task(self.root,call,'outputs/plan.json',self.plan['tasks'][0]['save_envelope_path'])
         self.assertEqual(error.exception.code,'INVALID_PATH');call.assert_not_called()
 
+    def test_cached_plan_revalidates_sources_without_recomputing(self):
+        from unittest.mock import patch
+        from cadkin.tools.followup import replay_plan
+        with patch('cadkin.tools.followup.replay_plan', wraps=replay_plan) as replay:
+            args={'plan_path':'outputs/plan.json','output_path':'outputs/cached1.json'}
+            first=self.live.call('sw_execute_evidence_task',args)
+            self.assertEqual(first['status'],'ok')
+            second=self.live.call('sw_execute_evidence_task',{**args,'output_path':'outputs/cached2.json','previous_execution_path':'outputs/cached1.json'})
+            self.assertEqual(second['status'],'ok');self.assertEqual(replay.call_count,1)
+            data=self.read('mates.json');data['data']['mate_count']=200;self.write('mates.json',data)
+            bad=self.live.call('sw_execute_evidence_task',{**args,'output_path':'outputs/cached3.json','previous_execution_path':'outputs/cached2.json'})
+            self.assertEqual(bad['errors'][0]['code'],'EVIDENCE_MISMATCH')
+            self.assertFalse((self.root/'outputs/cached3.json').exists())
+
+    def test_cached_plan_copies_and_reference_changes_rejected(self):
+        from unittest.mock import patch
+        cache=self.live.plan_cache
+        a=cache.load(self.root,'outputs/plan.json');a[0]['tasks'][0]['tool']='sw_rebuild'
+        self.assertEqual(cache.load(self.root,'outputs/plan.json')[0]['tasks'][0]['tool'],'sw_active_document')
+        with patch('cadkin.tools.plan_cache.reference_fingerprint',return_value=[]):
+            with self.assertRaises(ToolFailure) as error:cache.load(self.root,'outputs/plan.json')
+            self.assertEqual(error.exception.code,'EVIDENCE_MISMATCH')
+        self.assertFalse(cache.entries)
+
     def test_source_changed_between_steps_is_rejected(self):
         self.step();data=self.read('mates.json');data['data']['mate_count']=200;self.write('mates.json',data);call=Mock()
         with self.assertRaises(ToolFailure):self.step('outputs/step-1.json',2,call)
@@ -235,7 +259,7 @@ class ReintegrationTests(unittest.TestCase):
         step=next(s for s in r['data']['steps'] if s['tool']=='cad_review_proximity')
         new=self.read(step['output_source']['path']);old=self.read('outputs/proximity-review.json')
         self.assertEqual(new['contact_tolerance_mm'],old['contact_tolerance_mm'])
-        self.assertIn(str(path),[s['path'] for s in new['distance_sources']])
+        self.assertIn(path.resolve(),[Path(s['path']).resolve() for s in new['distance_sources']])
 
     def test_unlisted_distance_is_left_unintegrated(self):
         # A genuine measured pair is not automatically added outside the original bounded worklist.
