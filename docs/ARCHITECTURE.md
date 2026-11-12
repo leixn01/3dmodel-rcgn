@@ -17,6 +17,8 @@
 | 模板资源 | `cadkin/resources/mechanisms/` | 固定源版本的结构摘录、目录、哈希及许可；不包含运行流程 |
 | 模板算法 | `cadkin/templates/` | 目录、USD解析、给定对应的图评分；不依赖COM或skill |
 | 模板文件边界 | `cadkin/tools/templates.py` | 路径、哈希、独占新输出与错误envelope |
+| 目标图与匹配算法 | `cadkin/matching/target.py`、`search.py` | 纯特征适配、连通窗口与有预算搜索，不读skill、不连接COM |
+| 匹配来源与文件边界 | `cadkin/tools/matching.py` | 复用链级来源重放、重算目标图、校验模板/输出与错误 |
 | 空间计算 | `cadkin/geometry.py` | 无 COM 依赖的矩阵、单位与近似包围盒转换 |
 | STA 调度 | `cadkin/adapters/sta.py` | 单线程串行调用、超时及取消后的状态处理 |
 | 开源兼容片段 | `cadkin/_vendor/sw_mcp.py` | 从固定 SW_MCP 版本提取并修改的 COM 成员访问逻辑 |
@@ -69,6 +71,8 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 | `mechanism-template-search` | 仅检索参考目录、来源与划分 |
 | `mechanism-template-extract` | 只提取单个USD参考结构，保留未知 |
 | `mechanism-template-compare` | 根据已有对应评分，保留缺失/额外连接 |
+| `mechanism-target-graph` | 原始链清单到实例证据图；不执行搜索 |
+| `mechanism-template-match` | 图到局部模板假设；不重新采集CAD |
 | `solidworks-document` | 明确请求的打开/导入、重建操作 |
 | `solidworks-view` | 标准视图和缩放 |
 | `solidworks-display` | 基准面等类别显示过滤与总开关 |
@@ -91,6 +95,12 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 
 ## 0.13.0 自动流程边界
 
-默认不等待人工复核；旧requires_review/review_flags指证据需继续分析，无法补全就在结论说明风险。chain-review已从自动发现目录移除，旧工具仅保留兼容。引用数据、匹配算法、工具、skill分别维护。当前没有目标图适配/自动匹配器；比较工具要求已有来源绑定的body_map，不负责生成对应。
+默认不等待人工复核；旧requires_review/review_flags指证据需继续分析，无法补全就在结论说明风险。chain-review已从自动发现目录移除，旧工具仅保留兼容。引用数据、匹配算法、工具、skill分别维护。0.14.0已独立实现目标图适配与局部匹配；旧比较工具仍要求来源绑定的body_map，不负责生成对应。匹配报告不是比较工具的真值输入。
 
-27个skill仅入口信息常驻；references按需加载。usd-core通过templates extra可选安装；目录查询无需USD，解析工具不启动CAD，生产工具也不下载参考原始大文件。
+29个skill仅入口信息常驻；references按需加载。usd-core通过templates extra可选安装；目录查询无需USD，解析工具不启动CAD，生产工具也不下载参考原始大文件。
+
+## 0.14.0 数据流
+
+原始采集与离线证据 → chain dossier → target graph → local template hypotheses。每层重放已有来源并核对哈希；target图可不包含所有几何，但缺失要显式保留。一个叶实例对应一个节点，不提前合并。目标图处理坐标/证据标准化；搜索只读取标准字段，名称/角色只作上下文。
+
+搜索按模板连通窗口分配状态预算，beam剪枝与返回数量裁剪分别记录。采用连接支持与相对无向轴角作排序；具体权重和公式随结果保存，类型、轴点、行程和传动比不被宣称已恢复。测试与验收脚本中的参考派生控制不作为目标CAD独立准确率。

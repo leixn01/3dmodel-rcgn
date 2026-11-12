@@ -165,6 +165,20 @@ TOOLS = [
          {key: {'type':'string','minLength':1} for key in ('reference_path','candidate_path','correspondence_path','output_path')},
          ['reference_path','candidate_path','correspondence_path','output_path'], False),
 
+    spec('cad_build_target_graph', 'Replay a base chain dossier and its CAD sources into an occurrence graph with evidence support, geometric axes, source coverage and conflicts. Automatically includes relations bound by connection files; optional standalone relation files. Offline; no joint confirmation, human review or rigid merging.',
+         {'chain_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'relation_paths': {'type':'array','maxItems':20,'uniqueItems':True,'items':{'type':'string','minLength':1}}},
+         ['chain_path','output_path'], False),
+    spec('cad_match_mechanism_templates', 'Replay a target graph and search bounded connected windows of pinned reference mechanisms for ranked occurrence mappings and conditional joint hypotheses. Discloses support, relative-axis checks, ties, source gaps and search limits. Scores are not probabilities; no motion validation or copied target limits.',
+         {'target_graph_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'template_ids': {'type':'array','minItems':1,'maxItems':8,'uniqueItems':True,'items':{'type':'string','minLength':1}},
+          'include_heldout': {'type':'boolean'}, 'pattern_size': {'type':'integer','minimum':2,'maximum':6,'default':3},
+          'max_candidates': {'type':'integer','minimum':1,'maximum':20,'default':5},
+          'max_states': {'type':'integer','minimum':1,'maximum':100000,'default':20000},
+          'beam_width': {'type':'integer','minimum':1,'maximum':1000,'default':50},
+          'angle_tolerance_deg': {'type':'number','exclusiveMinimum':0,'maximum':45,'default':10}},
+         ['target_graph_path','output_path'], False),
+
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -190,6 +204,10 @@ class SolidWorksTools:
                 from cadkin.tools.templates import template_catalog, extract_template, compare_templates
                 handler = {'cad_list_mechanism_templates':template_catalog, 'cad_extract_mechanism_template':extract_template,
                            'cad_compare_mechanism_graphs':compare_templates}[name]
+                return handler(self.root, **arguments)
+            if name in ('cad_build_target_graph','cad_match_mechanism_templates'):
+                from cadkin.tools.matching import build_target_graph, match_templates
+                handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
                 return handler(self.root, **arguments)
             if name == "cad_group_components":
                 from cadkin.tools.grouping import group_components

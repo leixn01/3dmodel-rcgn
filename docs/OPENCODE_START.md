@@ -11,7 +11,7 @@ conda activate 你的环境名
 python -m pip install -e ".[solidworks,templates]"
 ```
 
-已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 34 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 36 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
 
 在同一个已激活 Conda 的终端启动 OpenCode；MCP 子进程通过 PATH 找到该环境的 python。先执行 `python -c "import sys; print(sys.executable)"` 记录解释器路径，再让 OpenCode 调用 `sw_session_status`，比较 `data.runtime.python_executable`，且 `matches_conda_prefix` 应为 true。运行时同时返回 python_prefix、conda_prefix、python_version；软件未运行时也能检查。没有 CONDA_PREFIX 时匹配值为 null，不能据此声称已在 Conda 中。
 
@@ -126,7 +126,7 @@ Skill 位于 `.opencode/skills/<名称>/SKILL.md`，按默认规则发现；不�
 
 诊断命令：`python -m cadkin sw sw_session_status`。结果输出到终端，不会开启 MCP 协议会话。运行产物留在 `outputs/`。
 
-用户已反馈旧版 15 工具的实测结果；新增模板按0.13.0清单验证；旧机构链汇总按0.12.0，人工复核段仅作历史兼容；面间隙/法向保留 0.11.0 清单；组件距离保留 0.10.0 清单；面身份核对保留 0.9.0 清单；配合状态/连接复核保留 0.8.0 清单；几何候选保留 0.7.0 清单；Conda、配合与轴线保留 0.6.0 清单；显示/超时修复与分组保留 0.5.0 复测项，启动仍按 0.4.0 清单验证。请按 [34 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
+用户已反馈旧版 15 工具的实测结果；新增目标图/匹配按0.14.0清单验证；模板读取保留0.13.0清单；旧机构链汇总按0.12.0，人工复核段仅作历史兼容；面间隙/法向保留 0.11.0 清单；组件距离保留 0.10.0 清单；面身份核对保留 0.9.0 清单；配合状态/连接复核保留 0.8.0 清单；几何候选保留 0.7.0 清单；Conda、配合与轴线保留 0.6.0 清单；显示/超时修复与分组保留 0.5.0 复测项，启动仍按 0.4.0 清单验证。请按 [36 个工具验收清单](MCP_ACCEPTANCE.md) 记录首次联调结果；后续任务见 [开发计划](DEVELOPMENT_PLAN.md)。
 
 官方说明：[Skills](https://opencode.ai/docs/skills/)、[MCP](https://opencode.ai/docs/mcp-servers/)、[V1/V2 兼容](https://opencode.ai/docs/migrate-v1/)。
 
@@ -142,6 +142,27 @@ python -m cadkin template-extract --template-id gas_lift_bar_stool --output outp
 python scripts/verify_reference_templates.py --output outputs/verify-0.13
 ```
 
-输出用新文件名/目录。自带8个结构摘录不是完整网格模型；默认目录只返回6个reference（其中2个无关节负例），另2个留作后续匹配评测。模板轴线和行程只属于参考。比较工具需要两份原始图和真实来源绑定的对应文件；当前尚未自动生成SolidWorks对应关系。
+输出用新文件名/目录。自带8个结构摘录不是完整网格模型；默认目录只返回6个reference（其中2个无关节负例），另2个留作后续匹配评测。模板轴线和行程只属于参考。比较工具需要两份原始图和真实来源绑定的对应文件；0.14.0可独立搜索目标实例图的局部候选对应；这些假设尚不是完整刚体图，也不能直接当作本评分工具的真值。
 
 新增错误：USD_DEPENDENCY_MISSING检查当前Conda是否安装templates extra；USD_COMPOSITION_UNSUPPORTED表示输入有外部层/变体等，本版只支持独立归一化USD；NO_RIGID_BODIES不把纯视觉模型当机构；TEMPLATE_INCOMPLETE/COMPARISON_PARTIAL保留风险继续；EVIDENCE_MISMATCH重新核对来源，不能只篡改哈希。
+
+## 0.14.0 使用已有真实来源做模板匹配
+
+先运行本轮自动验收（明确使用模拟来源，不启动SolidWorks）：
+
+```powershell
+python scripts/verify_template_matching.py --output outputs/verify-0.14
+```
+
+应返回passed=true、18项检查。已有本机真实chain dossier时：
+
+```powershell
+python -m cadkin target-graph outputs/chain.json --output outputs/target.json
+python -m cadkin match-templates outputs/target.json --output outputs/matches.json
+```
+
+没有chain.json时让Agent按独立链汇总流程生成；只加载缺少的采集能力，不让用户填写机械确认。已有连接结果关联的轴线会自动读取，只有独立轴线结果才额外传target-graph的--relations。所有输出使用新文件名。
+
+默认匹配3节点局部窗口、参考库6项；按实际范围可用--pattern-size 2到6。要筛选可用--template-ids gas_lift_bar_stool bench_vise。需要更多竞争解释可用--max-candidates 20；预算不足时先看search_exhaustive/beam_pruned_states，按任务调整--max-states和--beam-width。分数不是百分比，关节类型仅是假设，轴点/限位保留未知。
+
+MATCH_SEARCH_LIMIT为有预算结果，NO_SUPPORTED_MATCH表示本范围内没有受支持候选，均不能说明机构不存在。EVIDENCE_MISMATCH需重算修改后的来源；HELDOUT_TEMPLATE普通分析改用参考项。报告来源partial、同分候选、template_rankings以及缺失/额外联系。

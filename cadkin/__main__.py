@@ -86,14 +86,36 @@ def main():
     compare.add_argument('candidate_path')
     compare.add_argument('--correspondence', dest='correspondence_path', required=True)
     compare.add_argument('--output', required=True)
+    target = commands.add_parser('target-graph', help='Replay a chain dossier into an occurrence evidence graph')
+    target.add_argument('chain_path')
+    target.add_argument('--relations', dest='relation_paths', nargs='+')
+    target.add_argument('--output', required=True)
+    match = commands.add_parser('match-templates', help='Rank bounded reference subgraph hypotheses against a target graph')
+    match.add_argument('target_graph_path')
+    match.add_argument('--template-ids', nargs='+')
+    match.add_argument('--include-heldout', action='store_true')
+    match.add_argument('--pattern-size', type=int, default=3)
+    match.add_argument('--max-candidates', type=int, default=5)
+    match.add_argument('--max-states', type=int, default=20000)
+    match.add_argument('--beam-width', type=int, default=50)
+    match.add_argument('--angle-tolerance-deg', type=float, default=10)
+    match.add_argument('--output', required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare'}:
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates'}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
                 if args.command == "sw":
                     result = service.call(args.tool, json.loads(args.arguments))
+                elif args.command == 'target-graph':
+                    arguments = {'chain_path':args.chain_path,'output_path':args.output}
+                    if args.relation_paths is not None:arguments['relation_paths']=args.relation_paths
+                    result = service.call('cad_build_target_graph',arguments)
+                elif args.command == 'match-templates':
+                    arguments = {k:getattr(args,k) for k in ('target_graph_path','include_heldout','pattern_size','max_candidates','max_states','beam_width','angle_tolerance_deg')}
+                    if args.template_ids is not None:arguments['template_ids']=args.template_ids
+                    result = service.call('cad_match_mechanism_templates',{**arguments,'output_path':args.output})
                 elif args.command == 'templates':
                     result = service.call('cad_list_mechanism_templates', {'query':args.query,'include_heldout':args.include_heldout})
                 elif args.command == 'template-extract':
@@ -156,7 +178,7 @@ def main():
             print(str(output))
         else:
             print(payload, end="")
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare'} and result["status"] == "error":
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates'} and result["status"] == "error":
             raise SystemExit(2)
     except (RuntimeError, OSError, ValueError, KeyError, zipfile.BadZipFile, URLError) as exc:
         parser.exit(2, f"Error: {exc}\n")

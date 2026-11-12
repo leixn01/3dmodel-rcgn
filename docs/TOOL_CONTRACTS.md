@@ -1,9 +1,11 @@
 # SolidWorks 工具接口
 
-版本：0.13.0。以下 34 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.14.0。以下 36 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `cad_build_target_graph` | chain_path、output_path，可选relation_paths | 重放链及来源为实例图；轴线关系自动/显式读取，保留冲突，离线新输出 |
+| `cad_match_mechanism_templates` | target_graph_path、output_path；可选template_ids/include_heldout、窗口和预算参数 | 有预算地搜索局部参考结构，输出一对一实例映射和类型假设；不创建关节或运动 |
 | `cad_list_mechanism_templates` | 可选query、include_heldout | 查询固定参考目录；不连接CAD/网络，不导入USD |
 | `cad_extract_mechanism_template` | output_path；template_id/asset_path恰有一个 | 提取一个USD作者标注的机构图，保留来源与风险，写outputs新文件 |
 | `cad_compare_mechanism_graphs` | reference_path、candidate_path、correspondence_path、output_path | 给定一对一body_map比较图连接/类型；不推断映射，不评轴线/限位/运动 |
@@ -542,3 +544,23 @@ max_faces 和 max_cylinders 是全调用预算，达到且仍有面未检查时�
 输出mechanism_comparison_schema_version=1，包括body_coverage、connections、typed_joints、missing/extra_typed_joints、excluded、source_risks、unassessed与来源hash。body_coverage不证明刚体分组合并正确。摘要与实际记录不同提示STALE_GRAPH_SUMMARY，评分使用实际记录。图哈希相同提示SELF_COMPARISON，复制/构造案例同样不得宣称识别精度。
 
 错误代码：INVALID_ARGUMENTS、TEMPLATE_NOT_FOUND、INVALID_PATH、INVALID_INPUT、OUTPUT_EXISTS、USD_DEPENDENCY_MISSING、USD_COMPOSITION_UNSUPPORTED、INVALID_TEMPLATE、TEMPLATE_LIMIT、NO_RIGID_BODIES、INVALID_GRAPH、EVIDENCE_MISMATCH。COMPARISON_PARTIAL标明输入/对应/边覆盖不完整；继续报告风险。旧cad_apply_chain_review仅保留兼容，默认自动拆解不调用；旧requires_review字段不等于需要用户确认。
+
+## 0.14.0 目标图与局部匹配契约
+
+`cad_build_target_graph`读取原始chain_dossier_schema_version=1并根据parameters重新构建；不接受人工review或手写结果。可选relation_paths最多20文件；自动读取connection来源绑定的relations，总计最多40来源，文件图总体256文件/128MiB。每个关系都重放空间/原始圆柱/可选分组来源，要求同一清单/配置/位姿。
+
+输出target_graph_schema_version=1、algorithm_version=1；nodes记录实例ID、父级/配置、根坐标列矩阵（米）、近似盒和来源错误；pairs保留全部实例对、signals、axis_relations、flags、link_support、代表方向。参考的USD行矩阵不在目标侧混用。角色/名称不参与匹配分数。
+
+权重：active_mate=1、near_face_sample=0.65、near_component=0.55、coaxial_candidate=0.3、parallel_candidate=0.2；各对取最大值，不累积重复测量。存在flags/配合记录错误/多公差时减半，不能把它解释成正确率。轴线每对最多32条；多个方向或截断不产生代表方向。来源错误保留partial，requires_human_review=false。
+
+`cad_match_mechanism_templates`再重放目标来源并核对全部派生字段；只接受自带固定模板ID。template_ids最多8个；默认reference，heldout显式启用并记录。默认pattern_size=3（2–6）、max_candidates=5（1–20）、max_states=20000（1–100000）、beam_width=50（1–1000）、angle_tolerance_deg=10（0–45不含0）。可用目标不足时缩小窗口并记录effective_pattern_size。
+
+枚举启用刚体的连通内部窗口，固定/转动/移动以外类型和世界端点不进入映射；外部/排除的关节保留覆盖说明。单模板超过12启用刚体或总窗口超过1024时明确截断。将状态预算分给每个窗口，按部分连接支持保留beam；完整映射必须有正向证据连通路径。所有预算、剪枝、已发现候选数、同分数与模板汇总均输出，返回前K裁剪与非穷尽搜索分别记录。
+
+评分使用0.7×平均连接支持＋0.3×含缺失覆盖的相对轴角符合度−额外支持对惩罚，最低0。每对轴fit=max(0,1−无向角差/angle_tolerance_deg)，缺失/多义不择优补齐；额外惩罚0.1×额外支持之和/潜在对数。公式随输出保存。整体旋转/轴符号不改变轴角，但这些必要条件不验证统一框架对齐、自由度或实际运动。
+
+输出mechanism_match_schema_version=1，含candidates(mapping、joint_hypotheses、score_components、coverage、risk_codes)、template_rankings、reference_coverage、target_errors/boundary_evidence、search、search_exhaustive、output_truncated和heldout_exposed。ambiguous是排序歧义，不是机械认证。joint_hypotheses类型来自模板，limits/axis_origin_m为空，joint_axis_verified与mechanical_relation_confirmed始终false。
+
+与0.13.0图评分区别：此处生成的是参考窗口到叶实例的假设对应，不是完整刚体图/真值，不能直接传给cad_compare_mechanism_graphs。名称/尺寸/参考限位不参与自动赋值，多零件刚体聚合未实现。
+
+新增错误：INVALID_TARGET_SOURCE、TARGET_SOURCE_LIMIT、TARGET_AXIS_LIMIT、INVALID_MATCH_ARGUMENTS、HELDOUT_TEMPLATE、MATCH_SEARCH_LIMIT、NO_SUPPORTED_MATCH。EVIDENCE_MISMATCH/OUTPUT_EXISTS/INVALID_PATH沿用。预算/无候选为partial并保留现有输出，不请求人工复核；输入损坏/来源不符为error。
