@@ -44,9 +44,21 @@ def main():
     review.add_argument("relations_path")
     review.add_argument("mate_inventory_path")
     review.add_argument("--output", required=True)
+    proximity = commands.add_parser('proximity', help='Create an approximate-box worklist for component distance measurements')
+    proximity.add_argument('inventory_path')
+    proximity.add_argument('--output', required=True)
+    proximity.add_argument('--max-box-gap-mm', type=float, required=True)
+    proximity.add_argument('--occurrences', dest='occurrence_paths', nargs='+')
+    proximity.add_argument('--max-pairs', type=int, default=20000)
+    proximity.add_argument('--max-candidates', type=int, default=200)
+    near_review = commands.add_parser('review-proximity', help='Review saved distance evidence offline; contact remains a candidate')
+    near_review.add_argument('proximity_path')
+    near_review.add_argument('--distances', dest='distance_paths', nargs='+', required=True)
+    near_review.add_argument('--output', required=True)
+    near_review.add_argument('--contact-tolerance-mm', type=float, required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections"}:
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity'}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
@@ -69,6 +81,15 @@ def main():
                     if args.grouping_path is not None:
                         arguments["grouping_path"] = args.grouping_path
                     result = service.call("cad_component_relations", arguments)
+                elif args.command == 'proximity':
+                    arguments = {k: getattr(args, k) for k in ('inventory_path', 'max_box_gap_mm', 'max_pairs', 'max_candidates')}
+                    arguments['output_path'] = args.output
+                    if args.occurrence_paths is not None:
+                        arguments['occurrence_paths'] = args.occurrence_paths
+                    result = service.call('cad_proximity_candidates', arguments)
+                elif args.command == 'review-proximity':
+                    result = service.call('cad_review_proximity', {'proximity_path': args.proximity_path,
+                        'distance_paths': args.distance_paths, 'contact_tolerance_mm': args.contact_tolerance_mm, 'output_path': args.output})
                 else:
                     arguments = {"inventory_path": args.inventory_path, "output_path": args.output}
                     if args.scope_occurrence_path is not None:
@@ -89,7 +110,7 @@ def main():
             print(str(output))
         else:
             print(payload, end="")
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections"} and result["status"] == "error":
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity'} and result["status"] == "error":
             raise SystemExit(2)
     except (RuntimeError, OSError, ValueError, KeyError, zipfile.BadZipFile, URLError) as exc:
         parser.exit(2, f"Error: {exc}\n")

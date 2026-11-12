@@ -1,44 +1,38 @@
 # 3DModel-RCGN
 
-工业数模自动拆解项目。MCP 0.9.0 提供 23 个工具：SolidWorks 启动、文档/组件树、选择/显隐、分页空间读取，可复核的组件分组，配合/圆柱轴线证据读取，同轴/平行候选、配合状态与具体面身份核对。STEP 测试模型已在 examples 中。
+工业数模自动拆解项目。MCP 0.10.0 提供 26 个工具：SolidWorks 启动、文档/组件树、选择/显隐、空间读取、组件分组、配合/圆柱证据、面身份核对，以及组件距离与近接触候选。STEP 测试模型已在 examples 中。
 
 ## 在 Windows 上使用
 
-在仓库根目录的 PowerShell 中激活你已有的 Conda 环境（替换下面的环境名；已有仓库先 `git pull --ff-only`）：
+在仓库根目录的 PowerShell 中激活你已有的 Conda 环境（替换环境名；已有仓库先更新）：
 
 ```powershell
 conda activate 你的环境名
+git pull --ff-only
 python -m pip install -e ".[solidworks]"
-```
-
-仅面向 Windows + 桌面版 SolidWorks，Python 3.10+。无需提前启动 SolidWorks；STEP 已在 examples 下，无需解压。保持该 Conda 环境激活，在同一终端运行：
-
-```powershell
 opencode mcp list
 opencode
 ```
 
-项目 `opencode.json` 使用当前环境的 `python` 启动 MCP，不绑定机器路径。升级后退出并重新启动 OpenCode，让 MCP 加载新工具。告诉 Agent：
+仅面向 Windows + 桌面版 SolidWorks，Python 3.10+。无需提前启动 SolidWorks，无需解压模型。项目使用当前 Conda 环境的 python；升级后退出并重新启动 OpenCode。
 
-> 启动或复用 SolidWorks，打开仓库测试 STEP；按 docs/MCP_ACCEPTANCE.md 的 0.9.0 清单，核对配合引用面与圆柱候选面。只加载当前任务对应 skill，按需读取参考文件；保存原始证据，列出待核对实例，不自动确认运动副。
+本次可直接告诉 Agent：
+
+> 启动或复用 SolidWorks，打开仓库测试 STEP，按 docs/MCP_ACCEPTANCE.md 的 0.10.0 清单验收。先选 2–5 个真实零件，生成待测组件对，逐对测量距离，再离线整理近接触候选。只加载当前任务对应 skill，按需读取参考文件；保存原始返回，列出需要我在窗口核对的结果，不自动确认接触或运动副。
 
 ## 导出与分组
 
-打开模型后，在仓库根目录执行（文件名需未被使用）：
+模型打开后执行（输出需用新文件名）：
 
 ```powershell
 python -m cadkin spatial-export --page-size 5 --output outputs/spatial.json
 python -m cadkin group outputs/spatial.json --output outputs/groups.json
 ```
 
-第一条自动读完所有页；若包围盒较慢，可另取文件名加 `--without-boxes`。第二条离线生成固定基体、移动平台、传动/导向相关件和待确认四类候选，保留依据；子装配容器不重复分组，未知名称不强行识别。复核方法见验收清单。
+第一条收齐空间分页；第二条离线生成角色候选供复核。若只做名称分组、包围盒很慢，可用新文件名加 `--without-boxes`；邻近筛选需要包围盒。
 
-`sw_component_constraints` 查询固定标志/配合，`sw_component_cylinders` 查询指定零件的圆柱面轴线/半径。它们只读；嵌套固定状态、装配级几何差异和运动关系仍需核对。
+[0.10.0 验收步骤](docs/MCP_ACCEPTANCE.md#0100组件距离与近接触候选)包含新工具参数、测量对照、部分结果和只读检查。组件距离不依赖配合；具体配合面身份核对仍按 0.9.0 清单进行。
 
-`sw_match_mate_faces` 新增配合面身份核对：圆柱采集时设置 `include_face_references=true`，保存原始返回，再用 `cad_review_connections` 离线生成具体面对应清单。已有几何/配合文件仍可按原方式复核。
+20 个功能 skill 保持简短入口、references 按需读取；执行代码独立放在工具/COM 层。当前不含零件移动、配合编辑或自动运动关系确认。
 
-[0.9.0 验收步骤](docs/MCP_ACCEPTANCE.md#090配合引用面核对)包含持久引用、重复实例、部分结果和只读检查。STEP 若无配合，只能验证空结果；面匹配成功分支需已有含配合的装配。
-
-Skill 在 `.opencode/skills/`，入口简短、references 按需读取；工具在 `cadkin/tools/`，COM 在 `cadkin/adapters/`。当前不含零件移动、配合编辑或自动运动关系识别。
-
-[下一步](docs/DEVELOPMENT_PLAN.md) · [实机验收清单](docs/MCP_ACCEPTANCE.md) · [使用与排错](docs/OPENCODE_START.md) · [工具接口](docs/TOOL_CONTRACTS.md) · [分层](docs/ARCHITECTURE.md) · [开源来源](THIRD_PARTY_NOTICES.md)
+[下一步](docs/DEVELOPMENT_PLAN.md) · [实机验收](docs/MCP_ACCEPTANCE.md) · [使用与排错](docs/OPENCODE_START.md) · [工具接口](docs/TOOL_CONTRACTS.md) · [分层](docs/ARCHITECTURE.md) · [开源来源](THIRD_PARTY_NOTICES.md)

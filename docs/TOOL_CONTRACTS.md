@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.9.0。以下 23 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.10.0。以下 26 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -27,10 +27,55 @@
 | `sw_mate_inventory` | expected_document_token；可选 max_features、max_mates、max_entities、max_depth | 只读根配合特征状态与已确认的引用实例，包含抑制记录，不含子装配内部配合 |
 | `sw_match_mate_faces` | expected_document_token、inventory_path、cylinder_paths；可选面/比较/根配合遍历预算 | 在线核对持久面引用与根配合实体，返回来源绑定证据，不修改模型 |
 | `cad_review_connections` | relations_path、mate_inventory_path、output_path | 离线关联几何候选与根配合；有面身份证据时细化到具体候选面，不确认运动副 |
+| `cad_proximity_candidates` | inventory_path、output_path、max_box_gap_mm；可选 occurrence_paths、max_pairs、max_candidates | 离线近似包围盒筛选待测对，保留未知/预算；不证明接触 |
+| `sw_component_distance` | expected_document_token、left_occurrence_path、right_occurrence_path | 只读两个零件实例的最小距离和最近点，不修改选择 |
+| `cad_review_proximity` | proximity_path、distance_paths、output_path、contact_tolerance_mm | 离线整理距离候选，校验来源与位姿，不确认机械连接 |
 
 `view` 支持 front/back/left/right/top/bottom/isometric/trimetric/dimetric。接口用枚举值访问视图，不依赖中英文界面的视图名称。
 
 先读取文档或组件树，使用返回的 `document_token` 操作。该值关联进程、文档路径/标题及活动配置；目标不匹配返回 `DOCUMENT_CHANGED`，不会操作新目标。它不是不可变几何版本号；模型重建或编辑后重新读取组件清单。工具执行期间不要在界面切换文档、配置或修改模型，COM 读取不是事务快照。
+
+## 0.10.0：邻近工作清单、距离与离线复核
+
+三项工具相互独立；距离读取不要求存在配合/圆柱，离线工具不连接 COM。输入 JSON 必须在项目内，输出是 outputs 下新文件；MCP 与 CLI 共用工具实现。
+
+### cad_proximity_candidates
+
+必填 inventory_path、output_path、max_box_gap_mm（有限非负毫米数，无默认工程值）。空间来源必须为完整分页/层级的原始 envelope，单位 m/mm；几何缺失可保留，但不能用一页或缺父节点的清单代替。可选 occurrence_paths：2–200 个不同完整叶路径；不传时最多支持 5000 个叶实例。max_pairs 默认 20000、范围 1–200000；max_candidates 默认 200、范围 1–2000。
+
+输出文件 proximity_schema_version=1、algorithm_version=1，绑定 inventory_path/SHA256/document/parameters。候选包含 occurrence_paths、box_gap_hint_mm、basis=approximate_root_aabb、measurement_required=true；保留 scope_occurrence_paths、unranked_occurrences、coverage、pair_scan_complete、complete/truncated/errors。
+
+近似盒间距只用于安排测量。按路径顺序在预算内检查，再按已检查对的盒间距排序；不是全局最近邻。SOURCE_INCOMPLETE、UNRANKED_OCCURRENCES、PROXIMITY_PAIR_LIMIT、PROXIMITY_CANDIDATE_LIMIT 均保留 partial；不在清单内的对仍未知。盒重叠不是接触/碰撞证据。
+
+### sw_component_distance
+
+必填 expected_document_token、left_occurrence_path、right_occurrence_path；一次一对不同、已解析叶零件。检查源零件已加载且配置一致；子装配容器、在位编辑不支持，不自动解析/切配置/退出编辑。调用根装配文档 IModelDoc2.ClosestDistance，传入两个 IComponent2；多实体零件可作为目标，具体几何支持需实机核对。
+
+返回原始 envelope：component_distance_schema_version=1、scope=two_resolved_part_occurrences、geometry_scope=assembly_component_context、document、targets、captured_at_utc、snapshot_atomic=false、measurement_status、measurement、complete。targets 绑定实例/父级/文件/引用配置/根变换和源零件上下文。
+
+measurement 包括 distance_m/mm、point_left_m/mm、point_right_m/mm、point_separation_m、frame=root_assembly。最近点按左右输入顺序，已是模型根装配坐标，不再乘组件变换；未读取爆炸/演示显示位置，也未返回持久面 ID 或接触区域。数值自检采用 1e-8 m 绝对/1e-7 相对误差核对点间距与返回标量，仅为 API 返回一致性检查，不是工程接触公差。
+
+- 返回 -1：DISTANCE_NO_SOLUTION；负值/空点/非有限数：INVALID_DISTANCE_RESULT；点间距不符：DISTANCE_POINT_MISMATCH。保留 measurement=null、measurement_status=unavailable 和 partial，不补零或盒间距。
+- 同实例：INVALID_ARGUMENTS；未知路径：COMPONENT_NOT_FOUND；未解析：UNRESOLVED_COMPONENT；子装配：NOT_PART_COMPONENT；配置不匹配：COMPONENT_CONFIGURATION_MISMATCH；在位编辑：IN_CONTEXT_EDIT_ACTIVE。
+- 目标查找不完整拒绝 COMPONENT_LOOKUP_INCOMPLETE；文档或已检测的目标上下文改变拒绝 DOCUMENT_CHANGED/COMPONENT_CHANGED，不保留混合证据。几何读取不是事务，token 不是几何版本号。
+- 不改变选择、显示、位姿、配合或文档；不强制重绘。单次 COM 调用仍可能阻塞，超时不代表取消。
+
+### cad_review_proximity
+
+必填 proximity_path、distance_paths（1–200 个原始 envelope 文件，不重复路径）、output_path、contact_tolerance_mm（有限非负毫米数，无默认工程值）。输入工作清单保留空间源路径/哈希；工具从原空间重算筛选和范围以拒绝被改写的候选。每对只允许一个距离快照，反序仍为同一对。
+
+核对文档/配置、完整实例、来源位姿、单位、测量类型以及米/毫米/最近点一致性。混用源文件或修改工作清单返回 EVIDENCE_MISMATCH；反序重复为 DUPLICATE_DISTANCE_SOURCE，范围外为 DISTANCE_OUTSIDE_SCOPE，格式错误为 INVALID_DISTANCE_SOURCE。致命 envelope data=null 不作为可用距离源，保留在独立错误记录中。
+
+| review_state | 含义 |
+| --- | --- |
+| near_contact_candidate | API 距离 ≤ 明确阈值，仅近接触候选 |
+| separated_at_measurement | API 距离 > 阈值，不证明无机械连接 |
+| unresolved | 已尝试但 API 无有效值，保留错误与 null |
+| unmeasured | 待测清单中未提供距离证据 |
+
+复核文件 proximity_review_schema_version=1；保存 pairs、counts、distance_sources、sources、unranked_occurrences、worklist_coverage、complete/errors。每对关联原始哈希、测量和按实例归属的 point_by_occurrence_mm。未测或部分来源导致 partial；输出始终 requires_review=true、contact_confirmed=false、mechanical_relation_confirmed=false。小/零距离不能区分接触、穿透或包含；组件最近点不证明具体圆柱面接触，不自动合并到连接/配合面复核。
+
+官方 API 依据：[ClosestDistance](https://help.solidworks.com/2025/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IModelDoc2~ClosestDistance.html)、[IsEditingSelf](https://help.solidworks.com/2024/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IModelDoc2~IsEditingSelf.html)、[GetBox 近似值限制](https://help.solidworks.com/2018/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IComponent2~GetBox.html)。ClosestDistance 的圆柱面输入存在轴线语义；本工具传组件对象，不传候选圆柱面，不将该结果解释为特定面间隙。
 
 ## 结果
 

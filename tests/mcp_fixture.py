@@ -20,9 +20,14 @@ def face_app():
     return face_document()[4]
 
 
+def distance_app():
+    from tests.distance_fakes import distance_document
+    return distance_document()[1]
+
+
 async def main():
     factory = (lambda: SessionHarness().adapter) if '--cold-start' in sys.argv else (lambda: SolidWorksAdapter(
-        app=face_app() if '--faces' in sys.argv else mate_app(), runtime=runtime()))
+        app=distance_app() if '--distance' in sys.argv else (face_app() if '--faces' in sys.argv else mate_app()), runtime=runtime()))
     service = SolidWorksTools(factory=factory)
     server = create_server(service)
     try:

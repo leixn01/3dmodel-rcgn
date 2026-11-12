@@ -113,6 +113,22 @@ TOOLS = [
           "max_candidates": {"type": "integer", "minimum": 1, "maximum": 5000, "default": 1000},
           "grouping_path": {"type": "string", "minLength": 1}},
          ["inventory_path", "cylinder_paths", "output_path", "distance_tolerance_mm", "angle_tolerance_deg"], False),
+    spec('sw_component_distance', 'Read the current minimum distance and two witness points for two resolved leaf part occurrences, without changing selection. Uses root-document ClosestDistance with component objects; rejects subassemblies and in-context editing. API failures remain unavailable, never zero. Small/zero distance is not contact, interference or joint confirmation.',
+         {'expected_document_token': TOKEN, 'left_occurrence_path': {'type': 'string', 'minLength': 1},
+          'right_occurrence_path': {'type': 'string', 'minLength': 1}},
+         ['expected_document_token', 'left_occurrence_path', 'right_occurrence_path']),
+    spec('cad_proximity_candidates', 'Build an offline measurement worklist from complete spatial inventory approximate root boxes. Explicit box-gap threshold is a screening hint only, not clearance or contact. Keeps unknown boxes, separate occurrences and pair/output limits; writes a new outputs JSON. No COM or mate data required.',
+         {'inventory_path': {'type': 'string', 'minLength': 1}, 'output_path': {'type': 'string', 'minLength': 1},
+          'max_box_gap_mm': {'type': 'number', 'minimum': 0},
+          'occurrence_paths': {'type': 'array', 'minItems': 2, 'maxItems': 200, 'uniqueItems': True, 'items': {'type': 'string', 'minLength': 1}},
+          'max_pairs': {'type': 'integer', 'minimum': 1, 'maximum': 200000, 'default': 20000},
+          'max_candidates': {'type': 'integer', 'minimum': 1, 'maximum': 2000, 'default': 200}},
+         ['inventory_path', 'output_path', 'max_box_gap_mm'], False),
+    spec('cad_review_proximity', 'Review saved component-distance envelopes against a source-bound proximity worklist, offline. Explicit contact tolerance classifies near-contact candidates, separated measurements, unresolved and unmeasured pairs. Does not prove contact/interference/fit or motion joints and does not match specific cylinder faces. Writes a new outputs JSON.',
+         {'proximity_path': {'type': 'string', 'minLength': 1}, 'output_path': {'type': 'string', 'minLength': 1},
+          'distance_paths': {'type': 'array', 'minItems': 1, 'maxItems': 200, 'uniqueItems': True, 'items': {'type': 'string', 'minLength': 1}},
+          'contact_tolerance_mm': {'type': 'number', 'minimum': 0}},
+         ['proximity_path', 'distance_paths', 'output_path', 'contact_tolerance_mm'], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -146,6 +162,12 @@ class SolidWorksTools:
             if name == "sw_match_mate_faces":
                 from cadkin.tools.mate_faces import load_face_sources
                 arguments = load_face_sources(self.root, **arguments)
+            if name == 'cad_proximity_candidates':
+                from cadkin.tools.proximity import component_proximity
+                return component_proximity(self.root, **arguments)
+            if name == 'cad_review_proximity':
+                from cadkin.tools.proximity_review import proximity_review
+                return proximity_review(self.root, **arguments)
             return self.worker.call(name, arguments)
         except Exception as exc:
             return failure(exc)

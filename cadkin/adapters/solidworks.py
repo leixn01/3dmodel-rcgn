@@ -17,12 +17,13 @@ from cadkin.adapters.constraints import ConstraintOperations
 from cadkin.adapters.cylinders import CylinderOperations
 from cadkin.adapters.mate_inventory import MateInventoryOperations
 from cadkin.adapters.mate_faces import MateFaceOperations
+from cadkin.adapters.component_distance import ComponentDistanceOperations
 
 DOC_TYPES = {1: "part", 2: "assembly", 3: "drawing"}
 NATIVE_TYPES = {".sldprt": 1, ".sldasm": 2, ".slddrw": 3}
 
 
-class SolidWorksAdapter(DisplayOperations, SpatialOperations, SessionOperations, EvidenceOperations, ConstraintOperations, CylinderOperations, MateInventoryOperations, MateFaceOperations):
+class SolidWorksAdapter(DisplayOperations, SpatialOperations, SessionOperations, EvidenceOperations, ConstraintOperations, CylinderOperations, MateInventoryOperations, MateFaceOperations, ComponentDistanceOperations):
     def __init__(self, root=None, app=None, runtime=None):
         self.root = Path(root or Path.cwd()).resolve()
         self.app = app
