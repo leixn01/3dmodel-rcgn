@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.20.0（45 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.21.0（45 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -35,7 +35,7 @@
 | 来源重放与目标实例图 | `mechanism-target-graph` |
 | 参考局部子图匹配与候选解释 | `mechanism-template-match` |
 | 多零件刚体候选分组 | `mechanism-rigid-groups` |
-| 条件分组的模板匹配与关节草案 | `mechanism-joint-draft` |
+| 目标关系草案与可选模板类比 | `mechanism-joint-draft` |
 | 草案结构/证据一致性检查 | `joint-draft-check` |
 | 最近点引导的面候选与有限面探测规划 | `face-probe-plan` |
 | 有预算的只读补采任务规划 | `evidence-task-plan` |
@@ -102,3 +102,5 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 - 0.20.0回填只消费当前guard通过的receipt：面探测沿用已有复核覆盖组件对的阈值与全部旧行；未覆盖对可传原始face_review_path，只导入匹配当前guarded probe哈希/定位符的行。不扫描目录补历史，不用外部阈值覆盖旧对；歧义、重复、容量、缺依据明确保留。失败派生文件只作诊断。
 - 面比较按目录哈希/定位符/阈值区分观察，测量内容变化与来源文件变化分开；不同目录不猜同一CAD实体。新check建立新索引后再规划，沿用轮数与停止规则；不宣称物理接触/运动副/拆卸路径已经验证。
 - 只读重放的输入字节/路径缓存只活在一次重放内，返回前重新解析路径和核验内容哈希；不缓存可变JSON对象，不跨调用复用此缓存，不装饰写文件或CAD调用。禁止用缓存绕过来源校验。
+- 0.21.0默认cad_draft_joints不加载模板；connection_candidates以目标配合/几何/冲突为主结果，目标类型unknown、DOF=null。仅非空显式template_ids增加类比；reference_joint_kind/reference_dof不得写入目标hypothesis_kind或自由度。bench_vise/swivel不能因结构映射变成升降机revolute，也不凭“端座/导轨”等名字反推fixed/prismatic。
+- 新草案与check的algorithm_version=2；目标实例对输出预算max_target_pairs由全部分组方案共享，未知/省略分别报告。没有参考匹配不阻断检查、补采、回填、索引和比较。索引v2区分目标上下文与参考类比，并更正完整面probe的条件回填提示。旧草案/check/index按版本重放，不篡改旧字段/哈希；升级目标结论时从原rigid source生成新草案，不在旧计划中换token或草案。

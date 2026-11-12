@@ -1,16 +1,16 @@
 ---
 name: mechanism-template-match
-description: 对已有目标实例图搜索参考模板中的局部连接结构，输出实例对应、关节假设、排序依据和竞争解释。用于“用参考模板分析机构”“找一条升降链的候选结构”；不采集CAD、不编辑配合、不确认运动或拆卸路径。
+description: 对已有目标实例图进行可选参考模板类比，输出结构对应、参考关节语义和竞争解释。用于明确要求比较参考结构的任务；不作为目标关系分析的必要步骤，不采集CAD、不确认目标关节类型或运动。
 ---
 
 # 模板局部匹配
 
 输入：可追溯target graph，可选template_ids。输出：outputs下的新匹配报告。
 
-1. 调用cad_match_mechanism_templates；默认参考库，heldout仅用于明确评测任务。pattern_size默认3，表示局部窗口，不能称整机识别。
+1. 一般关系分析先交接mechanism-rigid-groups和mechanism-joint-draft生成不依赖模板的目标基线。需要参考类比时才调用cad_match_mechanism_templates；可明确template_ids，本工具不传时搜索参考库，heldout仅用于明确评测任务。
 2. 报告候选映射及score_components、轴向检查、缺边/额外联系、来源风险。查看template_rankings，避免把返回前几项当全部解释。
 3. 必须一起报告search_exhaustive、output_truncated、同分数候选数。预算不足可按任务适当扩大，仍保留未搜索范围；无候选只代表本范围未找到支持。
-4. 关节类型来自模板假设，score不是置信概率；不迁移模板行程，不把几何轴当已验证关节轴，不自动移动模型。继续可独立完成的分析，在结论保留替代解释与风险，不等待人工复核。
+4. reference_joint_kind属于参考；target_joint_kind/hypothesis_kind为unknown，target_degrees_of_freedom为null。不能将swivel/revolute等参考类型继承到目标零件。score只评结构/相对轴线，不区分旋转和平移等目标类型；不迁移行程或移动模型。没有合适模板仍继续目标基线分析，不等待人工复核。
 
 需要多零件共同运动的候选分组时，将原始target graph交接mechanism-rigid-groups，不把一对一匹配结果当刚体真值。
 

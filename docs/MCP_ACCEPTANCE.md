@@ -10,6 +10,41 @@
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
 
+## 0.21.0：目标证据优先与可选模板
+
+更新仓库后在已有Conda安装`.[solidworks,templates]`，重启OpenCode。仍45工具、38功能skill。只使用目标证据的草案不调用USD模板解析；下方模板对照验收需要templates依赖。
+
+```powershell
+python scripts/verify_target_evidence.py --output outputs/verify-0.21
+```
+
+预期`passed: true`、27项检查、退出码0，输出目录必须未存在。脚本用合成目标证据和仓库固定bench_vise资产，验证swivel保留为参考revolute、目标类型unknown/DOF=null，以及不加载模板的完整草案→检查→计划→合成执行→回填→比较→索引→停止。不能称为该升降机实机验证。
+
+### 用本机已有证据升级
+
+已有真实`cad_build_rigid_candidates`原始文件及全部来源；保持原件，用新输出名。旧草案、check和索引可按原版本读取，但其模板类型字段不能作为新结论；需要重新生成草案，不能手改algorithm_version或哈希。
+
+```powershell
+# 默认：不传 --template-ids，不需要找到合适模板。
+python -m cadkin draft-joints outputs/rigid.json --output outputs/target-draft-0.21.json
+python -m cadkin check-joints outputs/target-draft-0.21.json --output outputs/target-check-0.21.json
+# 只有需要台钳结构类比时另存：
+python -m cadkin draft-joints outputs/rigid.json --template-ids bench_vise --pattern-size 2 --output outputs/analogy-0.21.json
+```
+
+| 检查对象 | 应观察到 | 失败标准 |
+| --- | --- | --- |
+| 默认cad_draft_joints | algorithm_version=2；template_sources=[]、template_search_requested=false；connection_candidates保留目标关系与来源；match=null是正常状态 | 自动加载参考库或无模板就无结果 |
+| 目标结论 | target_joint_kind=unknown、target_degrees_of_freedom=null；assessment区分约束特征、几何候选、冲突与证据不足 | 仅凭名称/同轴/接近或模板赋fixed/revolute/prismatic/1DOF |
+| 显式bench_vise类比 | reference_joint_kind可为revolute，hypothesis_kind仍unknown；reference_dof与目标自由度分开 | swivel被继承成端座↔导轨的目标旋转副 |
+| 基线一致性 | 同输入、同目标参数下，是否选模板都不改变connection_candidates | 模板影响目标证据或强制删除不匹配组件对 |
+| 预算和风险 | max_target_pairs默认200、所有方案共享；target_pair_coverage保留省略；原冲突和未知继续报告 | 截断视为无连接，或无模板被报PARTITION_NOT_SEARCHED |
+| 后续流程 | check→补采→回填→新check索引可完全不使用模板；真实执行仍需要原文档/配置/位姿一致 | 回填时悄悄重新选择模板或索引把参考类型当目标类型 |
+
+`cad_match_mechanism_templates`显式调用仍可搜索参考结构，但新输出也分离参考/目标类型。分数只评连接线索和相对轴线，同证据下旋转/平移参考可以同分。即使真实目标有lock特征，也只报告约束特征及与参考运动的冲突，尚未调用求解器证明刚体或自由度。
+
+原始输入、调用返回、草案/check/计划、后续执行证据全保存在outputs。离线步骤不改变SolidWorks窗口或模型；旧计划继续用旧绑定。已有执行历史时，用新check和最新receipt重建索引，再生成携带该索引的新计划，保持原有累计轮数；不能省略索引重新计数。
+
 ## 0.20.0：面证据回填与变化比较
 
 更新方式见README：已有Conda中`git pull --ff-only`、`python -m pip install -e ".[solidworks,templates]"`，重启OpenCode。仍45工具、38功能skill。

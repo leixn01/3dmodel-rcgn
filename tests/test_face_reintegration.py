@@ -67,6 +67,8 @@ class FaceReintegrationTests(unittest.TestCase):
         self.assertTrue(compared['settings_equal']); self.assertFalse(compared['resolved_findings_asserted'])
         indexed = self.call('cad_index_evidence', draft_check_path=data['after_check_source']['path'],
             execution_path='outputs/face-run.json', output_path=self.name('index'))
+        self.assertTrue(all(o['details']['available_for_existing_reintegration'] and o['details']['reintegration_requires_compatible_face_review']
+            for o in indexed['observations'] if o['family'] == 'face_probes' and o['usable']))
         stopped = self.call('cad_plan_face_probes', draft_check_path=data['after_check_source']['path'],
             evidence_index_path=indexed['output_path'], max_component_gap_mm=30, surface_tolerance_mm=.1, output_path=self.name('stop'))
         self.assertEqual(stopped['tasks'], []); self.assertEqual(stopped['continuation']['rounds_completed'], 2)

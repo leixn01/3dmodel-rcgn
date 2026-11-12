@@ -6,7 +6,7 @@
 
 分数=max(0,0.7×平均连接支持+0.3×包含覆盖率的轴向关系符合度−额外联系惩罚)。连接支持及风险来自目标图。轴向检查比较两条参考关节轴的无向夹角与两条目标几何轴的夹角，fit=max(0,1−角差/angle_tolerance_deg)；缺失/多义方向记0，不自动选择有利方向。相对角不依赖整体旋转，但不能证明统一坐标对齐。额外联系惩罚为0.1×其支持之和/映射节点的潜在对数。
 
-关节类型本身不由上述证据评分；joint_hypotheses.kind_basis=reference_template_only。limits和axis_origin_m留空，joint_axis_verified=false。不得称“0.8分即80%正确”。角色、名称、尺寸不贡献分数；实例ID只决定稳定排序，在预算截断时顺序会影响搜索覆盖。
+关节类型本身不由上述证据评分；相同轴线/拓扑可以让revolute/prismatic参考获得同分。0.21.0输出algorithm_version=2，joint_hypotheses.reference_joint_kind保留参考类型，hypothesis_kind/target_joint_kind=unknown、target_degrees_of_freedom=null、reference_type_transferred=false。kind_basis=target_evidence_does_not_identify_joint_type；遇到活动lock与参考运动类型相反，reference_compatibility=opposed_by_active_lock，仍不是求解器结论。limits和axis_origin_m留空。不得称“0.8分即80%正确”。角色、名称、尺寸不贡献分数，ID仅作稳定排序。工具名中的匹配只指参考结构类比。
 
 搜索为每个模式分配状态预算，按部分连接证据保留beam，再评完整映射。search_exhaustive只说明选定范围和窗口内没有状态/beam截断，不代表全机证明。output_truncated表示已发现的候选只返回前N条；best_score_ties_found与template_rankings保留竞争解释。ambiguous只是排序歧义标志，即使false也没有机械确认。
 

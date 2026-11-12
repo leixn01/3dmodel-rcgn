@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.20.0。以下 45 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.21.0。以下 45 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -12,9 +12,9 @@
 | `cad_check_joint_draft` | joint_draft_path、output_path；可选max_findings | 重放原始草案，报告结构、证据冲突、竞争解释与覆盖缺口，离线新输出 |
 | `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks、evidence_index_path | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
 | `cad_build_rigid_candidates` | target_graph_path、output_path；可选max_group_size/max_partitions/include_contact_hypotheses | 重放目标图并生成多零件刚体候选，保留不合并基线/竞争解释，不修改CAD |
-| `cad_draft_joints` | rigid_candidates_path、output_path；可选模板、窗口、搜索预算、轴线公差 | 各分组方案下匹配，输出成员/类型/DOF及目标几何轴线草案，未知限位不填充 |
+| `cad_draft_joints` | rigid_candidates_path、output_path；可选max_target_pairs、显式模板、搜索/轴线参数 | 默认不加载模板，输出目标关系证据；类型unknown/DOF=null，参考语义分开 |
 | `cad_build_target_graph` | chain_path、output_path，可选relation_paths | 重放链及来源为实例图；轴线关系自动/显式读取，保留冲突，离线新输出 |
-| `cad_match_mechanism_templates` | target_graph_path、output_path；可选template_ids/include_heldout、窗口和预算参数 | 有预算地搜索局部参考结构，输出一对一实例映射和类型假设；不创建关节或运动 |
+| `cad_match_mechanism_templates` | target_graph_path、output_path；可选template_ids/include_heldout、窗口和预算参数 | 有预算地搜索局部参考结构，输出一对一实例映射和参考类型；目标类型未知，不创建关节或运动 |
 | `cad_list_mechanism_templates` | 可选query、include_heldout | 查询固定参考目录；不连接CAD/网络，不导入USD |
 | `cad_extract_mechanism_template` | output_path；template_id/asset_path恰有一个 | 提取一个USD作者标注的机构图，保留来源与风险，写outputs新文件 |
 | `cad_compare_mechanism_graphs` | reference_path、candidate_path、correspondence_path、output_path | 给定一对一body_map比较图连接/类型；不推断映射，不评轴线/限位/运动 |
@@ -578,9 +578,9 @@ max_faces 和 max_cylinders 是全调用预算，达到且仍有面未检查时�
 
 `cad_build_rigid_candidates`输入原始target graph；max_group_size=8（2–20）、max_partitions=8（1–12）、include_contact_hypotheses=true。输出raw rigid_candidates_schema_version=1；parameters含重放所需目标路径，input_files绑定全部来源。partitions始终含不合并基线，每方案完整且不重复归属；pair_proposals/omitted_groups/boundary_evidence保留限制。output_truncated不等同于partition_space_exhaustive，后者始终false。
 
-`cad_draft_joints`输入原始rigid candidates；template_ids默认6个reference，include_heldout=false。pattern_size=3（2–6）、max_candidates=5（1–10/方案）、max_states=20000（1–100000/全部方案共享）、beam_width=50（1–1000）、angle_tolerance_deg=10（0,45]；axis_distance_tolerance_mm=0.1（0,10]）、axis_angle_tolerance_deg=1（0,5]用于根坐标轴线去重。窗口大小不会随分组自动缩小，不足组数给skip_reason。
+`cad_draft_joints`输入原始rigid candidates；0.21.0起template_ids默认空，仅显式非空ID才搜索参考，include_heldout=false；目标证据输出见0.21.0节。pattern_size=3（2–6）、max_candidates=5（1–10/方案）、max_states=20000（1–100000/全部方案共享）、beam_width=50（1–1000）、angle_tolerance_deg=10（0,45]；axis_distance_tolerance_mm=0.1（0,10]）、axis_angle_tolerance_deg=1（0,5]用于根坐标轴线去重。窗口大小不会随分组自动缩小，不足组数给skip_reason。
 
-输出joint_draft_schema_version=1。partition_results[].match保留原搜索覆盖、各模板摘要和同分；candidates[].mapping为template_body_id/group_id/member_occurrence_paths。joint_hypotheses使用group_ids及两端成员，source_occurrence_pair_ids追溯所有组间来源。方向/线来自目标圆柱；axis_line_candidate的point_on_line_root_m是无限轴线上离根原点最近的点，不是枢轴。最多每边检查128条关系、16条线候选、每线32条来源引用并标明截断。固定副草案无轴参数；limits/axis_origin_m/pitch_m_per_revolution留空。类型/DOF未验证，automatic_followup只提供建议。
+输出joint_draft_schema_version=1；0.21.0起algorithm_version=2，connection_candidates是独立目标证据主结果。显式参考的partition_results[].match保留原搜索覆盖、各模板摘要和同分；candidates[].mapping为template_body_id/group_id/member_occurrence_paths。joint_hypotheses使用group_ids及两端成员，source_occurrence_pair_ids追溯所有组间来源。方向/线来自目标圆柱；axis_line_candidate的point_on_line_root_m是无限轴线上离根原点最近的点，不是枢轴。最多每边检查128条关系、16条线候选、每线32条来源引用并标明截断。固定副草案无轴参数；limits/axis_origin_m/pitch_m_per_revolution留空。旧v1曾直接填写模板类型/DOF；新v2只放reference字段，目标类型unknown/DOF=null，automatic_followup只提供建议。
 
 两工具无COM副作用，原文件不覆盖。RIGID_CANDIDATE_LIMIT、MATCH_SEARCH_LIMIT、SOURCE_INCOMPLETE、NO_SUPPORTED_MATCH保留partial结果；派生字段/来源变化拒绝EVIDENCE_MISMATCH。没有匹配不证明没有机构；各分组分数不能当分组真实性概率。
 
@@ -693,3 +693,20 @@ face observation标识由两端实例、保存目录哈希、body/face定位符�
 完成后用after_check_source.path及同一receipt调用cad_index_evidence，后续规划必须使用新check/新索引；只回填本轮，不能索引历史全量重应用或删除历史绕过4轮上限。离线工具不修改SolidWorks窗口/模型。
 
 重放读取优化仅在一次纯只读调用内复用不可变JSON字节及路径；每次解析返回独立对象，结束前重新解析输入路径并校验SHA256。512文件/128MiB缓存容量之外仍正常读取，不跨调用使用旧内容；不用于CAD调用、写入或跳过来源重放。
+
+
+## 0.21.0：目标证据草案与可选参考
+
+cad_draft_joints必填rigid_candidates_path、output_path。默认template_ids=None（或[]）不加载模板；非空显式1–8个ID才增加参考类比。新增max_target_pairs=200，范围1–2000，全部分组方案共享。原有窗口/搜索参数仅控制可选参考分析，轴线合并公差仍控制目标几何候选。
+
+新草案joint_draft_schema_version=1 / algorithm_version=2，analysis_basis=target_evidence_first。partition_results[].connection_candidates是目标主结果：id、group_ids、member_occurrence_paths、source_occurrence_pair_ids、signals、flags、geometry、assessment、target_joint_kind=unknown、target_degrees_of_freedom=null。assessment为constraint_feature_evidence/geometric_candidate/conflicting_evidence/insufficient_evidence；均不确认连接。排序权重不是机械概率，缺证据的对仍保留在预算范围内。
+
+每方案target_pair_coverage报告available/returned/omitted/budget，总体summary.target_pairs_returned与target_pairs_truncated保留覆盖；TARGET_PAIR_LIMIT表示部分对未返回。无模板时match=null、skip_reason=templates_not_requested、evaluated_states=0属于正常，不发NO_SUPPORTED_MATCH。summary.returned_candidates仍计可选参考类比，不能据其为0断言没有目标关系。
+
+显式参考类比和cad_match_mechanism_templates输出中的joint_hypotheses：reference_joint_kind是参考语义，hypothesis_kind/target_joint_kind=unknown、target_degrees_of_freedom=null、reference_type_transferred=false。草案还把reference_dof与空dof_hypothesis分开。reference_compatibility为opposed_by_active_lock或not_established；后者不是匹配类型已获目标支持。参考结构分数不评目标类型；例如同轴/近点不能区分revolute/prismatic/fixed，也不能把bench_vise的swivel复制成目标旋转副。模板不改变connection_candidates。
+
+新草案检查algorithm_version=2；新增TARGET_JOINT_TYPE_UNDETERMINED、TARGET_GEOMETRY_MISSING、TARGET_PAIR_COVERAGE_LIMIT、TARGET_RELATIONSHIP_CONFLICT，未启用模板不算PARTITION_NOT_SEARCHED。原有参考冲突仍仅说明参考假设与证据相反。新比较的候选表区分basis=target_evidence/optional_reference_analogy；旧新版本/模板设置不同需保留COMPARISON_SCOPE_CHANGED。
+
+新证据索引algorithm_version=2；joint_contexts区分目标上下文（template_id=null，类型unknown/DOF=null）和可选参考。完整guarded face_probes的available_for_existing_reintegration=true，但reintegration_requires_compatible_face_review=true；仍按当前receipt与兼容依据回填。修正0.20旧提示的false，不把所有索引历史自动导入。
+
+旧algorithm_version=1草案/check/index保持原算法重放，不直接改写文件；从原rigid source生成新目标草案再检查以迁移。旧输入被修改仍报EVIDENCE_MISMATCH。没有模板的检查、计划、执行、回填、比较和索引均已接通。

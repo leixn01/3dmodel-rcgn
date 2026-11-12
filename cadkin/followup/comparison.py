@@ -5,12 +5,22 @@ from cadkin.followup import stable_id
 def candidates(draft):
     result={}
     for run in draft['partition_results']:
+        for row in run.get('connection_candidates', []):
+            mapping = sorted(tuple(sorted(paths)) for paths in row['member_occurrence_paths'])
+            key = stable_id('target-relationship-', mapping)
+            result[key] = {'basis': 'target_evidence', 'mapping': mapping, 'target_joint_kind': row['target_joint_kind'],
+                'target_degrees_of_freedom': row['target_degrees_of_freedom'], 'assessment': row['assessment'],
+                'signals': row['signals'], 'flags': row['flags'], 'geometry': row['geometry']}
         if run['match'] is None:continue
         for row in run['match']['candidates']:
             mapping=sorted((m['template_body_id'],tuple(sorted(m['member_occurrence_paths']))) for m in row['mapping'])
             key=stable_id('candidate-', [row['template_id'],mapping])
             result[key]={'template_id':row['template_id'],'mapping':mapping,'score':row['score'],
                          'joint_hypotheses':[{k:j[k] for k in ('reference_joint_id','hypothesis_kind','member_occurrence_paths','direction_candidate_root_unit','geometry')} for j in row['joint_hypotheses']]}
+            if draft.get('algorithm_version') == 2:
+                result[key]['basis'] = 'optional_reference_analogy'
+                for new, old in zip(result[key]['joint_hypotheses'], row['joint_hypotheses']):
+                    new.update(reference_joint_kind=old['reference_joint_kind'], reference_compatibility=old['reference_compatibility'])
     return result
 
 

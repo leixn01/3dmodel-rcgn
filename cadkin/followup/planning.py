@@ -68,7 +68,7 @@ def plan_tasks(target, check, facts, capture_directory, max_tasks=20):
             for path in paths:
                 collect_or_reuse('constraints', 'sw_component_constraints', path, issue, 30,
                                 {'max_mates': 100, 'max_entities': 16}, 'supplemental_context_only_not_consumed_by_chain')
-        if code == 'JOINT_DIRECTION_UNKNOWN':
+        if code in {'JOINT_DIRECTION_UNKNOWN', 'TARGET_GEOMETRY_MISSING'}:
             for path in paths:
                 collect_or_reuse('cylinders', 'sw_component_cylinders', path, issue, 20,
                     {'max_bodies': 50, 'max_faces': 1000, 'max_cylinders': 200, 'include_face_references': True})
@@ -99,7 +99,8 @@ def plan_tasks(target, check, facts, capture_directory, max_tasks=20):
                     'SOURCE_PAIR_FLAGS', 'JOINT_PHYSICS_UNVERIFIED', 'JOINT_KIND_ALTERNATIVES',
                     'GROUP_MEMBERSHIP_ALTERNATIVES', 'BOUNDARY_LINKS_OUTSIDE_SCOPE', 'MATCH_COVERAGE_LIMIT',
                     'PARTITION_NOT_SEARCHED', 'NO_RETURNED_CANDIDATE', 'GROUP_ALTERNATIVES_OMITTED',
-                    'MULTIPLE_JOINTS_SAME_GROUP_PAIR', 'LOCAL_CANDIDATE_UNMATCHED_GROUPS', 'OCCURRENCE_CONTEXT_UNAVAILABLE'}:
+                    'MULTIPLE_JOINTS_SAME_GROUP_PAIR', 'LOCAL_CANDIDATE_UNMATCHED_GROUPS', 'OCCURRENCE_CONTEXT_UNAVAILABLE',
+                    'TARGET_JOINT_TYPE_UNDETERMINED', 'TARGET_PAIR_COVERAGE_LIMIT', 'TARGET_RELATIONSHIP_CONFLICT'}:
             unresolved.append({'finding_id': issue['id'], 'reason': code,
                 'meaning': 'Retain this finding; collection success alone does not resolve it. Recompute/reconcile scopes, search or constraints as applicable.'})
 

@@ -184,3 +184,8 @@ MATCH_SEARCH_LIMIT为有预算结果，NO_SUPPORTED_MATCH表示本范围内没�
 每轮面探测完成且保护检查通过后，将当前receipt交接evidence-reintegration；原链已覆盖组件对沿用原阈值，未覆盖对可使用face-contact-review的明确依据。回填完成再独立比较，使用新check与同一receipt建立索引后续轮。缺依据或冲突保留风险，不设置人工确认；不要把旧索引绑定到新check，也不要把历史观测全部当本轮回填。
 
 本次一键验证：`python scripts/verify_face_reintegration.py --output outputs/verify-0.20`，预期28项通过。具体真实文件、命令与失败标准见[0.20.0验收](MCP_ACCEPTANCE.md#0200面证据回填与变化比较)。
+
+
+## 默认不用模板生成关系草案（0.21.0）
+
+从已有rigid candidates执行`python -m cadkin draft-joints outputs/rigid.json --output outputs/target-draft-0.21.json`，再调用check-joints。默认不传template_ids；无需找到合适参考也能补采、回填与比较。只有需要结构类比时另存显式模板分析，不把reference_joint_kind/reference_dof继承到目标。旧文件仍可读取，但若要更新结论需从原rigid source重算，不能直接修改旧类型或哈希。完整参数及验收见[0.21.0验收](MCP_ACCEPTANCE.md#0210目标证据优先与可选模板)。

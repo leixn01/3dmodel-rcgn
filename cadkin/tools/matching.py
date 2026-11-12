@@ -89,6 +89,8 @@ def match_templates(root,target_graph_path,output_path,template_ids=None,include
     target,binding=replay_target(root,target_graph_path)
     references,bindings=load_references(template_ids,include_heldout)
     data=match_patterns(target,references,**parameters)
+    from cadkin.matching.analogy import separate_reference_types
+    data=separate_reference_types(data,{p['id']:p for p in target['pairs']})
     data.update(target_source=binding,template_sources=bindings,
                 heldout_exposed=any(b['split']=='heldout' for b in bindings))
     recheck(root,target['input_files']+[data['target_source']])

@@ -77,6 +77,18 @@ def associate(observations, target, check, draft, max_contexts):
     known_fixed = {p: values[0] for p, values in fixed.items() if len(set(values)) == 1}
     joints, total = [], 0
     for run in draft['partition_results']:
+        for relationship in run.get('connection_candidates', []):
+            total += 1
+            if len(joints) >= max_contexts: continue
+            members = sorted({p for group in relationship['member_occurrence_paths'] for p in group})
+            joints.append({'id': stable_id('target-context-', [run['partition_id'], relationship['id']]),
+                'partition_id': run['partition_id'], 'basis': 'target_evidence', 'template_id': None,
+                'reference_joint_id': None, 'hypothesis_kind': 'unknown', 'target_joint_kind': 'unknown',
+                'target_degrees_of_freedom': None, 'member_occurrence_paths': relationship['member_occurrence_paths'],
+                'observation_ids': references(members), 'fixed_members': [p for p in members if known_fixed.get(p) is True],
+                'unknown_fixed_members': [p for p in members if p not in known_fixed],
+                'all_endpoint_members_fixed': all(known_fixed[p] for p in members) if all(p in known_fixed for p in members) else None,
+                'signals': [], 'meaning': 'Target relationship context; fixed flags do not determine a joint type or physical connection.'})
         if not run['match']: continue
         for candidate in run['match']['candidates']:
             for joint in candidate['joint_hypotheses']:
@@ -84,6 +96,7 @@ def associate(observations, target, check, draft, max_contexts):
                 if len(joints) >= max_contexts: continue
                 members = sorted({p for group in joint['member_occurrence_paths'] for p in group})
                 all_fixed = all(known_fixed[p] for p in members) if all(p in known_fixed for p in members) else None
+                reference_kind = joint.get('reference_joint_kind', joint['hypothesis_kind'])
                 joints.append({'id': stable_id('joint-context-', [run['partition_id'], candidate['template_id'], candidate['rank'], joint['reference_joint_id']]),
                     'partition_id': run['partition_id'], 'template_id': candidate['template_id'], 'candidate_rank': candidate['rank'],
                     'reference_joint_id': joint['reference_joint_id'], 'hypothesis_kind': joint['hypothesis_kind'],
@@ -91,8 +104,11 @@ def associate(observations, target, check, draft, max_contexts):
                     'fixed_members': [p for p in members if known_fixed.get(p) is True],
                     'unknown_fixed_members': [p for p in members if p not in known_fixed],
                     'all_endpoint_members_fixed': all_fixed,
-                    'signals': ['FIXED_MEMBERS_VS_MOVING_HYPOTHESIS'] if all_fixed is True and joint['hypothesis_kind'] in ('prismatic', 'revolute') else [],
+                    'signals': ['FIXED_MEMBERS_VS_MOVING_HYPOTHESIS'] if all_fixed is True and reference_kind in ('prismatic', 'revolute') else [],
                     'meaning': 'Configured fixed flags constrain this snapshot; no solver verdict, physical grouping or joint rejection is asserted.'})
+                if draft.get('algorithm_version') == 2:
+                    joints[-1].update(basis='optional_reference_analogy', reference_joint_kind=reference_kind,
+                        target_joint_kind='unknown', target_degrees_of_freedom=None)
     pairs = [{'pair_id': p['id'], 'occurrence_paths': p['node_ids'],
                                'endpoint_observation_ids': [references([n]) for n in p['node_ids']],
                                'face_pair_selected': False, 'connection_confirmed': False} for p in target['pairs']]

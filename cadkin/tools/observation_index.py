@@ -35,7 +35,7 @@ def unique_bindings(root, bindings):
 
 
 @replay_reads
-def build_index(root, draft_check_path, execution_path, max_contexts=200):
+def build_index(root, draft_check_path, execution_path, max_contexts=200, _algorithm_version=2):
     require(type(max_contexts) is int and 1 <= max_contexts <= 2000,
             'max_contexts must be 1–2000.', 'INVALID_ARGUMENTS')
     check, target, draft, _, cb = replay_check(root, draft_check_path)
@@ -68,11 +68,16 @@ def build_index(root, draft_check_path, execution_path, max_contexts=200):
             'source': record['envelope_source'], 'state': record['state'], 'codes': record['codes'],
             'usable': usable, 'details': describe_capture(task['tool'], raw['data']) if usable else None,
             'reason': 'COMPLETE_GUARDED_OBSERVATION' if usable else 'RETAINED_ATTEMPT_NO_AUTOMATIC_RETRY'})
+    if _algorithm_version == 2:
+        for observation in observations:
+            if observation['usable'] and observation['family'] == 'face_probes':
+                observation['details'].update(available_for_existing_reintegration=True,
+                    reintegration_requires_compatible_face_review=True, next_tool='cad_reintegrate_evidence')
     sources.extend(check['input_files'] + plan['input_files'] + [cb, eb, execution['plan_source']])
     if execution['previous_execution_source']: sources.append(execution['previous_execution_source'])
     sources = unique_bindings(root, sources)
     contexts = associate(observations, target, check, draft, max_contexts)
-    data = {'evidence_index_schema_version': 1, 'algorithm_version': 1,
+    data = {'evidence_index_schema_version': 1, 'algorithm_version': _algorithm_version,
         'parameters': {'draft_check_path': cb['path'], 'execution_path': eb['path'], 'max_contexts': max_contexts},
         'document': target['document'], 'check_source': cb, 'execution_sources': history,
         'previous_index_source': previous, 'rounds_completed': len(history), 'max_rounds': MAX_ROUNDS,
@@ -98,10 +103,10 @@ def build_index(root, draft_check_path, execution_path, max_contexts=200):
 @bounded_replay
 def replay_index(root, name):
     path = json_path(root, name); raw, digest = read_json(path)
-    require(isinstance(raw, dict) and raw.get('evidence_index_schema_version') == 1 and raw.get('algorithm_version') == 1 and
+    require(isinstance(raw, dict) and raw.get('evidence_index_schema_version') == 1 and raw.get('algorithm_version') in (1, 2) and
             isinstance(raw.get('parameters'), dict) and set(raw['parameters']) == {'draft_check_path', 'execution_path', 'max_contexts'},
             'Use the original evidence index.', 'INVALID_EVIDENCE_INDEX')
-    data = build_index(root, **raw['parameters']); check_fields(raw, data)
+    data = build_index(root, **raw['parameters'], _algorithm_version=raw['algorithm_version']); check_fields(raw, data)
     return data, {'path': str(path), 'sha256': digest}
 
 

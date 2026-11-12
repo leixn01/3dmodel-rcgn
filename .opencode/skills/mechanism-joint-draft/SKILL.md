@@ -1,15 +1,15 @@
 ---
 name: mechanism-joint-draft
-description: 对已有刚体候选分组分别匹配机构参考并生成关节类型、自由度及目标几何轴线草案，保留成员映射和未知参数。用于继续分析多零件共同运动结构；不采集CAD、不修改配合、不做运动求解。
+description: 根据目标模型的配合、几何和冲突证据生成关系草案，保留未知关节类型与自由度；可选显式模板类比。用于分析零件间关系及多零件共同运动候选，不依赖模板、不采集CAD、不做运动求解。
 ---
 
 # 关节参数草案
 
 输入：原始rigid candidates及可回读来源。输出：outputs下新的joint draft文件。
 
-1. 调用cad_draft_joints；默认参考库，不使用heldout。pattern_size默认3；如果任务关注两个刚体的局部关系，可统一用2重新计算所有方案。参数细节按需读[草案说明](references/drafts.md)。
-2. 按partition_results分别报告映射到的member_occurrence_paths、候选类型/自由度、方向/轴线几何、缺失参数和竞争解释；一起报告同分数、搜索/输出截断及分组风险。
-3. 轴线点只是目标圆柱无限轴线上的规范点，不是运动副枢轴；模板类型只是条件假设。未知行程、零位、螺距与运动可行性保持未知，不能复制参考值。
+1. 调用cad_draft_joints，不传template_ids，先生成目标证据基线。读取partition_results[].connection_candidates：按实例成员报告assessment、signals、flags、geometry和target_pair_coverage，不因没有模板匹配就丢弃关系或停止分析。
+2. target_joint_kind=unknown、target_degrees_of_freedom=null时明确保留未知；配合特征、同轴/近接触和名称不独立证明机械关节。轴线规范点不是运动副枢轴，行程、零位、螺距未知。
+3. 只有任务需要参考结构类比时才明确传template_ids；先读[草案说明](references/drafts.md)。报告reference_joint_kind/reference_dof与目标字段的区别，不能把台钳swivel等参考语义写成目标零件的revolute。缺少合适模板也继续基线分析；score不用于确定类型或选定刚体分组。
 4. automatic_followup是后续采集建议，没有在本工具里执行。确需补充时只调度缺失的独立采集能力，重算相关来源，再生成新结果。遇到无法解决的差异继续独立部分，结论说明风险，不等待人工复核。
 
 需要检查草案内部结构、证据冲突和覆盖缺口时，将原始draft路径交接joint-draft-check；不以匹配分数替代一致性检查。

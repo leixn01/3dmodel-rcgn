@@ -31,7 +31,7 @@ def rigid_candidates(root, target_graph_path, output_path, **parameters):
 
 
 @replay_reads
-def build_draft(root, rigid_candidates_path, template_ids=None, include_heldout=False, **parameters):
+def build_draft(root, rigid_candidates_path, template_ids=None, include_heldout=False, _algorithm_version=2, **parameters):
     from cadkin.templates.catalog import find_template
     path = json_path(root, rigid_candidates_path)
     original, digest = read_json(path)
@@ -41,8 +41,13 @@ def build_draft(root, rigid_candidates_path, template_ids=None, include_heldout=
             'Use original cad_build_rigid_candidates output.', 'INVALID_RIGID_SOURCE')
     rigid, target = build_rigid(root, **original['parameters'])
     check_fields(original, rigid)
-    references, bindings = load_references(template_ids, include_heldout)
-    data = draft_partitions(target, rigid, references, **parameters)
+    require(type(include_heldout) is bool, 'include_heldout must be boolean.', 'INVALID_ARGUMENTS')
+    references, bindings = ([], []) if _algorithm_version == 2 and template_ids in (None, []) else load_references(template_ids, include_heldout)
+    if _algorithm_version == 1:
+        data = draft_partitions(target, rigid, references, **parameters)
+    else:
+        from cadkin.rigid.target_joints import target_draft
+        data = target_draft(target, rigid, references, **parameters)
     data.update(rigid_source={'path': str(path), 'sha256': digest}, target_source=rigid['target_source'],
                 template_sources=bindings, heldout_exposed=any(b['split'] == 'heldout' for b in bindings))
     recheck(root, rigid['input_files'] + [data['rigid_source']])
@@ -56,10 +61,12 @@ def replay_draft(root, joint_draft_path):
     original, digest = read_json(path)
     keys = {'pattern_size','max_candidates','max_states','beam_width','angle_tolerance_deg',
             'axis_distance_tolerance_mm','axis_angle_tolerance_deg'}
+    version = original.get('algorithm_version') if isinstance(original, dict) else None
+    if version == 2: keys.add('max_target_pairs')
     require(isinstance(original, dict) and original.get('joint_draft_schema_version') == 1 and
-            original.get('algorithm_version') == 1 and isinstance(original.get('parameters'), dict) and
+            version in (1, 2) and isinstance(original.get('parameters'), dict) and
             set(original['parameters']) == keys and isinstance(original.get('rigid_source'), dict) and
-            isinstance(original.get('template_sources'), list) and 1 <= len(original['template_sources']) <= 8 and
+            isinstance(original.get('template_sources'), list) and (1 if version == 1 else 0) <= len(original['template_sources']) <= 8 and
             all(isinstance(b, dict) and isinstance(b.get('id'), str) for b in original['template_sources']) and
             type(original.get('heldout_exposed')) is bool,
             'Use an original cad_draft_joints result.', 'INVALID_DRAFT_SOURCE')
@@ -68,7 +75,7 @@ def replay_draft(root, joint_draft_path):
             'Rigid source changed.', 'EVIDENCE_MISMATCH')
     data, rigid, target = build_draft(root, bound['path'],
         template_ids=[b['id'] for b in original['template_sources']],
-        include_heldout=original['heldout_exposed'], **original['parameters'])
+        include_heldout=original['heldout_exposed'], _algorithm_version=version, **original['parameters'])
     check_fields(original, data)
     binding = {'path': str(path), 'sha256': digest}
     recheck(root, rigid['input_files'] + [data['rigid_source'], binding])
@@ -85,6 +92,8 @@ def joint_drafts(root, rigid_candidates_path, output_path, template_ids=None, in
         errors.append({'code': 'RIGID_CANDIDATE_LIMIT', 'message': 'Grouping alternatives were limited; inspect original rigid candidates.'})
     if not data['search_exhaustive_within_retained_partitions']:
         errors.append({'code': 'MATCH_SEARCH_LIMIT', 'message': 'Search budget/beam omitted mappings; see per-partition coverage.'})
-    if not data['summary']['returned_candidates']:
+    if data.get('template_search_requested', True) and not data['summary']['returned_candidates']:
         errors.append({'code': 'NO_SUPPORTED_MATCH', 'message': 'No supported candidate in searched windows; not proof of absent mechanisms.'})
+    if data.get('target_pairs_truncated'):
+        errors.append({'code': 'TARGET_PAIR_LIMIT', 'message': 'Target relationship output budget omitted pairs; see per-partition coverage.'})
     return success({'output_path': str(output), **data}, errors)

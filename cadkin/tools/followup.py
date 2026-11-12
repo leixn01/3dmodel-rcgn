@@ -63,7 +63,7 @@ def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinat
     source = json_path(root, draft_check_path)
     original, digest = read_json(source)
     require(isinstance(original, dict) and original.get('draft_check_schema_version') == 1 and
-            original.get('algorithm_version') == 1 and isinstance(original.get('parameters'), dict) and
+            original.get('algorithm_version') in (1, 2) and isinstance(original.get('parameters'), dict) and
             set(original['parameters']) == {'joint_draft_path', 'max_findings'},
             'Use the raw cad_check_joint_draft result.', 'INVALID_DRAFT_CHECK')
     check, target = build_check(root, **original['parameters'])

@@ -106,7 +106,7 @@ def main():
     rigid.add_argument('--max-partitions', type=int, default=8)
     rigid.add_argument('--without-contact-hypotheses', action='store_true')
     rigid.add_argument('--output', required=True)
-    draft = commands.add_parser('draft-joints', help='Match group partitions and draft conditional joint parameters')
+    draft = commands.add_parser('draft-joints', help='Draft target evidence; templates are optional explicit analogies')
     draft.add_argument('rigid_candidates_path')
     draft.add_argument('--template-ids', nargs='+')
     draft.add_argument('--include-heldout', action='store_true')
@@ -117,6 +117,7 @@ def main():
     draft.add_argument('--angle-tolerance-deg', type=float, default=10)
     draft.add_argument('--axis-distance-tolerance-mm', type=float, default=0.1)
     draft.add_argument('--axis-angle-tolerance-deg', type=float, default=1)
+    draft.add_argument('--max-target-pairs', type=int, default=200)
     draft.add_argument('--output', required=True)
     check = commands.add_parser('check-joints', help='Replay and check a joint draft for conflicts and uncertainty')
     check.add_argument('joint_draft_path')
@@ -193,7 +194,7 @@ def main():
                         'include_contact_hypotheses':not args.without_contact_hypotheses})
                 elif args.command == 'draft-joints':
                     arguments = {k:getattr(args,k) for k in ('rigid_candidates_path','include_heldout','pattern_size',
-                        'max_candidates','max_states','beam_width','angle_tolerance_deg','axis_distance_tolerance_mm','axis_angle_tolerance_deg')}
+                        'max_candidates','max_states','beam_width','angle_tolerance_deg','axis_distance_tolerance_mm','axis_angle_tolerance_deg','max_target_pairs')}
                     if args.template_ids is not None:arguments['template_ids']=args.template_ids
                     result = service.call('cad_draft_joints',{**arguments,'output_path':args.output})
                 elif args.command == 'target-graph':

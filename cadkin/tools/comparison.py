@@ -14,7 +14,7 @@ from cadkin.followup.face_comparison import compare_faces
 @replay_reads
 def replay_check(root,name):
     path=json_path(root,name);raw,sha=read_json(path)
-    require(isinstance(raw,dict) and raw.get('draft_check_schema_version')==1 and raw.get('algorithm_version')==1 and
+    require(isinstance(raw,dict) and raw.get('draft_check_schema_version')==1 and raw.get('algorithm_version') in (1, 2) and
             isinstance(raw.get('parameters'),dict) and set(raw['parameters'])=={'joint_draft_path','max_findings'},
             'Use original draft checks.','INVALID_DRAFT_CHECK')
     check,target=build_check(root,**raw['parameters']);check_fields(raw,check)

@@ -68,9 +68,29 @@ def check_draft(target, rigid, draft, max_findings=200):
         if pid not in partitions:
             add('UNKNOWN_PARTITION', 'structural_error', context=pid)
             continue
+        if draft.get('algorithm_version') == 2:
+            if run['target_pair_coverage']['omitted']:
+                add('TARGET_PAIR_COVERAGE_LIMIT', 'coverage', context=pid, detail=run['target_pair_coverage'])
+            for relationship in run['connection_candidates']:
+                paths = sorted(set(itertools.chain.from_iterable(relationship['member_occurrence_paths'])))
+                pids = relationship['source_occurrence_pair_ids']
+                add('TARGET_JOINT_TYPE_UNDETERMINED', 'uncertainty', paths, pids,
+                    detail={'assessment': relationship['assessment'], 'target_joint_kind': 'unknown',
+                            'degrees_of_freedom': None, 'template_required': False})
+                if not relationship['geometry']['geometric_line_candidates']:
+                    add('TARGET_GEOMETRY_MISSING', 'coverage', paths, pids)
+                elif len(relationship['geometry']['geometric_line_candidates']) > 1 or relationship['geometry']['line_candidates_truncated']:
+                    add('AXIS_LINES_AMBIGUOUS', 'uncertainty', paths, pids,
+                        detail={'line_candidates': len(relationship['geometry']['geometric_line_candidates']),
+                                'truncated': relationship['geometry']['line_candidates_truncated']})
+                if relationship['assessment'] == 'insufficient_evidence':
+                    add('JOINT_LINK_UNSUPPORTED', 'uncertainty', paths, pids)
+                if relationship['flags']:
+                    add('TARGET_RELATIONSHIP_CONFLICT', 'evidence_conflict', paths, pids, detail={'flags': relationship['flags']})
         match = run['match']
         if match is None:
-            add('PARTITION_NOT_SEARCHED', 'coverage', context=pid, detail={'reason': run['skip_reason']})
+            if run['skip_reason'] != 'templates_not_requested':
+                add('PARTITION_NOT_SEARCHED', 'coverage', context=pid, detail={'reason': run['skip_reason']})
             continue
         if not match['search_exhaustive'] or match['output_truncated']:
             add('MATCH_COVERAGE_LIMIT', 'coverage', context=pid,
@@ -105,7 +125,8 @@ def check_draft(target, rigid, draft, max_findings=200):
                 source_pairs = [pairs[p] for p in pids if p in pairs]
                 if len(source_pairs) != len(pids):
                     add('UNKNOWN_SOURCE_PAIR', 'structural_error', paths, pids, candidate=ref)
-                if edge['hypothesis_kind'] in ('revolute', 'prismatic'):
+                reference_kind = edge.get('reference_joint_kind', edge['hypothesis_kind'])
+                if reference_kind in ('revolute', 'prismatic'):
                     locks = [p['id'] for p in source_pairs if any(s['kind']=='active_mate' and s.get('mate_type')=='lock' and not s.get('record_errors') for s in p['signals'])]
                     if locks:
                         add('ACTIVE_LOCK_VS_MOVING_HYPOTHESIS', 'evidence_conflict', paths, locks,
@@ -119,7 +140,7 @@ def check_draft(target, rigid, draft, max_findings=200):
                 if edge['link_support'] == 0:
                     add('JOINT_LINK_UNSUPPORTED', 'uncertainty', paths, pids, candidate=ref)
                 endpoint_key = tuple(sorted(tuple(sorted(m)) for m in edge['member_occurrence_paths']))
-                alternatives[endpoint_key][edge['hypothesis_kind']].append(ref)
+                alternatives[endpoint_key][reference_kind].append(ref)
             for ids, edges in seen_edges.items():
                 if len(edges) > 1:
                     add('MULTIPLE_JOINTS_SAME_GROUP_PAIR', 'uncertainty', context=[ref['candidate_id'], list(ids)],
@@ -140,7 +161,7 @@ def check_draft(target, rigid, draft, max_findings=200):
                 'meaning': 'Current read-only geometry tools cannot certify these mechanical properties.'})
     rows = sorted(findings.values(), key=lambda r: (SEVERITIES[r['severity']], r['code'], r['id']))
     severity_counts = dict(Counter(r['severity'] for r in rows))
-    return {'draft_check_schema_version': 1, 'algorithm_version': 1,
+    return {'draft_check_schema_version': 1, 'algorithm_version': draft['algorithm_version'],
             'parameters': {'max_findings': max_findings}, 'document': target['document'],
             'findings': rows[:max_findings], 'summary': {**counts, 'findings_found': len(rows),
                 'findings_returned': min(len(rows), max_findings), 'severity_counts': severity_counts},
