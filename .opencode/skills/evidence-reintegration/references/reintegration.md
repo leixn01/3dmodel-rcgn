@@ -1,0 +1,13 @@
+# 回填细节
+
+cad_reintegrate_evidence必填execution_path、output_path。输出evidence_reintegration_schema_version=1及同名`-derived`新目录。CLI：`python -m cadkin reintegrate-evidence outputs/run.json --output outputs/updated.json`。
+
+必须execution_complete=true、guards_passed=true；重放receipt、全部原始capture和原计划，拒绝手改执行状态/发现/哈希。未完成报EXECUTION_NOT_COMPLETE，校验未通过报EXECUTION_GUARDS_FAILED。离线运行，不连接SolidWorks，不改原始文件。
+
+仅完整passed观测进入自动回填：圆柱替换/补充已有relation来源，根配合替换已有connection来源，距离只回填原worklist中已有候选对。沿用原inventory、角色分组、公差、模板集合、分组/搜索预算，依次重算关系/复核、chain、target、rigid、joints、check。保持来源数量上限；没有兼容基础或公差时不补造。旧新路径在superseded_sources列出；旧文件继续保留。
+
+单实例约束尚未直接关联到根实例对，面目录尚未自动选面/测点，因此分别作为CONSTRAINTS_CONTEXT_ONLY和FACE_CATALOG_REQUIRES_PAIR_SELECTION_AND_PROBING保留。当前规划器尚不消费这个补充上下文清单；不能因为这些观测未降低风险，就反复重建同样计划采集。需要新增面配对或约束关联能力才能继续消费。
+
+recomputation_complete表示成功产出新check，不表示发现消失或物理验证。原有partial/冲突/搜索覆盖会在DERIVATION_REMAINS_PARTIAL中保留；CAPTURES_NOT_INTEGRATED说明补充/诊断观测，PLAN_SCOPE_INCOMPLETE保留原计划延期/截断。pipeline_error时after_check_source=null，applied_capture_ids为空，attempted_capture_ids与中间步骤仅供诊断；原始文件始终保留。
+
+已有精确配合面匹配可能绑定旧圆柱来源；改变圆柱后，无法复用的身份绑定应重新通过对应独立能力采集，不能改哈希绕过。回填文件并不证明CAD原子快照、刚体或运动副，也不会自动重试或自动开始下一轮补采。

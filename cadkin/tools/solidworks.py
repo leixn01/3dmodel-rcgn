@@ -204,6 +204,14 @@ TOOLS = [
          {'draft_check_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'max_tasks': {'type':'integer','minimum':3,'maximum':200,'default':20}},
          ['draft_check_path','output_path'], False),
+    spec('sw_execute_evidence_task', 'Replay an evidence plan and optional previous receipt, then execute at most ONE next existing read-only CAD tool. Validate context, save original envelope and immutable receipt; block dependent tasks and stop on timeouts or context mismatch. Never start/open/edit/save CAD or retry. Reinvoke with the returned receipt until execution_complete.',
+         {'plan_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'previous_execution_path': {'type':'string','minLength':1}}, ['plan_path','output_path'], False),
+    spec('cad_reintegrate_evidence', 'Replay a completed guarded execution and recompute compatible cylinder, root-mate and distance derivations, chain, target, rigid candidates, joints and draft check into fresh files. Retain thresholds/budgets/originals; partial captures, face catalogs and constraints remain diagnostic/supplemental. Offline; no physical confirmation.',
+         {'execution_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1}}, ['execution_path','output_path'], False),
+    spec('cad_compare_draft_checks', 'Replay before/after draft checks and compare returned candidates, findings, settings and coverage. Disappearing entries are no_longer_observed, never mechanically resolved. Reject changed document or shared occurrence poses. Offline; no CAD modification.',
+         {'before_check_path': {'type':'string','minLength':1}, 'after_check_path': {'type':'string','minLength':1},
+          'output_path': {'type':'string','minLength':1}}, ['before_check_path','after_check_path','output_path'], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -242,6 +250,15 @@ class SolidWorksTools:
                 from cadkin.tools.followup import check_joint_draft, evidence_task_plan
                 handler = check_joint_draft if name == 'cad_check_joint_draft' else evidence_task_plan
                 return handler(self.root, **arguments)
+            if name == 'sw_execute_evidence_task':
+                from cadkin.tools.execution import execute_task
+                return execute_task(self.root, self.call, **arguments)
+            if name == 'cad_reintegrate_evidence':
+                from cadkin.tools.reintegration import reintegrate
+                return reintegrate(self.root, **arguments)
+            if name == 'cad_compare_draft_checks':
+                from cadkin.tools.comparison import compare_draft_checks
+                return compare_draft_checks(self.root, **arguments)
             if name == "cad_group_components":
                 from cadkin.tools.grouping import group_components
                 return group_components(self.root, **arguments)

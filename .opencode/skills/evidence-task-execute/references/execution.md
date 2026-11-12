@@ -1,0 +1,13 @@
+# 执行细节
+
+工具sw_execute_evidence_task必填plan_path、output_path；previous_execution_path仅首步省略。输入是原始计划/receipt文件，不是外层MCP envelope。输出是raw evidence_execution_schema_version=1；完整MCP envelope也应保留。CLI可用`python -m cadkin execute-evidence outputs/plan.json --output outputs/run.json`串行完成同样的有界流程，逐步记录在run-steps目录，最后run.json为终态receipt。
+
+每次重放原计划及来源，并根据已有原始envelope重新计算执行状态。执行前独占创建新receipt及目标capture文件；文件已存在时拒绝调用，避免重放一个旧prefix导致重复COM。崩溃可能留下空/未完成文件，应保留诊断，不能删文件来盲目重试。计划不可重复执行；有明确的新采集需要时重新生成计划并使用新路径。
+
+文档核对token、路径、标题、类型、配置、dirty；实例核对路径/父级/文件/引用配置、已解析未抑制状态和原始变换。包围盒错误与有效位姿分开处理。每个采集结果还检查其文档和可用的目标上下文。前后检查不能证明期间完整几何从未变化，采集过程中保持装配不变。
+
+执行状态passed/partial/failed/skipped和CAD envelope的status分开保存。普通单项读取失败会保留原始错误，允许其他独立任务及后置检查继续；文档/位姿异常、TIMEOUT、OUTCOME_UNKNOWN会停止剩余任务。超时不表示底层COM已经停止。EXECUTION_COMPLETE不需要再次执行；OUTPUT_EXISTS应检查已保存记录，不删除重试。
+
+execution_complete只代表计划任务都有终态，不等于采集成功。guards_passed=true且完成后，eligible_capture_ids才列出可回填的完整capture；部分观测仍留档但本轮不自动回填。后置检查失败时所有capture只作诊断。缺少字段时拒绝校验，不把空值当一致。
+
+不将补采计划之外的操作加入执行器；没有启动/打开/重建/选择/隐藏/移动/保存调用。原计划的deferred_tasks并未执行。哈希和receipt验证一致性，不证明来源真实性或真实CAD执行；显式测试后端结果必须标注为模拟。

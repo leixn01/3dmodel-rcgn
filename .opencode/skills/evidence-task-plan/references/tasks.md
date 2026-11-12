@@ -15,3 +15,5 @@ cad_plan_evidence_tasks必填draft_check_path、output_path；max_tasks默认20�
 补采建议不保证减少歧义。约束单实例读取是补充上下文，当前chain不直接消费它；面目录不自动选择配对面或种子，也不证明接触。缺少自由度/行程/螺距/运动求解能力时unresolved_findings保留，不能用几何扫描替代。recompute_handoffs说明后续现有工具、来源与阈值要求，不是已生成/已执行的回填流程。
 
 EVIDENCE_PLAN_LIMIT为部分计划，报告延期任务及check截断；INVALID_DRAFT_STRUCTURE不应继续采集填补结构造假；EVIDENCE_MISMATCH应重建改变来源后的依赖。检查完整性与机械一致性是不同问题，执行完所有计划也不能宣布模型拆解完成。
+
+0.17.0起可将原始计划交接evidence-task-execute，用独立单步执行器落实上述校验和保存规则，再交接evidence-reintegration；本规划工具仍不执行。

@@ -53,10 +53,10 @@ def source_facts(root, target):
     return facts
 
 
-def evidence_task_plan(root, draft_check_path, output_path, max_tasks=20):
+def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinations=True):
     from jsonschema import Draft202012Validator
     from cadkin.tools.solidworks import CATALOG
-    output = json_path(root, output_path, output=True)
+    output = json_path(root, output_path, output=check_destinations)
     source = json_path(root, draft_check_path)
     original, digest = read_json(source)
     require(isinstance(original, dict) and original.get('draft_check_schema_version') == 1 and
@@ -73,11 +73,29 @@ def evidence_task_plan(root, draft_check_path, output_path, max_tasks=20):
                 'Planner emitted a non-read-only tool.', 'INVALID_TASK_PLAN')
         require(Draft202012Validator(CATALOG[task['tool']]['inputSchema']).is_valid(task['arguments']),
                 'Planner emitted invalid tool arguments.', 'INVALID_TASK_PLAN')
-        json_path(root, task['save_envelope_path'], output=True)
+        json_path(root, task['save_envelope_path'], output=check_destinations)
     data['parameters']['draft_check_path'] = str(source)
     data['check_source'] = {'path': str(source), 'sha256': digest}
     data['input_files'] = check['input_files'] + [data['check_source']]
     recheck(root, data['input_files'])
+    return data, check, target
+
+
+def replay_plan(root, plan_path):
+    path = json_path(root, plan_path)
+    original, digest = read_json(path)
+    require(isinstance(original, dict) and original.get('evidence_task_plan_schema_version') == 1 and
+            original.get('algorithm_version') == 1 and isinstance(original.get('parameters'), dict) and
+            set(original['parameters']) == {'draft_check_path', 'max_tasks'},
+            'Use the original evidence task plan.', 'INVALID_TASK_PLAN')
+    data, check, target = build_plan(root, output_path=str(path), check_destinations=False, **original['parameters'])
+    check_fields(original, data)
+    return data, check, target, {'path': str(path), 'sha256': digest}
+
+
+def evidence_task_plan(root, draft_check_path, output_path, max_tasks=20):
+    output = json_path(root, output_path, output=True)
+    data, check, _ = build_plan(root, draft_check_path, output_path, max_tasks)
     write_result(output, data)
     errors = []
     if data['output_truncated']:

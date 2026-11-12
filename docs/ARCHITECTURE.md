@@ -47,7 +47,7 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 2. 进入后读取简短 SKILL.md，获得输入/输出、最小流程及关键限制。
 3. 只有参数不明、需要解释字段或遇到失败时，读取入口明确链接的 references 对应文件/段落。不主动读全套参考、其他 skill 或完整开发文档；验收任务才读对应验收章节。
 
-当前 33 个入口保持简短；详细流程移到 references，配合/面核对按字段、失败分支或判读拆分。references 只含说明，执行仍在工具/适配层。已有文件足够时离线完成；缺少哪个输入才调用对应采集能力，不建立强制串联的全套流程。
+当前 36 个入口保持简短；详细流程移到 references，配合/面核对按字段、失败分支或判读拆分。references 只含说明，执行仍在工具/适配层。已有文件足够时离线完成；缺少哪个输入才调用对应采集能力，不建立强制串联的全套流程。
 
 ## 功能拆分
 
@@ -105,7 +105,7 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 
 默认不等待人工复核；旧requires_review/review_flags指证据需继续分析，无法补全就在结论说明风险。chain-review已从自动发现目录移除，旧工具仅保留兼容。引用数据、匹配算法、工具、skill分别维护。0.14.0已独立实现目标图适配与局部匹配；旧比较工具仍要求来源绑定的body_map，不负责生成对应。匹配报告不是比较工具的真值输入。
 
-33个skill仅入口信息常驻；references按需加载。usd-core通过templates extra可选安装；目录查询无需USD，解析工具不启动CAD，生产工具也不下载参考原始大文件。
+36个skill仅入口信息常驻；references按需加载。usd-core通过templates extra可选安装；目录查询无需USD，解析工具不启动CAD，生产工具也不下载参考原始大文件。
 
 ## 0.14.0 数据流
 
@@ -124,3 +124,11 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 joint draft → draft check → evidence task plan。工具层重放所有派生输入后才计算；纯算法不读文件、skill或COM。planner对每项调用使用生产CATALOG校验，仅允许固定只读工具。前/后document及pose守卫也计入预算；计划、原始采集、证据重算解耦。
 
 生成计划并不自动执行。需要执行时由Agent交接已有采集能力，按文档与位姿字段核对并保存原始envelope。错误/部分结果不变成完成状态，物理能力缺口不由采样次数替代。未来执行器与回填层单独实现。
+
+## 0.17.0 执行、回填、比较
+
+纯上下文/执行状态判定与差异在cadkin/followup/execution.py、comparison.py；文件重放与单步调度在tools/execution.py；兼容来源路由和依赖重算在tools/reintegration.py；前后报告边界在tools/comparison.py。COM继续使用既有STA工具，每次执行工具最多一个CAD调用。
+
+三个独立入口evidence-task-execute、evidence-reintegration、joint-draft-compare分别交接原计划、执行receipt、前后check路径，详细字段按需读取references。规划工具保持离线。CLI execute-evidence仅串行调用同一个单步工具；没有生产mock后端或隐藏重试。
+
+raw evidence_execution_schema_version=1记录原计划哈希、上一步receipt哈希、各task的原始envelope哈希及从数据重算的状态；evidence_reintegration_schema_version=1保留原/新来源、应用/补充/排除和步骤；draft_comparison_schema_version=1保留前后候选、发现与覆盖。原始文件不覆盖，计划重放不可更换为任意操作。

@@ -10,6 +10,6 @@ description: 将已有草案检查转换成有预算的只读补采清单，包�
 1. 调用cad_plan_evidence_tasks，传draft_check_path、output_path。缺少check时交接joint-draft-check，不读取全套开发文档。
 2. 读取tasks、deferred_tasks、reused_evidence、unresolved_findings与summary；报告真正的capture任务数和包含前后校验的总调用数。executed=false必须明确，不能称已采集或已验证。
 3. 需要理解预算、依赖、来源复用或执行前置时读[计划细节](references/tasks.md)。不擅自增加工具、改旧token/来源哈希或猜测面索引/测点。
-4. 若后续任务明确包含执行，将每项交给对应已有采集能力；按execution_policy串行执行及核对，保存原始envelope。当前入口自身不执行清单；补采后的证据重算也单独交接。
+4. 任务需要执行时，将原始计划路径交接evidence-task-execute；执行后的回填与比较继续由独立能力处理。当前入口只生成计划。
 
 继续独立分析，在结论保留能力缺口与延期事项，不设置人工复核节点。

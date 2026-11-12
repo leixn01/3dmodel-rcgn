@@ -11,7 +11,7 @@ from tests.mate_fakes import attach_features
 from tests.sw_fakes import Component, pose, runtime
 
 
-def write_chain_fixture(root, with_lock=False, return_app=False):
+def write_chain_fixture(root, with_lock=False, return_app=False, incomplete_sources=()):
     root = Path(root);root.mkdir(parents=True,exist_ok=True)
     doc,part,app=probe_document()
     doc.root.children[0].Name2='base-1';doc.root.children[1].Name2='carriage-1'
@@ -25,9 +25,18 @@ def write_chain_fixture(root, with_lock=False, return_app=False):
     doc.ClosestDistance=closest
     service=SolidWorksTools(root=root,factory=lambda:SolidWorksAdapter(app=app,runtime=runtime()))
     def save(name,data):
+        if name in incomplete_sources:
+            data['status']='partial';data['errors']=[{'code':'SYNTHETIC_CAPTURE_LIMIT','message':'Explicit incomplete test observation.'}]
+            data['data']['complete']=False
+            if 'cylinder_schema_version' in data['data']:
+                data['data'].update(cylinders=[],cylinder_count=0,truncated=True)
+            elif 'mate_inventory_schema_version' in data['data']:
+                data['data']['truncated']=True
+            elif 'component_distance_schema_version' in data['data']:
+                data['data'].update(measurement_status='unavailable',measurement=None)
         path=root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(data),encoding='utf-8');return name
     def call(name,args):
-        result=service.call(name,args);assert result['status']=='ok',result;return result
+        result=service.call(name,args);assert result['status']!='error',result;return result
     try:
         inventory=collect_spatial(service);save('inventory.json',inventory);token=inventory['data']['document']['document_token']
         call('cad_group_components',{'inventory_path':'inventory.json','output_path':'outputs/groups.json'})

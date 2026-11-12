@@ -1,9 +1,12 @@
 # SolidWorks 工具接口
 
-版本：0.16.0。以下 40 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.17.0。以下 43 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `sw_execute_evidence_task` | plan_path、output_path；可选previous_execution_path | 每次至多一个已有只读CAD调用，保存原始返回和receipt，自动上下文校验 |
+| `cad_reintegrate_evidence` | execution_path、output_path | 离线回填兼容完整观测，保留旧源、阈值与预算，重算草案检查 |
+| `cad_compare_draft_checks` | before_check_path、after_check_path、output_path | 离线比较返回候选/发现与覆盖，不声明物理问题解决 |
 | `cad_check_joint_draft` | joint_draft_path、output_path；可选max_findings | 重放原始草案，报告结构、证据冲突、竞争解释与覆盖缺口，离线新输出 |
 | `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
 | `cad_build_rigid_candidates` | target_graph_path、output_path；可选max_group_size/max_partitions/include_contact_hypotheses | 重放目标图并生成多零件刚体候选，保留不合并基线/竞争解释，不修改CAD |
@@ -590,3 +593,21 @@ cad_plan_evidence_tasks输入原始draft check，max_tasks=20（3–200，包含
 预算按完整任务及共享保护调用分配，deferred_tasks保留延期请求；check截断传播到plan，EVIDENCE_PLAN_LIMIT保留partial。完整已有圆柱/面/距离/根配合复用；unresolved_findings保留求解缺口与不能直接解决的矛盾。单实例constraints是上下文，不直接进入chain。recompute_handoffs是后续能力交接说明，不是已经执行或参数完整的回填计划。
 
 执行时原token、文档身份/dirty和实例身份/根变换需前后比对，缺少字段不可通过。变更则重采快照，不替换旧token/哈希。后置校验失败的返回只作诊断；保存仍要独占新建。guard调用数在total_tool_calls中，预算不代表耗时上限或所有几何原子快照。本轮不提供任务执行器、结果回填和前后差异自动判定。
+
+## 0.17.0 只读执行、回填与比较
+
+| 工具 | 必填 | 可选/输出 |
+| --- | --- | --- |
+| sw_execute_evidence_task | plan_path、output_path | previous_execution_path；raw evidence_execution_schema_version=1。每次最多一个原计划CAD调用 |
+| cad_reintegrate_evidence | execution_path、output_path | raw evidence_reintegration_schema_version=1；新建同名-derived目录，after_check_source指向重算结果 |
+| cad_compare_draft_checks | before_check_path、after_check_path、output_path | raw draft_comparison_schema_version=1；前后候选/发现、设置及覆盖 |
+
+每个output_path为outputs下新JSON，不能是MCP envelope。执行receipt具有plan_source、previous_execution_source、records（task_id/state/reason/codes/fatal/envelope_source）、execution_complete、guards_passed、eligible_capture_ids、next_task_id和summary。每步重放原计划及前缀，原始envelope独占保存到计划的save_envelope_path；所有状态由实际返回重算，禁止修改receipt绕过。passed校验中的bbox失败不等于必需身份/位姿失败；上下文、变换必须完整一致。
+
+普通capture错误可继续独立任务，postflight仍执行；文档/位姿不一致或TIMEOUT/OUTCOME_UNKNOWN停止剩余调用。不自动启动/打开/修改/保存，不自动提高预算或重试。执行完且全部guard通过后，完整capture才可回填，其他观测诊断留档。哈希与前后校验不证明原子快照。
+
+回填使用原有relation/connection/proximity基础，保留阈值和预算；新圆柱替换/增加原relation输入，根配合替换对应来源，距离仅替换或补充已有worklist候选对；再重算chain/target/rigid/joints/check。superseded_sources、applied_capture_ids、supplemental_captures、excluded_captures、steps、pipeline_error分别记录去向。面目录与单实例约束暂为补充，规划器尚不消费这个补充清单。recomputation_complete不证明机械正确。
+
+错误：EXECUTION_COMPLETE拒绝重复终态；EXECUTION_NOT_COMPLETE/EXECUTION_GUARDS_FAILED拒绝回填；EVIDENCE_MISMATCH拒绝源/派生/receipt篡改；OUTPUT_EXISTS拒绝覆盖。执行部分失败为EXECUTION_INCOMPLETE_EVIDENCE；回填失败为REINTEGRATION_FAILED并保留中间诊断，after_check_source=null、applied_capture_ids为空。DERIVATION_REMAINS_PARTIAL、CAPTURES_NOT_INTEGRATED、PLAN_SCOPE_INCOMPLETE保留余项。
+
+比较重放两侧来源，共有实例身份/位姿和文档必须一致。settings_equal包含模板、检查输出、分组、搜索及轴线公差；范围/参数不同报COMPARISON_SCOPE_CHANGED，发现截断报COMPARISON_FINDINGS_LIMIT。候选按参考body到实际成员映射标识，跨方案相同局部映射合并作比较；报告before_candidates/after_candidates及原草案来源。no_longer_observed不是resolved，changed可能包含来源引用变化；resolved_findings_asserted=false。
