@@ -13,7 +13,7 @@ MATE_TYPES = {0: "coincident", 1: "concentric", 2: "perpendicular", 3: "parallel
 
 
 
-def read_mate(mate, index, max_entities, check_context, resolve_reference=None, inspect_entity=None):
+def read_mate(mate, index, max_entities, check_context, resolve_reference=None, inspect_entity=None, inspection_field='face_match'):
     truncated = False
     item = {"mate_index": index, "type_code": None, "alignment_code": None,
             "entity_count": None, "entities": None, "errors": [],
@@ -68,7 +68,7 @@ def read_mate(mate, index, max_entities, check_context, resolve_reference=None, 
                     try:
                         inspect_entity(mate, entity, record)
                     except Exception as exc:
-                        record['errors'].append(evidence_error(exc, field='face_match'))
+                        record['errors'].append(evidence_error(exc, field=inspection_field))
             except Exception as exc:
                 record["errors"].append(evidence_error(exc, field="entity"))
             for error in record["errors"]:

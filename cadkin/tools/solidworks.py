@@ -85,7 +85,8 @@ TOOLS = [
           "max_features": {"type": "integer", "minimum": 1, "maximum": 20000, "default": 2000},
           "max_mates": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 200},
           "max_entities": {"type": "integer", "minimum": 1, "maximum": 64, "default": 16},
-          "max_depth": {"type": "integer", "minimum": 1, "maximum": 64, "default": 32}},
+          "max_depth": {"type": "integer", "minimum": 1, "maximum": 64, "default": 32},
+          "include_reference_geometry": {"type": "boolean", "default": False, "description": "Read direct mate face surface kinds/root parameters with persistent identity round-trip and concentric LockRotation. Extra COM reads; failures remain unknown."}},
          ["expected_document_token"]),
     spec("sw_match_mate_faces", "Read current root mates and compare their referenced faces against 1-8 saved cylinder envelopes captured with include_face_references=true. Requires a complete spatial inventory and unchanged document/configuration/poses. Resolves persistent IDs in the referenced part, maps to the occurrence, then compares live CAD object identity. Preserves partial/unsupported evidence; does not infer contact or joints. Save the original envelope for offline cad_review_connections.",
          {"expected_document_token": TOKEN, "inventory_path": {"type": "string", "minLength": 1},
@@ -185,6 +186,12 @@ TOOLS = [
           'max_partitions': {'type':'integer','minimum':1,'maximum':12,'default':8},
           'include_contact_hypotheses': {'type':'boolean','default':True}},
          ['target_graph_path','output_path'], False),
+    spec('cad_analyze_constraints', 'Replay a target graph and combine exact root mate constraints per occurrence pair and per source snapshot. Produces traceable local fixed/revolute/prismatic candidates, conflicts and missing evidence; target type/DOF remain unknown. Templates and geometric proximity cannot supply constraints. Offline; writes a new outputs JSON without CAD edits.',
+         {'target_graph_path': {'type': 'string', 'minLength': 1}, 'output_path': {'type': 'string', 'minLength': 1},
+          'distance_tolerance_mm': {'type': 'number', 'exclusiveMinimum': 0},
+          'angle_tolerance_deg': {'type': 'number', 'exclusiveMinimum': 0, 'maximum': 5},
+          'max_pairs': {'type': 'integer', 'minimum': 1, 'maximum': 1225, 'default': 200}},
+         ['target_graph_path', 'output_path', 'distance_tolerance_mm', 'angle_tolerance_deg'], False),
     spec('cad_draft_joints', 'Build source-bound target relationship evidence for each conditional partition WITHOUT requiring templates. Target joint types and DOF remain unknown. Only explicit nonempty template_ids add optional structural analogies; reference kind/DOF never become target conclusions. Preserve constraints, geometry, conflicts and shared pair/search budgets. Offline; no CAD edits or motion solving.',
          {'rigid_candidates_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'template_ids': {'type':'array','minItems':0,'maxItems':8,'uniqueItems':True,'items':{'type':'string','minLength':1}},
@@ -262,6 +269,9 @@ class SolidWorksTools:
                 from cadkin.tools.matching import build_target_graph, match_templates
                 handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
                 return handler(self.root, **arguments)
+            if name == 'cad_analyze_constraints':
+                from cadkin.tools.constraint_analysis import analyze_constraints
+                return analyze_constraints(self.root, **arguments)
             if name in ('cad_build_rigid_candidates','cad_draft_joints'):
                 from cadkin.tools.rigid import rigid_candidates, joint_drafts
                 handler = rigid_candidates if name == 'cad_build_rigid_candidates' else joint_drafts

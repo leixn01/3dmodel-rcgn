@@ -10,7 +10,8 @@ description: 读取活动根装配的配合特征清单、抑制/回滚/特征�
 1. 已有有效 token 时直接调用 sw_mate_inventory；缺少时仅查询活动文档，确认 assembly。采集期间保持模型不变，不启动额外会话、不切换配置。
 2. 保存真实返回到 outputs 新 JSON，检查 scope、complete、truncated、errors。范围仅为活动根装配的配合，引用到嵌套组件不表示已读其内部配合。
 3. 报告抑制/回滚/特征报错/未知状态；无特征报错不证明求解成功、有效约束或机械连接。原始实体参数不转换成运动轴。
-4. 本流程只采集状态。需要与已有几何候选关联时，交付该文件给 connection-review，不在此处重做几何分析。
+4. 约束组合分析明确缺少引用几何或锁定旋转状态时，先读[增强采集](references/geometry.md)，可在本次采集传include_reference_geometry=true；失败不按false或空几何处理。
+5. 本流程只采集状态和明确请求的引用几何。需要与已有几何候选关联时，交付该文件给 connection-review，不在此处重做几何分析。
 
 按需读取：
 

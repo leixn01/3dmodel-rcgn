@@ -7,9 +7,11 @@ from cadkin.adapters.evidence import integer
 from cadkin.errors import ToolFailure
 
 
-def decode_reference(reference):
-    if not isinstance(reference, dict) or reference.get('encoding') != 'base64' or reference.get('scope') != 'referenced_part_definition':
-        raise ToolFailure('FACE_REFERENCE_UNAVAILABLE', 'Recollect cylinders with include_face_references=true.')
+def decode_reference(reference, scope='referenced_part_definition'):
+    if not isinstance(reference, dict) or reference.get('encoding') != 'base64' or reference.get('scope') != scope:
+        hint = ('Recollect root mates with include_reference_geometry=true.' if scope == 'active_root_assembly' else
+                'Recollect cylinders with include_face_references=true.')
+        raise ToolFailure('FACE_REFERENCE_UNAVAILABLE', hint)
     encoded = reference.get('id')
     try:
         if not isinstance(encoded, str) or len(encoded) > 5464:
@@ -29,8 +31,8 @@ def same_object(app, left, right):
     return code == 1
 
 
-def resolve_face(part, reference, runtime):
-    raw = decode_reference(reference)
+def resolve_face(part, reference, runtime, scope='referenced_part_definition'):
+    raw = decode_reference(reference, scope)
     pythoncom, client = runtime
     encoded = client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_UI1, tuple(raw))
     state = client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
@@ -41,7 +43,7 @@ def resolve_face(part, reference, runtime):
     return face
 
 
-def capture_face_reference(part, face, app, runtime):
+def capture_face_reference(part, face, app, runtime, scope='referenced_part_definition'):
     raw = call(value(part, 'Extension'), 'GetPersistReference3', face)
     if isinstance(raw, (tuple, list)):
         if not all(type(x) is int and 0 <= x <= 255 for x in raw):
@@ -49,8 +51,8 @@ def capture_face_reference(part, face, app, runtime):
         raw = bytes(raw)
     if not isinstance(raw, bytes) or not 1 <= len(raw) <= 4096:
         raise ToolFailure('FACE_REFERENCE_UNAVAILABLE', 'SOLIDWORKS did not return a bounded persistent face ID.')
-    reference = {'encoding': 'base64', 'scope': 'referenced_part_definition',
+    reference = {'encoding': 'base64', 'scope': scope,
                  'id': base64.b64encode(raw).decode('ascii')}
-    if not same_object(app, face, resolve_face(part, reference, runtime)):
+    if not same_object(app, face, resolve_face(part, reference, runtime, scope)):
         raise ToolFailure('FACE_IDENTITY_UNAVAILABLE', 'Persistent reference round-trip resolved a different object.')
     return reference

@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.21.0。以下 45 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.22.0。以下 46 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -710,3 +710,23 @@ cad_draft_joints必填rigid_candidates_path、output_path。默认template_ids=N
 新证据索引algorithm_version=2；joint_contexts区分目标上下文（template_id=null，类型unknown/DOF=null）和可选参考。完整guarded face_probes的available_for_existing_reintegration=true，但reintegration_requires_compatible_face_review=true；仍按当前receipt与兼容依据回填。修正0.20旧提示的false，不把所有索引历史自动导入。
 
 旧algorithm_version=1草案/check/index保持原算法重放，不直接改写文件；从原rigid source生成新目标草案再检查以迁移。旧输入被修改仍报EVIDENCE_MISMATCH。没有模板的检查、计划、执行、回填、比较和索引均已接通。
+
+## 0.22.0：目标约束组合分析
+
+新增工具cad_analyze_constraints（工具总数46；功能skill39），不连接COM。参数：target_graph_path、output_path、distance_tolerance_mm>0、0<angle_tolerance_deg<=5必填；max_pairs默认200、1–1225。输出constraint_analysis_schema_version=1、algorithm_version=1、parameters、target_source、input_files、mate_sources、pairs、coverage、source_errors；写outputs新文件。
+
+pairs按目标实例对保留occurrence_paths、snapshots、geometry_context和flags。每份根mate源独立成snapshot，包含原始feature_id/entity_index/实例/持久引用定位、constraint_facts、candidates、conflicts、missing_evidence。重复源SHA256去重；不同源不合并，不把feature_id当跨文件ID。max_pairs覆盖不足返回CONSTRAINT_PAIR_LIMIT及omitted_pairs。原始与派生来源重放，输出不覆盖；改原始哈希或派生候选会拒绝。没有任何模板参数。
+
+候选规则：活动精确双实例lock→fixed；同心圆柱+锁转→prismatic；有间距的平行同心轴→prismatic；同心圆柱、明确未锁转、沿轴重合平面→revolute；已约束旋转并有沿轴重合平面→fixed。未实现的活动配合、边界、多实体/未映射引用、读取/范围不完整均保留缺口；重复同一轴不增加约束。几何超公差保留冲突。候选status为supported_local_pattern/conditional/opposed。该status是局部规则状态，不是概率、求解成功或实际可运动。所有target_joint_kind=unknown、target_degrees_of_freedom=null，degrees_of_freedom_solved=false。
+
+sw_mate_inventory增加include_reference_geometry=false，可选true后增加只读调用：直接MateEntity.Reference→GetSurface区分解析面，使用EntityParams原始根坐标；以根文档GetPersistReference3/GetObjectByPersistReference3/IsSame回读身份；GetDefinition→IConcentricMateFeatureData.LockRotation读取锁转。无AccessSelections/ModifyDefinition/选择/运动/重建操作。采集后再次检查引用、参数、类型/对齐和锁转。旧默认输出保持兼容；失败保留partial/error，锁转未知为null。
+
+新增数据：data.reference_geometry_capture（scope=direct_root_mate_face_references）、entities[].reference_geometry（status、surface_type、entity_params_raw、point_root_m、direction_root_unit、radius_m、persistent_reference、identity_method）、mates[].constraint_options（status、concentric_lock_rotation）。根持久引用scope=active_root_assembly，不能当零件目录body/face索引或跨快照稳定身份。引用类型ReferenceType2是选择类型，仅“面”不意味着圆柱；根EntityParams不重复乘实例变换。
+
+本工具结果独立于draft/check；暂不被自动补采规划器消费。旧文件不改版本/哈希，增强采集后新建连接复核→链→目标图→约束分析；原draft/check及索引历史保留。几何观察只在geometry_context，不生成约束方程。完全没有配合的STEP保留未知，不强制参考匹配。
+
+API依据：
+- [ReferenceType2：swSelectType_e](https://help.solidworks.com/2025/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMateEntity2~ReferenceType2.html)
+- [EntityParams：所属装配坐标与参数定义](https://help.solidworks.com/2026/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMateEntity2~EntityParams.html)
+- [LockRotation](https://help.solidworks.com/2024/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IConcentricMateFeatureData~LockRotation.html)
+- [局部配合与整机自由度/冗余的区别](https://help.solidworks.com/2016/english/solidworks/motionstudies/c_degrees_freedom_motion.htm)

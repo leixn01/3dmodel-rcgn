@@ -976,3 +976,55 @@ Copy-Item -LiteralPath 'examples/three_servo_lift/3X Lift Assembly.STEP' -Destin
 当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 45 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
 
 后续每次功能变更都在此追加对应版本的操作、预期返回、人工核对和失败标准。每条记录注明提交 SHA、工具参数、原始返回文件、窗口核对者与结论；没有证据不沿用上版“通过”。
+
+## 0.22.0：目标约束组合分析
+
+前置：Windows、已有Conda环境，拉取并安装最新仓库，重启OpenCode；46个工具，39个功能skill。无需新建.venv。离线验收不要求SolidWorks。
+
+```powershell
+git pull --ff-only
+python -m pip install -e ".[solidworks,templates]"
+python scripts/verify_constraint_analysis.py --output outputs/verify-0.22
+```
+
+预期passed=true、35项检查。九个合成场景覆盖lock、旋转/滑动/固定组合、不同位置平行轴、重复轴、无配合、几何冲突、旧版缺少几何字段；检查原始源不变、预算省略、禁止覆盖、重放和伪造结论拒绝。结果与调用在outputs/verify-0.22；重复运行换目录。此脚本使用显式CAD替身，真实stdio另有协议测试；均不等于本机SolidWorks或升降机实测。
+
+### A. 已有目标图离线验收
+
+在仓库根目录，使用当前真实target graph（下面路径是示例；不要手写目标图）：
+
+```powershell
+python -m cadkin analyze-constraints outputs/target.json --distance-tolerance-mm 0.1 --angle-tolerance-deg 0.1 --output outputs/constraints-0.22.json
+```
+
+等价MCP：
+```json
+{"tool":"cad_analyze_constraints","arguments":{"target_graph_path":"outputs/target.json","output_path":"outputs/constraints-0.22.json","distance_tolerance_mm":0.1,"angle_tolerance_deg":0.1,"max_pairs":200}}
+```
+
+0.1mm/0.1度是验收示例，真实任务按源精度选择并保留参数。检查：
+1. 原始源被重放，报告target_source和input_files哈希可追溯。逐pair看snapshots，不把多个源文件拼成一个约束系统。
+2. 支持/冲突/缺失分别在constraint_facts/candidates、conflicts、missing_evidence；candidate.evidence_ids能回到具体mate源、feature_id和entity_index。不同快照相同feature_id不能直接当同一观测。
+3. 旧数据缺新字段时报告MATE_REFERENCE_GEOMETRY_MISSING_OR_UNSUPPORTED；缺旋转锁定状态时不能默认false。STEP无配合会有NO_USABLE_ACTIVE_PAIR_MATES或NO_ROOT_MATE_SOURCE，同时保留几何上下文；这是合理未知，不是必须匹配模板。
+4. supported_local_pattern也仍target_joint_kind=unknown、target_degrees_of_freedom=null。报告不覆盖draft、不自动合并零件、不发起运动。
+5. max_pairs=1时coverage明确省略，partial/CONSTRAINT_PAIR_LIMIT；原输出路径再次使用返回OUTPUT_EXISTS。改变任何已绑定源字节后重跑返回EVIDENCE_MISMATCH，不写新结果。
+
+失败标准：只凭“导轨”名称/同轴/近接触/bench_vise swivel出现确定revolute；漏记录抑制/错误/边界约束；跨快照拼接；省略对当无连接；修改旧源、原STEP或CAD；声称已求出DOF。
+
+### B. 本机增强配合采集验收
+
+准备：当前装配与空间清单的文档token、配置、实例路径和位姿一致；否则先新采一致来源。记录窗口的dirty/选择/配置和目标配合的锁转设置，仅做核对，不切换它。取得sw_active_document的真实token，再调用：
+
+```json
+{"tool":"sw_mate_inventory","arguments":{"expected_document_token":"替换为真实24字符token","include_reference_geometry":true,"max_features":2000,"max_mates":200,"max_entities":16,"max_depth":32}}
+```
+
+将完整原始envelope保存为outputs/mates-geometry-0.22.json。检查reference_geometry_capture、每个具体面引用的root参数/持久身份回读，以及同心配合constraint_options.concentric_lock_rotation。面/实例/参数绑定成功不代表配合已求解；无法读取为null及错误，不能冒充false。若STEP无配合，完整空列表允许，不能为验收自行添加配合。
+
+使用原关系文件和新mates文件调用cad_review_connections写新connections文件，再按原链parameters（保持成员/名称/分组/其它证据和公差，仅替换本次根mate连接源）调用cad_build_chain_evidence写新chain、cad_build_target_graph写新target，最后用A步骤分析新target。缺源/配置/位姿不一致时明确报错，不修旧哈希。
+
+核对一条目标组件对，例如“端座—导轨”：记录真实完整occurrence_paths，查看哪些配合及具体面支持候选、缺哪些条件、是否有冲突。若只有几何观察，应保持未知。另有本机原生装配可核对现存同心配合+端面重合、锁转等组合；不要为测试改动用户模型。
+
+预期窗口选择/dirty/位姿/配置保持原状，无修改配合或重建。变化被捕获时返回MATE_STATE_CHANGED/GEOMETRY_CHANGED/COMPONENT_CHANGED/DOCUMENT_CHANGED，混合快照不可用于分析。保存原始envelope、新派生JSON和结果，不仅保存聊天结论。
+
+本版增强采集和约束报告缺口尚未接入自动计划/receipt闭环；已有4轮上限及索引历史继续保留，不把本机单次验收称为自动补采已完成，也不通过新文件名绕过停止规则。

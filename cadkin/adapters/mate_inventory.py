@@ -25,11 +25,22 @@ class MateInventoryOperations:
         return {'suppressed': suppressed, 'rolled_back': rolled_back, 'feature_error_code': code,
                 'error_is_warning': is_warning, 'state': state, 'solver_validity': 'not_evaluated'}
 
-    def sw_mate_inventory(self, expected_document_token, max_features=2000, max_mates=200, max_entities=16, max_depth=32):
-        return self._collect_mates(expected_document_token, max_features, max_mates, max_entities, max_depth)
+    def sw_mate_inventory(self, expected_document_token, max_features=2000, max_mates=200, max_entities=16, max_depth=32,
+                          include_reference_geometry=False):
+        if not include_reference_geometry:
+            return self._collect_mates(expected_document_token, max_features, max_mates, max_entities, max_depth)
+        from cadkin.adapters.mate_geometry import MateGeometryCapture
+        capture = MateGeometryCapture(self, expected_document_token)
+        result = self._collect_mates(expected_document_token, max_features, max_mates, max_entities, max_depth,
+                                    capture.inspect, capture.feature, 'reference_geometry', capture.finish)
+        result['data']['reference_geometry_capture'] = {'schema_version': 1, 'frame': 'root_assembly',
+            'scope': 'direct_root_mate_face_references', 'identity_rechecked': True,
+            'assembly_geometry_revision_verified': False}
+        result['data']['parameters']['include_reference_geometry'] = True
+        return result
 
     def _collect_mates(self, expected_document_token, max_features=2000, max_mates=200, max_entities=16, max_depth=32,
-                       inspect_entity=None):
+                       inspect_entity=None, inspect_feature=None, inspection_field='face_match', finalize=None):
         doc, info, nodes, errors, objects = self._spatial_tree(expected_document_token, 20000, 128)
         structural = {'COMPONENT_LIMIT', 'DEPTH_LIMIT', 'CHILDREN_READ_FAILED', 'INVALID_INSTANCE_NAME'}
         if any(e['code'] in structural or (e['code'] == 'COMPONENT_READ_FAILED' and e.get('field') == 'name') for e in errors):
@@ -102,8 +113,10 @@ class MateInventoryOperations:
                     if mate is None:
                         raise ToolFailure('MATE_INTERFACE_UNAVAILABLE', 'Mate feature has no readable specific interface.')
                     record, limited = read_mate(mate, len(mates), max_entities,
-                                               lambda: self._check_current(info), resolve_reference, inspect_entity)
+                                               lambda: self._check_current(info), resolve_reference, inspect_entity, inspection_field)
                     truncated = truncated or limited
+                    if inspect_feature is not None:
+                        inspect_feature(feature, mate, record)
                 except ToolFailure as exc:
                     if exc.code in {'DOCUMENT_CHANGED', 'COMPONENT_CHANGED'}:
                         raise
@@ -137,6 +150,8 @@ class MateInventoryOperations:
                 except Exception as exc:
                     errors.append(evidence_error(exc, feature_id=fid, field='subfeatures'))
         self._check_current(info)
+        if finalize is not None:
+            finalize()  # Final state/pose guards below must also cover these extra COM reads.
         for feature, fid, name, activity in verification:
             self._check_current(info)
             if value(feature, 'GetID') != fid or value(feature, 'Name') != name:
