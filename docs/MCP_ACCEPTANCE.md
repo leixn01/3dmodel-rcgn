@@ -1,18 +1,97 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 29 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用全部 31 个工具，核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
 1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks]`，退出并重启 OpenCode。先完成 0.6.0 的 Conda 环境核对；SolidWorks 未运行时再按 0.4.0 启动，无需手动提前打开。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 29 个工具。客户端可能给工具名添加服务器前缀。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 31 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
 
+## 0.12.0：机构链证据清单与人工复核
+
+当前 **0.12.0 / 31个工具 / 25个skill**。在已有Conda环境更新安装并重启OpenCode。本轮两项新增均离线运行；已有文件时无需启动SolidWorks。先用真实模型中明确选定的2–5个叶零件验收，不凭模型名称硬编码升降链。
+
+### 准备与准确调用
+
+1. 准备完整空间原始envelope，必须收齐分页/层级；几何缺失可保留partial。可选准备已有分组文件及 cad_review_connections、cad_review_proximity、cad_review_face_contacts 写出的结果JSON。输入须保留原始来源，不能用MCP成功摘要代替结果文件。
+2. 明确所选实例范围及名称。调用 **cad_build_chain_evidence**；下面文件路径和实例A/B/C替换为真实值，缺少某一类输入就省略参数或相应数组项，不补造数据：
+
+```json
+{
+  "inventory_path": "outputs/spatial.json",
+  "occurrence_paths": ["实际完整实例A", "实际完整实例B", "实际完整实例C"],
+  "chain_name": "升降链候选1",
+  "grouping_path": "outputs/groups.json",
+  "evidence_paths": ["outputs/connections.json", "outputs/proximity-review.json", "outputs/face-contacts.json"],
+  "output_path": "outputs/chain-0.12.json"
+}
+```
+
+范围2–50个不同叶实例；证据文件最多20个。手工复核过的旧分组若缺review_path，需额外传 grouping_review_path 并使用原review_sha256所绑定的文件；新版分组已保存该路径。没有任何证据文件也可以生成草案，未知对仍保留。
+
+3. 阅读文件中的members、pairs、coverage、boundary_evidence及sources。3个范围实例必须产生3个实例对；未测/无证据的对也在，不能仅统计返回候选。核对链的实际范围，不把清单顺序当作运动或拆卸顺序。
+4. 人工逐对给出明确意见后，另存复核JSON。下面是**格式示例**，不要把占位人员、时间、理由或pending改为默认确认；使用实际复核人、带时区时间、基础清单SHA256及该清单的pair_id/evidence_id：
+
+```json
+{
+  "chain_review_input_schema_version": 1,
+  "chain_sha256": "chain-0.12.json的实际SHA256",
+  "reviewer": "实际复核人",
+  "reviewed_at": "2026-11-12T10:00:00+08:00",
+  "decisions": [{
+    "pair_id": "从清单读取的pair_id",
+    "decision": "pending",
+    "relation_type": null,
+    "reason": "实际待查理由",
+    "evidence_ids": [],
+    "acknowledged_flags": []
+  }]
+}
+```
+
+`Get-FileHash outputs/chain-0.12.json -Algorithm SHA256`可读取哈希。decision可为confirmed/rejected/pending/conflict；confirmed须明确relation_type为rigid_connection/revolute_joint/prismatic_joint/other_connection之一，其余为null。每对最多一条；evidence_ids只引用本对，可为空但须有实际人工判断理由。confirmed/rejected还需在acknowledged_flags列出本对所有review_flags的code，并说明判断依据。未给意见的对省略，保持pending。
+
+5. 调用 **cad_apply_chain_review**：
+
+```json
+{"chain_path":"outputs/chain-0.12.json","review_path":"outputs/chain-decisions-0.12.json","output_path":"outputs/chain-reviewed-0.12.json"}
+```
+
+等价CLI：
+
+```powershell
+python -m cadkin chain-evidence outputs/spatial.json --occurrences "实际完整实例A" "实际完整实例B" --name "升降链候选1" --grouping outputs/groups.json --evidence outputs/connections.json --output outputs/chain-cli-0.12.json
+python -m cadkin review-chain outputs/chain-0.12.json outputs/chain-decisions-0.12.json --output outputs/chain-reviewed-cli-0.12.json
+```
+
+全部使用新输出文件名，不覆盖原始来源。
+
+### 每项怎么验证
+
+| 新增项 | 核对与通过标准 | 失败/未测试标准 |
+| --- | --- | --- |
+| 实例范围与分组 | members与选择的叶实例一一对应，重复文件实例分别保留，角色标签及人工分组来源可回读；N个实例保留N(N−1)/2对。 | 容器当叶件、遗漏未知对或把角色分组自动称作刚体均为失败。 |
+| 三类证据汇总 | 沿source_path/SHA256回读：轴线/配合、组件距离、局部面证据分别保存，没有互相替代测量范围。 | 局部大间隙称全局分离、零距离当接触、配合无报错当求解成功均为失败。 |
+| 无轴线候选的根配合 | 来源中存在准确映射到两个实例的根配合时，即使geometric_candidate_indices为空也应列入；保留抑制/错误/未知状态。 | 不能为纳入配合而伪造同轴候选。多实例/未映射/子装配内部配合缺口仍保留；没有案例记未测试。 |
+| 边界联系 | 缩小范围后，一端在内一端在外的已有记录进入boundary_evidence；两端在外保留计数，来源unmatched记录仍可查看。 | 范围外未测关系不声称已覆盖，已知边界联系不能静默丢弃。 |
+| 未知与partial | 少传证据或只传一对测量时，其他对为unknown，UNASSESSED_CHAIN_PAIRS和源partial保留；missing_evidence_families指出缺口。 | 无证据不等于无连接。complete只描述给定输入的汇总，不是整机已拆解。 |
+| 差异提示 | 同阈值距离分类不同、阈值不同或组件上下文距离大于定义面测点间距时，保留双方来源并显示对应review_flags。 | 提示是待核对事项，不能自动认定哪个源正确或删除其中一个；不同范围不能直接叫同一测量。 |
+| 人工记录 | 用户明确给意见后核对人员、时间、理由、决定、同对证据ID；没有意见的对仍pending；原清单不变。 | Agent自行填写确认、套用旧pair索引、将rejected当CAD无连接证明均为失败。 |
+| 人工与CAD状态分离 | human_confirmed可反映声明，但cad_verified、motion_parameters_verified及mechanical_relation_confirmed仍false；人工全答完不清除源partial。 | 不自动合并、移动、创建关节、推断轴线/行程。姓名时间只作归属，不算身份认证。 |
+| 来源变化/错误恢复 | 对副本做哈希不符、派生值变动、错pair/evidence ID或漏acknowledged_flags负例，应拒绝且不写成功结果；随后合法离线调用仍可用。 | 负例验证文件逻辑，不算真实CAD实测。旧清单意见不能自动应用到新来源；不能手改SHA绕过。 |
+
+保存版本/SHA、输入文件哈希、准确参数、原始返回、范围选择依据和真实人工意见到 `outputs/acceptance-0.12-<时间>/`。对真实模型，仍需按对应旧清单核对CAD原始采集；离线汇总成功不能替代实际面/距离测量。测试用演示确认不得写入升降机正式复核记录。
+
+可直接告诉OpenCode：
+
+> 按0.12.0清单，明确选择一条升降链的少量真实叶实例，离线汇总已有角色、配合、组件距离和面证据。保留未知对和边界联系，列出需要我判断的关系；我明确给意见后再单独记录人工复核，不自动确认或移动零件。
+
 ## 0.11.0：具体面间隙与法向
 
-当前 **0.11.0 / 29 个工具 / 23 个 skill**。在已有 Conda 环境更新安装并重启 OpenCode。本轮验证有限平面/圆柱面上的局部测点间隙和法向，**不验证全局最小面间距或确认真实接触**。模型总体状态见 [拆解进度](MODEL_PROGRESS.md)。
+本节保留 **0.11.0 新增能力**；当前版本/数量按上方0.12.0检查。在已有 Conda 环境更新安装并重启 OpenCode。本轮验证有限平面/圆柱面上的局部测点间隙和法向，**不验证全局最小面间距或确认真实接触**。模型总体状态见 [拆解进度](MODEL_PROGRESS.md)。
 
 ### 前置与准确调用
 
@@ -82,7 +161,7 @@ python -m cadkin review-face-contacts --probes outputs/face-probe-0.11.json --co
 
 ## 0.10.0：组件距离与近接触候选
 
-本节保留 **0.10.0 新增能力**；当前版本与工具数量按上方 0.11.0 检查。继续使用已有 Conda 环境，更新安装并重启 OpenCode。三项新能力不要求 STEP 有配合：离线准备待测对、在线单对测量、离线复核。先验收少量组件，不一次跑完整装配的全部组合。
+本节保留 **0.10.0 新增能力**；当前版本与工具数量按上方 0.12.0 检查。继续使用已有 Conda 环境，更新安装并重启 OpenCode。三项新能力不要求 STEP 有配合：离线准备待测对、在线单对测量、离线复核。先验收少量组件，不一次跑完整装配的全部组合。
 
 ### 前置与准确调用
 
@@ -163,7 +242,7 @@ python -m cadkin review-proximity outputs/proximity-cli-0.10.json --distances ou
 
 ## 0.9.0：配合引用面核对
 
-本节保留 **0.9.0 新增能力**；当前版本与工具数量按上方 0.11.0 检查。在已有 Conda 环境运行 `git pull --ff-only`、`python -m pip install -e ".[solidworks]"`，退出并重启 OpenCode；调用会话工具核对 Python 解释器和 Conda 前缀。
+本节保留 **0.9.0 新增能力**；当前版本与工具数量按上方 0.12.0 检查。在已有 Conda 环境运行 `git pull --ff-only`、`python -m pip install -e ".[solidworks]"`，退出并重启 OpenCode；调用会话工具核对 Python 解释器和 Conda 前缀。
 
 ### 前置与准确调用
 
@@ -213,7 +292,7 @@ python -m cadkin review-connections outputs/relations-0.9.json outputs/mate-face
 
 ## 0.8.0：配合状态与连接复核
 
-本节保留 0.8.0 引入的两项能力：只读根配合采集与离线关联。当前安装版本/工具数量按上方 0.11.0 检查，skill 参考文件仍按需加载。
+本节保留 0.8.0 引入的两项能力：只读根配合采集与离线关联。当前安装版本/工具数量按上方 0.12.0 检查，skill 参考文件仍按需加载。
 
 ### 前置与调用
 
@@ -249,7 +328,7 @@ python -m cadkin review-connections outputs/relations.json outputs/mates.json --
 
 ## 0.7.0：组件关系候选
 
-0.7.0 新增第 20 个工具 `cad_component_relations`，流程独立于角色分组和 COM 读取。先按下方 Conda 命令更新并重新启动 OpenCode，核对版本 **0.11.0 / 29 个工具**（本节保留 0.7.0 新增项）。软件启动/显示修复、空间和圆柱的实机核对仍分别执行原有清单。
+0.7.0 新增第 20 个工具 `cad_component_relations`，流程独立于角色分组和 COM 读取。先按下方 Conda 命令更新并重新启动 OpenCode，核对版本 **0.12.0 / 31 个工具**（本节保留 0.7.0 新增项）。软件启动/显示修复、空间和圆柱的实机核对仍分别执行原有清单。
 
 ### 采集与调用
 
@@ -300,7 +379,7 @@ opencode mcp list
 opencode
 ```
 
-当前版本应为 0.11.0，工具数 29（本节保留 0.6.0 新增项）。升级后要从同一已激活终端重新启动 OpenCode。调用 `sw_session_status({})`，核对 runtime.python_executable 与终端打印路径一致、matches_conda_prefix=true；软件未运行时 connected=false 也应带这些字段。与目标 Conda 不符即本项失败，不继续把其他环境的测试当作通过。配置不硬编码环境名称或机器路径。
+当前版本应为 0.12.0，工具数 31（本节保留 0.6.0 新增项）。升级后要从同一已激活终端重新启动 OpenCode。调用 `sw_session_status({})`，核对 runtime.python_executable 与终端打印路径一致、matches_conda_prefix=true；软件未运行时 connected=false 也应带这些字段。与目标 Conda 不符即本项失败，不继续把其他环境的测试当作通过。配置不硬编码环境名称或机器路径。
 
 ### 两个新工具逐项验收
 
@@ -334,7 +413,7 @@ python -m pip install -e ".[solidworks]"
 python -c "from importlib.metadata import version; print(version('3dmodel-rcgn'))"
 ```
 
-本节保留 0.5.0 的修复验收项；当前更新应显示 0.11.0、29 个工具（0.5.0 时为 17 个）。退出并重新启动 OpenCode，确认含 `cad_group_components`。若仍为 15 个工具或仍报旧的 60 秒上限，先核对所用目录、解释器与 MCP 进程。使用已有打开的测试装配，记录 SHA、软件版本、PID、当前文档/配置/token，以及修改前的选择/显隐/dirty。不要为测试关闭有未保存工程的会话。
+本节保留 0.5.0 的修复验收项；当前更新应显示 0.12.0、31 个工具（0.5.0 时为 17 个）。退出并重新启动 OpenCode，确认含 `cad_group_components`。若仍为 15 个工具或仍报旧的 60 秒上限，先核对所用目录、解释器与 MCP 进程。使用已有打开的测试装配，记录 SHA、软件版本、PID、当前文档/配置/token，以及修改前的选择/显隐/dirty。不要为测试关闭有未保存工程的会话。
 
 每次工具调用保存准确参数、原始返回、开始/结束时间与人工窗口结论到 `outputs/acceptance-0.5-<时间>/`。回读、耗时、窗口效果分别记录；没有窗口证据不填写视觉通过。
 
@@ -477,8 +556,8 @@ Copy-Item -LiteralPath 'examples/three_servo_lift/3X Lift Assembly.STEP' -Destin
 
 可直接告诉 OpenCode：
 
-> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 29 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
+> 按 docs/MCP_ACCEPTANCE.md，在当前 Windows 和 SolidWorks 上逐项验收 31 个 MCP 工具。测试模型已在 examples/three_servo_lift/3X Lift Assembly.STEP。串行调用，记录真实参数、原始返回和需要我核对的窗口现象；重建使用 outputs 下的新工作副本，不保存覆盖原始输入。将结果存入 outputs 的新目录，不把模拟测试、协议连通或部分结果写成实机全部通过。
 
-当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 29 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
+当前仓库已验证离线逻辑和真实 stdio 协议；用户已反馈旧版 15 个工具的实测状态，修复、分组、证据读取和本次关系候选仍需目标 SolidWorks 与 OpenCode 客户端验证。零件移动、配合编辑、CAD 文件保存/导出及机械运动副确认不在当前 31 个工具范围内；已包含几何关系候选；空间结果 JSON 可由客户端或 CLI 保存。
 
 后续每次功能变更都在此追加对应版本的操作、预期返回、人工核对和失败标准。每条记录注明提交 SHA、工具参数、原始返回文件、窗口核对者与结论；没有证据不沿用上版“通过”。

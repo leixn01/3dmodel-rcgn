@@ -124,6 +124,7 @@ def group_components(root, inventory_path, output_path, scope_occurrence_path=No
     data = group_inventory(envelope, digest, scope_occurrence_path, review)
     data["source"]["inventory_path"] = str(source)
     data["review_sha256"] = review_digest
+    data["review_path"] = str(json_path(root, review_path)) if review_path is not None else None
     payload = json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     output.parent.mkdir(parents=True, exist_ok=True)
     try:

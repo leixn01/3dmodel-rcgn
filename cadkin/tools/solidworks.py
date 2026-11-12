@@ -147,6 +147,16 @@ TOOLS = [
           'output_path': {'type': 'string', 'minLength': 1}, 'contact_tolerance_mm': {'type': 'number', 'minimum': 0},
           'angle_tolerance_deg': {'type': 'number', 'minimum': 0, 'maximum': 90}},
          ['probe_paths', 'output_path', 'contact_tolerance_mm', 'angle_tolerance_deg'], False),
+    spec('cad_build_chain_evidence', 'Compile an explicit 2–50 leaf-occurrence scope into an offline chain evidence dossier. Replays source grouping/connection/proximity/face reviews and hashes; preserves every scope pair, unknowns, boundary links and differing measurement scopes. No CAD, rigid-body merge, joint inference or removal planning.',
+         {'inventory_path': {'type': 'string', 'minLength': 1}, 'output_path': {'type': 'string', 'minLength': 1},
+          'chain_name': {'type': 'string', 'minLength': 1, 'maxLength': 100},
+          'occurrence_paths': {'type': 'array', 'minItems': 2, 'maxItems': 50, 'uniqueItems': True, 'items': {'type': 'string', 'minLength': 1}},
+          'evidence_paths': {'type': 'array', 'maxItems': 20, 'uniqueItems': True, 'items': {'type': 'string', 'minLength': 1}},
+          'grouping_path': {'type': 'string', 'minLength': 1}, 'grouping_review_path': {'type': 'string', 'minLength': 1}},
+         ['inventory_path', 'occurrence_paths', 'chain_name', 'output_path'], False),
+    spec('cad_apply_chain_review', 'Apply explicit attributed human confirmed/rejected/pending/conflict declarations to an exact chain dossier SHA256, offline. Revalidates evidence and acknowledges review flags; unmentioned pairs stay pending. Human confirmation does not certify CAD geometry/joints or clear partial evidence. Writes a new file, never moves parts.',
+         {'chain_path': {'type': 'string', 'minLength': 1}, 'review_path': {'type': 'string', 'minLength': 1}, 'output_path': {'type': 'string', 'minLength': 1}},
+         ['chain_path', 'review_path', 'output_path'], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -192,6 +202,12 @@ class SolidWorksTools:
             if name == 'cad_review_face_contacts':
                 from cadkin.tools.face_contacts import face_contact_review
                 return face_contact_review(self.root, **arguments)
+            if name == 'cad_build_chain_evidence':
+                from cadkin.tools.chain import chain_dossier
+                return chain_dossier(self.root, **arguments)
+            if name == 'cad_apply_chain_review':
+                from cadkin.tools.chain_review import apply_chain_review
+                return apply_chain_review(self.root, **arguments)
             return self.worker.call(name, arguments)
         except Exception as exc:
             return failure(exc)

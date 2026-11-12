@@ -21,7 +21,7 @@ def identity(info):
     return tuple(info[k] for k in fields)
 
 
-def review_connections(relations, mates, inventory, expected_inventory_sha256):
+def review_connections(relations, mates, inventory, expected_inventory_sha256, extra_occurrence_pairs=()):
     require(isinstance(relations, dict) and relations.get('relation_schema_version') == 1 and
             isinstance(relations.get('candidates'), list) and len(relations['candidates']) <= 5000,
             'Expected a bounded cad_component_relations result file.')
@@ -57,6 +57,12 @@ def review_connections(relations, mates, inventory, expected_inventory_sha256):
         require(all(isinstance(p, str) and p in nodes for p in paths) and paths[0] != paths[1], 'Candidate occurrences differ.', 'EVIDENCE_MISMATCH')
         pair = pairs.setdefault(tuple(sorted(paths)), {'geometric_candidate_indices': [], 'mate_evidence': []})
         pair['geometric_candidate_indices'].append(index)
+    # Internal dossier replay may include verified root mate pairs absent from axis candidates.
+    # Empty geometric indices explicitly mean no fabricated coaxial/parallel evidence.
+    for paths in extra_occurrence_pairs:
+        require(isinstance(paths, (list, tuple)) and len(paths) == 2 and paths[0] != paths[1] and
+                all(isinstance(p, str) and p in nodes for p in paths), 'Invalid extra occurrence pair.')
+        pairs.setdefault(tuple(sorted(paths)), {'geometric_candidate_indices': [], 'mate_evidence': []})
     face_evidence = validate_face_matching(data, relations, expected_inventory_sha256)
     ids, unmatched = set(), []
     for record in data['mates']:

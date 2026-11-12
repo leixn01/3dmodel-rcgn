@@ -5,6 +5,38 @@ import unittest
 
 @unittest.skipUnless(importlib.util.find_spec('mcp'), 'Install .[solidworks] for protocol integration tests')
 class McpTests(unittest.IsolatedAsyncioTestCase):
+    async def test_production_chain_compile_review_and_errors_over_stdio(self):
+        import hashlib
+        import json
+        from pathlib import Path
+        import tempfile
+        from anyio import fail_after
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+        from tests.chain_fakes import write_chain_fixture
+        root = Path.cwd(); (root / 'outputs').mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=root / 'outputs') as directory, fail_after(25):
+            base = Path(directory); args = write_chain_fixture(base)
+            parameters = StdioServerParameters(command=sys.executable, args=['-m', 'cadkin.mcp_server', '--root', str(base)])
+            async with stdio_client(parameters) as (read, write):
+                async with ClientSession(read, write) as session:
+                    init = await session.initialize(); self.assertEqual(init.serverInfo.version, '0.12.0')
+                    result = await session.call_tool('cad_build_chain_evidence', args)
+                    self.assertEqual(result.structuredContent['status'], 'ok', result)
+                    self.assertEqual(result.structuredContent['data']['coverage']['possible_pairs'], 3)
+                    dossier = json.loads((base / 'outputs/chain.json').read_text(encoding='utf-8'))
+                    review = {'chain_review_input_schema_version': 1,
+                        'chain_sha256': hashlib.sha256((base / 'outputs/chain.json').read_bytes()).hexdigest(),
+                        'reviewer': 'Protocol fixture reviewer', 'reviewed_at': '2026-11-12T00:00:00Z',
+                        'decisions': [{'pair_id': dossier['pairs'][0]['pair_id'], 'decision': 'pending', 'relation_type': None,
+                                       'reason': 'Synthetic pending decision', 'evidence_ids': []}]}
+                    (base / 'review.json').write_text(json.dumps(review), encoding='utf-8')
+                    result = await session.call_tool('cad_apply_chain_review', {'chain_path': 'outputs/chain.json', 'review_path': 'review.json', 'output_path': 'outputs/reviewed.json'})
+                    self.assertFalse(result.isError); self.assertEqual(result.structuredContent['data']['review_counts']['pending'], 3)
+                    bad = await session.call_tool('cad_build_chain_evidence', {**args, 'output_path': 'outputs/bad.json', 'occurrence_paths': ['base-1', 'missing']})
+                    self.assertTrue(bad.isError); self.assertEqual(bad.structuredContent['errors'][0]['code'], 'INVALID_CHAIN_SCOPE')
+                    self.assertEqual(len((await session.list_tools()).tools), 31)
+
     async def test_face_catalog_probe_review_and_recovery_over_real_stdio(self):
         import json
         from pathlib import Path
@@ -19,7 +51,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.11.0')
+                    self.assertEqual(init.serverInfo.version, '0.12.0')
                     token = (await session.call_tool('sw_active_document')).structuredContent['data']['document_token']
                     selections = []
                     for i, occurrence in enumerate(('plate-1', 'plate-2')):
@@ -41,7 +73,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                     bad = await session.call_tool('sw_probe_face_pair', {**args, 'expected_document_token': '0' * 24})
                     self.assertTrue(bad.isError)
                     self.assertEqual(bad.structuredContent['errors'][0]['code'], 'EVIDENCE_MISMATCH')
-                    self.assertEqual(len((await session.list_tools()).tools), 29)
+                    self.assertEqual(len((await session.list_tools()).tools), 31)
 
     async def test_proximity_distance_review_and_errors_over_real_stdio(self):
         import json
@@ -57,7 +89,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.11.0')
+                    self.assertEqual(init.serverInfo.version, '0.12.0')
                     active = await session.call_tool('sw_active_document')
                     token = active.structuredContent['data']['document_token']
                     spatial = await session.call_tool('sw_spatial_inventory', {'expected_document_token': token})
@@ -91,7 +123,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                         'left_occurrence_path': 'base-1', 'right_occurrence_path': 'slider-1'})
                     self.assertTrue(bad.isError)
                     self.assertEqual(bad.structuredContent['errors'][0]['code'], 'DOCUMENT_CHANGED')
-                    self.assertEqual(len((await session.list_tools()).tools), 29)
+                    self.assertEqual(len((await session.list_tools()).tools), 31)
 
     async def test_face_identity_collection_and_review_over_real_stdio(self):
         import json
@@ -118,7 +150,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.11.0')
+                    self.assertEqual(init.serverInfo.version, '0.12.0')
                     capture = await session.call_tool('sw_component_cylinders', {
                         'expected_document_token': args['expected_document_token'], 'occurrence_path': 'shaft-1', 'include_face_references': True})
                     self.assertFalse(capture.isError, capture)
@@ -142,7 +174,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(limited.structuredContent['status'], 'partial')
                     bad = await session.call_tool('sw_match_mate_faces', {**args, 'max_candidate_faces': 0})
                     self.assertTrue(bad.isError)
-                    self.assertEqual(len((await session.list_tools()).tools), 29)
+                    self.assertEqual(len((await session.list_tools()).tools), 31)
 
     async def test_production_offline_relations_over_real_stdio(self):
         import json
@@ -179,7 +211,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                         **args, 'output_path': str(base / 'outputs/bad.json'), 'angle_tolerance_deg': 0})
                     self.assertTrue(bad.isError)
                     self.assertFalse((base / 'outputs/bad.json').exists())
-                    self.assertEqual(len((await session.list_tools()).tools), 29)
+                    self.assertEqual(len((await session.list_tools()).tools), 31)
 
     async def test_real_stdio_handshake_schemas_success_and_tool_error(self):
         from anyio import fail_after
@@ -191,7 +223,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = (await session.list_tools()).tools
-                    self.assertEqual(len(tools), 29)
+                    self.assertEqual(len(tools), 31)
                     self.assertFalse(any('script' in tool.name or 'save' in tool.name for tool in tools))
                     doc = await session.call_tool('sw_active_document')
                     self.assertFalse(doc.isError)
@@ -293,7 +325,7 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.11.0')
+                    self.assertEqual(init.serverInfo.version, '0.12.0')
                     doc = (await session.call_tool('sw_active_document')).structuredContent['data']
                     args = {'expected_document_token': doc['document_token'], 'page_size': 2}
                     page = (await session.call_tool('sw_spatial_inventory', args)).structuredContent
@@ -397,11 +429,11 @@ class McpTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(parameters) as (read, write):
                 async with ClientSession(read, write) as session:
                     init = await session.initialize()
-                    self.assertEqual(init.serverInfo.version, '0.11.0')
+                    self.assertEqual(init.serverInfo.version, '0.12.0')
                     result = await session.call_tool('cad_review_connections', args)
                     self.assertFalse(result.isError, result)
                     self.assertEqual(result.structuredContent['data']['counts']['has_unsuppressed_mate_evidence'], 1)
                     repeated = await session.call_tool('cad_review_connections', args)
                     self.assertTrue(repeated.isError)
                     self.assertEqual(repeated.structuredContent['errors'][0]['code'], 'OUTPUT_EXISTS')
-                    self.assertEqual(len((await session.list_tools()).tools), 29)
+                    self.assertEqual(len((await session.list_tools()).tools), 31)

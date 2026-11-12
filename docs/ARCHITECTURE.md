@@ -13,6 +13,7 @@
 | 面身份核对 | `adapters/face_identity.py`、`adapters/mate_faces.py`、`tools/mate_faces.py`、`tools/face_matches.py` | 文件校验、STA 内对象解析/比较与离线解释分离；共享根配合遍历，不跨线程传 COM 对象 |
 | 组件距离 / 近接触候选 | `adapters/component_distance.py`、`distance.py`、`tools/proximity.py`、`tools/proximity_review.py` | 在线单对 API、纯数值校验、离线待测清单与判读分开；与配合面身份无强制依赖 |
 | 面目录 / 局部面探测 / 候选复核 | `adapters/faces.py`、`adapters/face_probe.py`、`tools/face_sources.py`、`tools/face_contacts.py`、`face_geometry.py` | 只读 COM、来源文件校验、纯变换/法向计算和离线分类分开；不依赖配合/圆柱链 |
+| 机构链清单 / 人工复核 | `tools/chain_sources.py`、`tools/chain.py`、`tools/chain_review.py` | 重算已有来源、按显式范围汇总、记录人工声明分别实现；全程离线、不调用COM或自动合并刚体 |
 | 空间计算 | `cadkin/geometry.py` | 无 COM 依赖的矩阵、单位与近似包围盒转换 |
 | STA 调度 | `cadkin/adapters/sta.py` | 单线程串行调用、超时及取消后的状态处理 |
 | 开源兼容片段 | `cadkin/_vendor/sw_mcp.py` | 从固定 SW_MCP 版本提取并修改的 COM 成员访问逻辑 |
@@ -37,7 +38,7 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 2. 进入后读取简短 SKILL.md，获得输入/输出、最小流程及关键限制。
 3. 只有参数不明、需要解释字段或遇到失败时，读取入口明确链接的 references 对应文件/段落。不主动读全套参考、其他 skill 或完整开发文档；验收任务才读对应验收章节。
 
-当前 23 个入口保持简短；详细流程移到 references，配合/面核对按字段、失败分支或判读拆分。references 只含说明，执行仍在工具/适配层。已有文件足够时离线完成；缺少哪个输入才调用对应采集能力，不建立强制串联的全套流程。
+当前 25 个入口保持简短；详细流程移到 references，配合/面核对按字段、失败分支或判读拆分。references 只含说明，执行仍在工具/适配层。已有文件足够时离线完成；缺少哪个输入才调用对应采集能力，不建立强制串联的全套流程。
 
 ## 功能拆分
 
@@ -61,6 +62,8 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 | `component-faces` | 单实例面目录、描述符与持久引用，保留失败与预算 |
 | `face-gap-probing` | 两个指定有限面的局部测点间隙/法向，不宣称全局最小值 |
 | `face-contact-review` | 已有探测文件的离线阈值复核，不连接 CAD |
+| `chain-evidence` | 明确叶实例范围的离线证据汇总，保留未知/边界/待核对差异 |
+| `chain-review` | 绑定清单哈希的明确人工意见，不把声明当CAD验证 |
 | `solidworks-document` | 明确请求的打开/导入、重建操作 |
 | `solidworks-view` | 标准视图和缩放 |
 | `solidworks-display` | 基准面等类别显示过滤与总开关 |

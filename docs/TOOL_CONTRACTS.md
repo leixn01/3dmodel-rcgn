@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.11.0。以下 29 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.12.0。以下 31 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -33,10 +33,54 @@
 | `sw_component_faces` | expected_document_token、occurrence_path；可选 max_bodies、max_faces | 只读有限面目录、描述符和持久引用，零件定义范围 |
 | `sw_probe_face_pair` | expected_document_token、left、right、seed_points_root_mm；可选 max_iterations、convergence_tolerance_mm | 指定两面的局部测点间隙和法向，不证明全局最小距离 |
 | `cad_review_face_contacts` | probe_paths、output_path、contact_tolerance_mm、angle_tolerance_deg | 离线校验/复核面探测来源，写 outputs 新文件，不确认接触 |
+| `cad_build_chain_evidence` | inventory_path、occurrence_paths、chain_name、output_path；可选 grouping_path、grouping_review_path、evidence_paths | 离线汇总指定范围的角色/连接证据，保留未知和边界，不识别运动副 |
+| `cad_apply_chain_review` | chain_path、review_path、output_path | 将明确人工意见绑定到清单哈希，写新文件，不把声明当CAD验证 |
 
 `view` 支持 front/back/left/right/top/bottom/isometric/trimetric/dimetric。接口用枚举值访问视图，不依赖中英文界面的视图名称。
 
 先读取文档或组件树，使用返回的 `document_token` 操作。该值关联进程、文档路径/标题及活动配置；目标不匹配返回 `DOCUMENT_CHANGED`，不会操作新目标。它不是不可变几何版本号；模型重建或编辑后重新读取组件清单。工具执行期间不要在界面切换文档、配置或修改模型，COM 读取不是事务快照。
+
+## 0.12.0：机构链证据清单与人工声明
+
+本轮两工具完全离线，不新建COM连接；CLI/MCP共用实现。输入仍限项目内JSON，输出为outputs下新文件，来源图最多256文件/128MiB。读取并重算原始派生结果，结束前复查文件哈希；不提供事务或作者身份认证。
+
+### cad_build_chain_evidence
+
+必填inventory_path、occurrence_paths（2–50个不同叶实例）、chain_name（1–100字符）、output_path。可选grouping_path、grouping_review_path、evidence_paths（最多20个不重复文件/内容）；不传时省略字段。空间清单必须完整分页/层级；几何缺失可以保留。
+
+evidence_paths支持connection_review_schema_version=1、proximity_review_schema_version=1、face_contact_review_schema_version=1的结果文件。工具沿源路径/hash重算分组、轴线关系、连接复核、组件近接触与面探测判读；不能直接输入sw_*原始envelope或MCP摘要。面源上下文还需与本次空间清单的实例/配置/变换一致。
+
+分组若有review_sha256，必须取得原始人工角色复核文件。新版cad_group_components额外保存review_path；旧文件需显式grouping_review_path。此字段只补充出处，不改变分组算法。角色manual_confirmed仍不等于刚体确认。
+
+连接复核来源验证后，另把根配合中准确映射到两个实例但无轴线候选的对纳入；复用同一配合状态判读，geometric_candidate_indices=[]，不会伪造几何证据。源覆盖保存original_review_coverage及root_mate_source；多实例/未映射记录保持unmatched。
+
+输出chain_dossier_schema_version=1、algorithm_version=1，保存parameters、inventory_source、input_files（完整来源路径/hash）、members、pairs、sources、boundary_evidence、outside_scope_records和coverage。范围是显式选择，不是自动识别链路；全部N(N−1)/2对保留。
+
+每对有pair_id、occurrence_paths、evidence、review_flags、evidence_status（candidate_evidence/unknown/needs_reconciliation）、missing_evidence_families、review_state=pending。证据以kind区分connection/component_proximity/face_contact，保留源路径/hash、阈值、重放记录和evidence_id。replayed_pair_index定位重放结果，不当作跨文件CAD ID；原始细节沿source_path和来源绑定定位。只有未测/失败记录时仍为unknown。
+
+| review_flags code | 解释 |
+| --- | --- |
+| DIFFERENT_DISTANCE_THRESHOLDS | 不同阈值导致分类不可直接比较 |
+| DISTANCE_CLASSIFICATION_DISAGREEMENT | 同阈值的组件距离快照分类不同，需核对时间/几何 |
+| GEOMETRY_SCOPE_REQUIRES_REVIEW | 组件上下文距离大于放置后定义面的某个测点间距，需核对装配切除/范围/时刻；不是自动矛盾裁决 |
+
+compilation_complete=true表示清单成功形成；complete=false可由SOURCE_INCOMPLETE或UNASSESSED_CHAIN_PAIRS产生。缺少某证据类别只是缺口，不强迫每个真实连接具备所有类型。始终requires_review=true、mechanical_relation_confirmed=false、solidworks_modified=false。
+
+主要拒绝码：INVALID_CHAIN_SCOPE、DUPLICATE_CHAIN_SOURCE、GROUPING_REVIEW_SOURCE_REQUIRED、EVIDENCE_MISMATCH、INVALID_CHAIN_SOURCE、CHAIN_SOURCE_LIMIT。拒绝不会写成功文件；缺失输入可省略，但已提供且损坏的输入不能静默忽略。
+
+### cad_apply_chain_review
+
+必填chain_path、review_path、output_path。基础文件必须为原chain dossier，工具按其parameters重新生成并核对；不把已复核结果继续当基础，也不按索引迁移决定。
+
+人工输入chain_review_input_schema_version=1、chain_sha256、reviewer（非空，最多200字符）、reviewed_at（ISO带时区）、decisions。每条决定含pair_id、decision、relation_type、reason（非空，最多4000字符）、evidence_ids，以及可选acknowledged_flags。未提到的对保持pending；evidence_id必须属于该对，不重复。
+
+confirmed仅接受rigid_connection/revolute_joint/prismatic_joint/other_connection；rejected/pending/conflict的relation_type为null。confirmed/rejected必须确认该对所有review_flags code已处理，理由由实际人工判断提供。工具验证格式和来源，不认证复核人，也不代替其判断。
+
+输出chain_review_schema_version=1，保留基础清单/复核输入路径hash、成员、证据、边界和来源错误。human_review记录basis=human_declaration、人员/时间/理由、human_confirmed；cad_verified=false、motion_parameters_verified=false、mechanical_relation_confirmed=false。rejected表示人工不接受该候选，不等于已证明不存在连接。
+
+human_review_complete只统计是否仍有pending/conflict，和来源complete独立；来源partial仍保留且requires_review=true。没有经过CAD/求解验证的轴线、限位、行程、刚体或运动副不会被创建。输出始终solidworks_modified=false。
+
+INVALID_CHAIN_REVIEW表示哈希、归属、时间、决定或引用不合法；UNACKNOWLEDGED_CHAIN_FLAGS表示最终声明未处理全部提示；EVIDENCE_MISMATCH表示清单/源文件变动。所有旧意见必须对新清单重新核对，不能改哈希绕过。
 
 ## 0.11.0：面目录、局部面探测与候选复核
 
