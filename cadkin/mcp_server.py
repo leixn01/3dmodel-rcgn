@@ -11,7 +11,7 @@ from cadkin.tools.solidworks import SolidWorksTools, TOOLS
 def create_server(service):
     from mcp.server import Server
     from mcp.types import Tool, TextContent, CallToolResult
-    server = Server("3dmodel-rcgn-solidworks", version="0.17.0")
+    server = Server("3dmodel-rcgn-solidworks", version="0.18.0")
 
     @server.list_tools()
     async def list_tools():

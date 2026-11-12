@@ -200,9 +200,10 @@ TOOLS = [
          {'joint_draft_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'max_findings': {'type':'integer','minimum':1,'maximum':2000,'default':200}},
          ['joint_draft_path','output_path'], False),
-    spec('cad_plan_evidence_tasks', 'Replay a draft check and produce concrete bounded read-only CAD calls with before/after document and pose guards, dependencies and new raw-envelope paths. Reuse complete evidence, preserve capability gaps and deferred tasks. Does not execute collection or reintegrate evidence.',
+    spec('cad_plan_evidence_tasks', 'Replay a draft check and produce concrete bounded read-only CAD calls with before/after document and pose guards, dependencies and new raw-envelope paths. Optionally replay an evidence index to reuse captures, block repeated failed scans and return an explicit collect/stop decision within four rounds. Preserve capability gaps and deferred tasks. Does not execute or reintegrate evidence.',
          {'draft_check_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
-          'max_tasks': {'type':'integer','minimum':3,'maximum':200,'default':20}},
+          'max_tasks': {'type':'integer','minimum':3,'maximum':200,'default':20},
+          'evidence_index_path': {'type':'string','minLength':1}},
          ['draft_check_path','output_path'], False),
     spec('sw_execute_evidence_task', 'Replay an evidence plan and optional previous receipt, then execute at most ONE next existing read-only CAD tool. Validate context, save original envelope and immutable receipt; block dependent tasks and stop on timeouts or context mismatch. Never start/open/edit/save CAD or retry. Reinvoke with the returned receipt until execution_complete.',
          {'plan_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
@@ -212,6 +213,10 @@ TOOLS = [
     spec('cad_compare_draft_checks', 'Replay before/after draft checks and compare returned candidates, findings, settings and coverage. Disappearing entries are no_longer_observed, never mechanically resolved. Reject changed document or shared occurrence poses. Offline; no CAD modification.',
          {'before_check_path': {'type':'string','minLength':1}, 'after_check_path': {'type':'string','minLength':1},
           'output_path': {'type':'string','minLength':1}}, ['before_check_path','after_check_path','output_path'], False),
+    spec('cad_index_evidence', 'Replay a completed guarded execution and current draft check into an observation index. Associate constraints and face catalogs with occurrences, pairs, findings and retained joint candidates; preserve unsuccessful attempts and prior indexed lineage. Input context must match. Offline, no reranking, face selection or mechanical confirmation. Pass index to cad_plan_evidence_tasks for reuse and explicit bounded stopping.',
+         {'draft_check_path': {'type':'string','minLength':1}, 'execution_path': {'type':'string','minLength':1},
+          'output_path': {'type':'string','minLength':1}, 'max_contexts': {'type':'integer','minimum':1,'maximum':2000,'default':200}},
+         ['draft_check_path','execution_path','output_path'], False),
 ]
 CATALOG = {tool["name"]: tool for tool in TOOLS}
 
@@ -261,6 +266,9 @@ class SolidWorksTools:
             if name == 'cad_compare_draft_checks':
                 from cadkin.tools.comparison import compare_draft_checks
                 return compare_draft_checks(self.root, **arguments)
+            if name == 'cad_index_evidence':
+                from cadkin.tools.observation_index import index_evidence
+                return index_evidence(self.root, **arguments)
             if name == "cad_group_components":
                 from cadkin.tools.grouping import group_components
                 return group_components(self.root, **arguments)

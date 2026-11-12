@@ -105,7 +105,7 @@ Agent 按 skill 选择 MCP 工具，MCP 调用工具层，工具在 STA 线程�
 
 默认不等待人工复核；旧requires_review/review_flags指证据需继续分析，无法补全就在结论说明风险。chain-review已从自动发现目录移除，旧工具仅保留兼容。引用数据、匹配算法、工具、skill分别维护。0.14.0已独立实现目标图适配与局部匹配；旧比较工具仍要求来源绑定的body_map，不负责生成对应。匹配报告不是比较工具的真值输入。
 
-36个skill仅入口信息常驻；references按需加载。usd-core通过templates extra可选安装；目录查询无需USD，解析工具不启动CAD，生产工具也不下载参考原始大文件。
+37个skill仅入口信息常驻；references按需加载。usd-core通过templates extra可选安装；目录查询无需USD，解析工具不启动CAD，生产工具也不下载参考原始大文件。
 
 ## 0.14.0 数据流
 
@@ -132,3 +132,11 @@ joint draft → draft check → evidence task plan。工具层重放所有派生
 三个独立入口evidence-task-execute、evidence-reintegration、joint-draft-compare分别交接原计划、执行receipt、前后check路径，详细字段按需读取references。规划工具保持离线。CLI execute-evidence仅串行调用同一个单步工具；没有生产mock后端或隐藏重试。
 
 raw evidence_execution_schema_version=1记录原计划哈希、上一步receipt哈希、各task的原始envelope哈希及从数据重算的状态；evidence_reintegration_schema_version=1保留原/新来源、应用/补充/排除和步骤；draft_comparison_schema_version=1保留前后候选、发现与覆盖。原始文件不覆盖，计划重放不可更换为任意操作。
+
+## 0.18.0 观测索引与续轮决策
+
+纯关联/复用规则在cadkin/followup/observations.py，来源重放和文件边界在tools/observation_index.py，循环/深度约束在tools/replay_guard.py。新工具cad_index_evidence及evidence-observation-index独立于规划、执行和回填。check + guarded execution → observation index → 带索引的新计划；计划只有collect才交接执行。
+
+约束/面目录按已有实例成员关联到组件对、发现与候选；不调用COM，不改候选得分，不捏造面配对。planner保留旧algorithm=1；有索引时algorithm=2，显式blocked_requests和continuation。stop计划没有任何工具任务，执行器不创建receipt。索引沿执行计划引用继承历史，每一层重放与哈希校验，不扫描其他文件。最多4轮、12层重放、512来源/128MiB。
+
+计划缓存为单服务容量4的内存对象，每步重新校验全部输入及参考资源后才复用已重算结果，返回独立副本。变更拒绝并清除缓存；缓存不替代原始receipt/envelope核对，不跨进程持久化。

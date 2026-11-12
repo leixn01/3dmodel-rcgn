@@ -122,7 +122,7 @@ def reintegrate(root, execution_path, output_path):
           'limitations':['Only complete captures under passed guards enter existing compatible derivations. Partial and failed results remain diagnostic.',
               'Original thresholds, inventory, grouping options, template set and search budgets are preserved; raw originals are never edited.',
               'Cylinders/root mates/component distances require existing compatible relation/review bases; no thresholds or face pairs are invented.',
-              'Constraints and face catalogs remain supplemental; they do not directly establish joints or resolve findings. Subsequent planning does not yet consume this supplemental ledger.',
+              'Constraints and face catalogs remain supplemental; they do not directly establish joints or resolve findings. Use cad_index_evidence to associate guarded observations and pass its index to subsequent planning; this report alone is not an index.',
               'Completed recomputation is not physical confirmation. Compare before/after checks separately; disappeared findings do not prove resolution.']}
     write_result(output,data)
     errors=[]

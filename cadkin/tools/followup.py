@@ -7,6 +7,7 @@ from cadkin.tools.matching import recheck
 from cadkin.tools.rigid import replay_draft
 from cadkin.followup.checks import check_draft
 from cadkin.followup.planning import plan_tasks, READ_TOOLS
+from cadkin.tools.replay_guard import bounded_replay
 
 
 def build_check(root, joint_draft_path, max_findings=200):
@@ -53,7 +54,7 @@ def source_facts(root, target):
     return facts
 
 
-def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinations=True):
+def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinations=True, evidence_index_path=None):
     from jsonschema import Draft202012Validator
     from cadkin.tools.solidworks import CATALOG
     output = json_path(root, output_path, output=check_destinations)
@@ -66,7 +67,20 @@ def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinat
     check, target = build_check(root, **original['parameters'])
     check_fields(original, check)
     capture_dir = output.parent/(output.stem+'-captures')
-    data = plan_tasks(target, check, source_facts(root, target), capture_dir, max_tasks)
+    facts = source_facts(root, target)
+    indexed = None
+    if evidence_index_path is not None:
+        from cadkin.tools.observation_index import replay_index
+        from cadkin.followup.observations import reuse_facts
+        indexed, index_binding = replay_index(root, evidence_index_path)
+        require(indexed['check_source'] == {'path': str(source), 'sha256': digest},
+                'Index belongs to a different draft check; rebuild its associations.', 'EVIDENCE_MISMATCH')
+        extra = reuse_facts(indexed)
+        for family in ('constraints', 'faces', 'cylinders'):
+            for key, values in extra[family].items(): facts[family].setdefault(key, []).extend(values)
+        facts['root_mates'].extend(extra['root_mates'])
+        facts.update({k: extra[k] for k in ('distance', 'attempted_requests', 'rounds_completed')}, _indexed=True)
+    data = plan_tasks(target, check, facts, capture_dir, max_tasks)
     # Validate every concrete call against the production catalog, not a parallel copy of its schema.
     for task in data['tasks']:
         require(task['tool'] in READ_TOOLS and CATALOG[task['tool']]['annotations']['readOnlyHint'],
@@ -77,29 +91,39 @@ def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinat
     data['parameters']['draft_check_path'] = str(source)
     data['check_source'] = {'path': str(source), 'sha256': digest}
     data['input_files'] = check['input_files'] + [data['check_source']]
+    if indexed is not None:
+        from cadkin.tools.observation_index import unique_bindings
+        data['parameters']['evidence_index_path'] = index_binding['path']
+        data['evidence_index_source'] = index_binding
+        data['input_files'] = unique_bindings(root, data['input_files'] + indexed['input_files'] + [index_binding])
+        data['heldout_exposed'] = data['heldout_exposed'] or indexed['heldout_exposed']
     recheck(root, data['input_files'])
     return data, check, target
 
 
+@bounded_replay
 def replay_plan(root, plan_path):
     path = json_path(root, plan_path)
     original, digest = read_json(path)
+    version = original.get('algorithm_version') if isinstance(original, dict) else None
+    keys = {'draft_check_path', 'max_tasks'} | ({'evidence_index_path'} if version == 2 else set())
     require(isinstance(original, dict) and original.get('evidence_task_plan_schema_version') == 1 and
-            original.get('algorithm_version') == 1 and isinstance(original.get('parameters'), dict) and
-            set(original['parameters']) == {'draft_check_path', 'max_tasks'},
+            version in (1, 2) and isinstance(original.get('parameters'), dict) and set(original['parameters']) == keys,
             'Use the original evidence task plan.', 'INVALID_TASK_PLAN')
     data, check, target = build_plan(root, output_path=str(path), check_destinations=False, **original['parameters'])
     check_fields(original, data)
     return data, check, target, {'path': str(path), 'sha256': digest}
 
 
-def evidence_task_plan(root, draft_check_path, output_path, max_tasks=20):
+def evidence_task_plan(root, draft_check_path, output_path, max_tasks=20, evidence_index_path=None):
     output = json_path(root, output_path, output=True)
-    data, check, _ = build_plan(root, draft_check_path, output_path, max_tasks)
+    data, check, _ = build_plan(root, draft_check_path, output_path, max_tasks, evidence_index_path=evidence_index_path)
     write_result(output, data)
     errors = []
     if data['output_truncated']:
         errors.append({'code': 'EVIDENCE_PLAN_LIMIT', 'message': 'Some tasks/findings were omitted; retain deferred work and check coverage.'})
     if not check['structural_checks_passed']:
         errors.append({'code': 'INVALID_DRAFT_STRUCTURE', 'message': 'Regenerate invalid derivations before planning capture.'})
+    if data.get('blocked_requests'):
+        errors.append({'code': 'AUTOMATIC_CAPTURE_BLOCKED', 'message': 'Prior attempts or round budget block repeated scans; retain remaining uncertainty.'})
     return success({'output_path': str(output), **data}, errors)

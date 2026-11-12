@@ -5,6 +5,8 @@ description: 执行已有只读补采计划，自动核对文档和实例位姿�
 
 # 执行只读补采
 
+先读取计划的continuation；action=stop时不调用执行器，报告剩余风险。旧版无此字段的计划按原规则执行一轮。
+
 输入：cad_plan_evidence_tasks原始计划及全部来源；当前SolidWorks文档应保持采集时的配置和位姿。输出：新执行记录和计划指定的原始envelope。
 
 1. 首次调用sw_execute_evidence_task，传plan_path和新的output_path。缺少计划交接evidence-task-plan。

@@ -17,3 +17,11 @@ cad_plan_evidence_tasks必填draft_check_path、output_path；max_tasks默认20�
 EVIDENCE_PLAN_LIMIT为部分计划，报告延期任务及check截断；INVALID_DRAFT_STRUCTURE不应继续采集填补结构造假；EVIDENCE_MISMATCH应重建改变来源后的依赖。检查完整性与机械一致性是不同问题，执行完所有计划也不能宣布模型拆解完成。
 
 0.17.0起可将原始计划交接evidence-task-execute，用独立单步执行器落实上述校验和保存规则，再交接evidence-reintegration；本规划工具仍不执行。
+
+## 0.18.0 索引复用与停止
+
+可选evidence_index_path必须绑定同一份check。用索引中的完整观测补充已有来源；失败/partial的同工具和实例范围保持blocked_requests，不自动调大预算重试。没有索引的旧计划仍按algorithm_version=1重放；带索引为2，输入参数多evidence_index_path。
+
+continuation.action为collect或stop。stop原因包括没有新的可支持采集、既有失败尝试、当前预算无法容纳整套保护、达到4轮或派生结构无效；tasks=[]，不会只跑guard。remaining_findings仍保留，stop不是机械确认。缺失求解能力/面配对仍需独立功能，不能靠反复建同一计划消除风险。
+
+带索引计划的remaining_findings复制check中全部已返回发现。unresolved_findings仅为规划能力缺口列表，不是剩余风险全集；已有完整观测的发现也必须保留。check_output_truncated=true时仍存在未返回发现。

@@ -62,6 +62,8 @@ def execute_task(root, call, plan_path, output_path, previous_execution_path=Non
     output=json_path(root,output_path,output=True)
     loaded=plan_cache.load(root,plan_path) if plan_cache is not None else replay_plan(root,plan_path)
     plan,check,target,pb=loaded
+    require(plan.get('continuation', {}).get('action') != 'stop',
+            'This plan explicitly stops; no CAD calls are scheduled.', 'NO_CAPTURE_TASKS')
     previous=None;records=[]
     if previous_execution_path is not None:
         old,_,_,_,previous=replay_execution(root,previous_execution_path,loaded)
@@ -105,6 +107,8 @@ def run_plan(service, plan_path, output_path):
     """CLI orchestrator: bounded calls to the same single-step tool, no hidden CAD backend."""
     output=json_path(service.root,output_path,output=True)
     plan,_,_,_=replay_plan(service.root,plan_path)
+    require(plan.get('continuation', {}).get('action') != 'stop',
+            'This plan explicitly stops; retain remaining risks.', 'NO_CAPTURE_TASKS')
     require(str(output) not in {t['save_envelope_path'] for t in plan['tasks']},'Receipt cannot replace a planned capture.','INVALID_PATH')
     steps=output.parent/(output.stem+'-steps')
     require(not steps.exists(),'Choose a new execution directory.','OUTPUT_EXISTS')

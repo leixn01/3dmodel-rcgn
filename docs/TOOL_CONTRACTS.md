@@ -1,14 +1,15 @@
 # SolidWorks 工具接口
 
-版本：0.17.0。以下 43 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.18.0。以下 44 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
 | `sw_execute_evidence_task` | plan_path、output_path；可选previous_execution_path | 每次至多一个已有只读CAD调用，保存原始返回和receipt，自动上下文校验 |
 | `cad_reintegrate_evidence` | execution_path、output_path | 离线回填兼容完整观测，保留旧源、阈值与预算，重算草案检查 |
+| `cad_index_evidence` | draft_check_path、execution_path、output_path；可选max_contexts | 离线关联已采集观测与当前候选，供后续规划复用及停止 |
 | `cad_compare_draft_checks` | before_check_path、after_check_path、output_path | 离线比较返回候选/发现与覆盖，不声明物理问题解决 |
 | `cad_check_joint_draft` | joint_draft_path、output_path；可选max_findings | 重放原始草案，报告结构、证据冲突、竞争解释与覆盖缺口，离线新输出 |
-| `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
+| `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks、evidence_index_path | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
 | `cad_build_rigid_candidates` | target_graph_path、output_path；可选max_group_size/max_partitions/include_contact_hypotheses | 重放目标图并生成多零件刚体候选，保留不合并基线/竞争解释，不修改CAD |
 | `cad_draft_joints` | rigid_candidates_path、output_path；可选模板、窗口、搜索预算、轴线公差 | 各分组方案下匹配，输出成员/类型/DOF及目标几何轴线草案，未知限位不填充 |
 | `cad_build_target_graph` | chain_path、output_path，可选relation_paths | 重放链及来源为实例图；轴线关系自动/显式读取，保留冲突，离线新输出 |
@@ -606,8 +607,32 @@ cad_plan_evidence_tasks输入原始draft check，max_tasks=20（3–200，包含
 
 普通capture错误可继续独立任务，postflight仍执行；文档/位姿不一致或TIMEOUT/OUTCOME_UNKNOWN停止剩余调用。不自动启动/打开/修改/保存，不自动提高预算或重试。执行完且全部guard通过后，完整capture才可回填，其他观测诊断留档。哈希与前后校验不证明原子快照。
 
-回填使用原有relation/connection/proximity基础，保留阈值和预算；新圆柱替换/增加原relation输入，根配合替换对应来源，距离仅替换或补充已有worklist候选对；再重算chain/target/rigid/joints/check。superseded_sources、applied_capture_ids、supplemental_captures、excluded_captures、steps、pipeline_error分别记录去向。面目录与单实例约束暂为补充，规划器尚不消费这个补充清单。recomputation_complete不证明机械正确。
+回填使用原有relation/connection/proximity基础，保留阈值和预算；新圆柱替换/增加原relation输入，根配合替换对应来源，距离仅替换或补充已有worklist候选对；再重算chain/target/rigid/joints/check。superseded_sources、applied_capture_ids、supplemental_captures、excluded_captures、steps、pipeline_error分别记录去向。面目录与单实例约束保留补充上下文；0.18.0起经cad_index_evidence关联后供规划复用。recomputation_complete不证明机械正确。
 
 错误：EXECUTION_COMPLETE拒绝重复终态；EXECUTION_NOT_COMPLETE/EXECUTION_GUARDS_FAILED拒绝回填；EVIDENCE_MISMATCH拒绝源/派生/receipt篡改；OUTPUT_EXISTS拒绝覆盖。执行部分失败为EXECUTION_INCOMPLETE_EVIDENCE；回填失败为REINTEGRATION_FAILED并保留中间诊断，after_check_source=null、applied_capture_ids为空。DERIVATION_REMAINS_PARTIAL、CAPTURES_NOT_INTEGRATED、PLAN_SCOPE_INCOMPLETE保留余项。
 
 比较重放两侧来源，共有实例身份/位姿和文档必须一致。settings_equal包含模板、检查输出、分组、搜索及轴线公差；范围/参数不同报COMPARISON_SCOPE_CHANGED，发现截断报COMPARISON_FINDINGS_LIMIT。候选按参考body到实际成员映射标识，跨方案相同局部映射合并作比较；报告before_candidates/after_candidates及原草案来源。no_longer_observed不是resolved，changed可能包含来源引用变化；resolved_findings_asserted=false。
+
+## 0.18.0 证据关联与规划复用
+
+`cad_index_evidence(draft_check_path, execution_path, output_path, max_contexts=200)`：离线建索引。max_contexts范围1–2000，只限制关节上下文返回数量；原始观测不因该预算丢失。执行必须完整且所有guard通过，当前check的完整实例范围、身份、文档及位姿须与采集计划相同。当前check可以是回填后的版本。
+
+原始输出`evidence_index_schema_version=1 / algorithm_version=1`：
+
+- `parameters`、`check_source`、`execution_sources`、`previous_index_source`、`input_files`保留参数与完整来源；重放时重算，不接受手改usable/关联/历史。
+- `observations[]`：id、execution_source、task_id、tool、family、arguments、occurrence_paths、source、state、codes、usable、details。只有已完整采集且guard通过的观测usable=true；失败/partial保存尝试。
+- `node_observations`、`pair_contexts`、`finding_contexts`、`joint_contexts`按实例成员关联当前候选，不选择面、不构造配合两端、不改变候选分数。pair的两个端点目录并不是接触面证据。
+- 约束details保留顶层fixed_state、附属配合类型码与未解析名称，`reference_names_resolved_to_occurrences=false`、`mate_activity_known=false`。只有所有端点成员有一致的fixed=true，运动假设才附配置提示；冲突固定记录保持未知。
+- 面details保留哈希源内body/face索引、类型和是否保存引用。`live_face_identity_verified=false`，不自动选取面或种子。
+- `rounds_completed` / `max_rounds=4`与历史沿计划引用索引继承。最多12层来源重放、512文件/128MiB；拒绝循环来源。`heldout_exposed`沿链传播。
+- `joint_contexts_truncated`与`check_output_truncated`分别表示关联/发现范围；原findings保持未解决。`mechanically_verified=false`、`requires_human_review=false`。
+
+`cad_plan_evidence_tasks`新增可选`evidence_index_path`。索引必须绑定本次同一check：不同check应先重新建索引。带索引的计划保留schema=1，algorithm_version=2，parameters新增evidence_index_path，新增evidence_index_source、blocked_requests、remaining_findings与continuation。remaining_findings保留check全部已返回发现，unresolved_findings只是规划缺口列表，不能当作风险全集。
+
+`continuation.action`为collect或stop；reason为NEW_SUPPORTED_CAPTURE、INVALID_DERIVATION、ROUND_LIMIT、CAPTURE_BUDGET_UNAVAILABLE、NO_NEW_CAPTURE_AFTER_ATTEMPTS或NO_NEW_SUPPORTED_CAPTURE。stop时tasks=[]、总调用数0，不执行guard空转；remaining_findings保留，不代表问题解决。完整空观测亦复用；相同工具+实例范围的失败/partial尝试被阻止，预算变化不绕过限制。未执行的延期任务仍可安排；不自动提高预算。
+
+无索引仍按algorithm_version=1生成和重放，兼容历史数据。`sw_execute_evidence_task`与`execute-evidence`拒绝stop计划，错误NO_CAPTURE_TASKS，不创建receipt/步骤目录或调用CAD。
+
+错误：INVALID_EVIDENCE_INDEX、EXECUTION_NOT_COMPLETE、EXECUTION_GUARDS_FAILED、EVIDENCE_MISMATCH、EVIDENCE_CYCLE、EVIDENCE_DEPTH_LIMIT、OBSERVATION_ROUND_LIMIT、OBSERVATION_SOURCE_LIMIT。部分结果：OBSERVATIONS_NOT_REUSABLE、ASSOCIATION_CONTEXT_LIMIT、AUTOMATIC_CAPTURE_BLOCKED。OUTPUT_EXISTS不覆盖旧文件。
+
+CLI：`index-evidence <check> <receipt> --output <index> [--max-contexts N]`；`plan-evidence <check> --evidence-index <index> --output <plan> [--max-tasks N]`。已有sw/stdio使用同一处理实现，不引入新COM后端。

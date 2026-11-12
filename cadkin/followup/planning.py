@@ -3,6 +3,7 @@ from pathlib import Path
 
 from cadkin.errors import ToolFailure
 from cadkin.followup import stable_id
+from cadkin.followup.observations import request_key, MAX_ROUNDS
 
 READ_TOOLS = {'sw_active_document', 'sw_component_spatial', 'sw_component_constraints',
               'sw_component_cylinders', 'sw_component_faces', 'sw_component_distance', 'sw_mate_inventory'}
@@ -14,10 +15,19 @@ def plan_tasks(target, check, facts, capture_directory, max_tasks=20):
     nodes = {n['id']: n for n in target['nodes']}
     pairs = {p['id']: p for p in target['pairs']}
     token = target['document']['document_token']
-    requests, reused, unresolved = {}, {}, []
+    requests, reused, unresolved, blocked = {}, {}, [], {}
 
     def request(tool, paths, issue, priority, options=None, integration='recompute_dependent_evidence'):
         paths = sorted(set(paths))
+        if facts.get('_indexed'):
+            key = request_key(tool, paths)
+            attempts = facts['attempted_requests'].get(key, [])
+            if attempts or facts['rounds_completed'] >= MAX_ROUNDS:
+                row = blocked.setdefault(key, {'tool': tool, 'occurrence_paths': paths, 'finding_ids': [],
+                    'reason': 'PRIOR_ATTEMPT_NO_AUTOMATIC_RETRY' if attempts else 'ROUND_LIMIT',
+                    'observation_ids': [a['id'] for a in attempts]})
+                if issue['id'] not in row['finding_ids']: row['finding_ids'].append(issue['id'])
+                return
         if not paths or any(p not in nodes or not nodes[p]['eligible'] or nodes[p].get('source_errors') or
                             nodes[p].get('to_root_column_vectors_m') is None for p in paths):
             unresolved.append({'finding_id': issue['id'], 'reason': 'SOURCE_CONTEXT_UNAVAILABLE', 'occurrence_paths': paths})
@@ -76,9 +86,13 @@ def plan_tasks(target, check, facts, capture_directory, max_tasks=20):
                 pair = pairs.get(pair_id)
                 if not pair: continue
                 observed = [s for s in pair['signals'] if s.get('measurement') and not s['measurement'].get('source_errors')]
+                indexed = facts.get('distance', {}).get(tuple(sorted(pair['node_ids'])), [])
                 if observed:
                     reused['distance-'+pair_id] = {'family': 'distance', 'pair_id': pair_id,
                         'sources': [s['measurement'] for s in observed], 'reason': 'Existing measured distance retained, including separated pairs.'}
+                elif indexed:
+                    reused['distance-'+pair_id] = {'family': 'distance', 'pair_id': pair_id,
+                        'sources': indexed, 'reason': 'Complete guarded distance retained; may still need compatible reintegration.'}
                 else:
                     request('sw_component_distance', pair['node_ids'], issue, 25)
         if code in {'ACTIVE_LOCK_VS_MOVING_HYPOTHESIS', 'MOTION_MATE_INSIDE_GROUP', 'REFERENCE_AXIS_RELATION_MISMATCH',
@@ -122,7 +136,7 @@ def plan_tasks(target, check, facts, capture_directory, max_tasks=20):
             nodes[path])
     add('document-after', 'sw_active_document', {}, 'postflight',
         [t['id'] for t in tasks if t['phase'] == 'postflight'] or capture_ids or ['document-before'], target['document'])
-    return {'evidence_task_plan_schema_version': 1, 'algorithm_version': 1,
+    result = {'evidence_task_plan_schema_version': 1, 'algorithm_version': 1,
             'parameters': {'max_tasks': max_tasks}, 'document': target['document'],
             'tasks': tasks, 'deferred_tasks': deferred, 'reused_evidence': list(reused.values()),
             'unresolved_findings': unresolved,
@@ -150,3 +164,19 @@ def plan_tasks(target, check, facts, capture_directory, max_tasks=20):
                 'Guard calls count toward max_tasks. High-cost root mate tasks may be deferred while smaller independent tasks fit.',
                 'Existing complete observations are reused even if empty/ambiguous; missing DOF, stroke, pitch and motion solvers cannot be replaced by repeated scans.',
                 'Only returned check findings are planned; skipped findings/search spaces remain unknown. No arbitrary scripts, CAD edits, human gate or invented face selections.']}
+    if facts.get('_indexed'):
+        if not selected: result['tasks'] = []
+        reason = ('NEW_SUPPORTED_CAPTURE' if selected else
+                  'INVALID_DERIVATION' if not check['structural_checks_passed'] else
+                  'ROUND_LIMIT' if facts['rounds_completed'] >= MAX_ROUNDS else
+                  'CAPTURE_BUDGET_UNAVAILABLE' if deferred else
+                  'NO_NEW_CAPTURE_AFTER_ATTEMPTS' if blocked else 'NO_NEW_SUPPORTED_CAPTURE')
+        result.update(algorithm_version=2, blocked_requests=list(blocked.values()),
+            remaining_findings=check['findings'],
+            continuation={'action': 'collect' if selected else 'stop', 'reason': reason,
+                'rounds_completed': facts['rounds_completed'], 'max_rounds': MAX_ROUNDS,
+                'remaining_findings': check['summary']['findings_found'], 'mechanically_verified': False})
+        result['summary'].update(guard_tasks=len(result['tasks'])-len(selected),
+                                 total_tool_calls=len(result['tasks']), blocked_capture_requests=len(blocked))
+        result['limitations'].append('Stopping means no new supported capture in this bounded lineage, never resolved physics. No guard-only loop or automatic retries.')
+    return result
