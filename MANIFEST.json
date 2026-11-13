@@ -1158,8 +1158,8 @@
     },
     {
       "path": "scripts/verify_chain_session.py",
-      "size_bytes": 5403,
-      "sha256": "42047594112e03b5b3ccd85bb56759ef692e4e5cb0a155d9e19c24861496030d"
+      "size_bytes": 5447,
+      "sha256": "c3469862789bed1e62cfe3a4c0b2a9e65230236947de70d03c6e9982f279d691"
     },
     {
       "path": "scripts/verify_constraint_analysis.py",
@@ -1338,8 +1338,8 @@
     },
     {
       "path": "tests/test_chain_session.py",
-      "size_bytes": 10531,
-      "sha256": "29e648b380a9919a5815e51ea119caf9cef5f0de3bae8aee8624d16440b7bf70"
+      "size_bytes": 10601,
+      "sha256": "0b7ea1d656199a98d032f896c42657493082fdf0975b54a1f33c5471df5c0c8a"
     },
     {
       "path": "tests/test_constraint_analysis.py",

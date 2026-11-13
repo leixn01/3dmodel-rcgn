@@ -55,7 +55,7 @@ def run(root, output):
                 snap = solution['snapshots'][0]
                 if mode == 'chain_closed':
                     check('closed synthetic chain restricts two loop directions', snap['modeled_chain_instantaneous_dof'] == 0 and snap['spanning_forest_diagnostics']['additional_loop_rank'] == 2)
-                    check('single command completes two bounded batches', d['workflow_complete'] and len(report['batch_sources']) == 2)
+                    check('single command completes two bounded capture rounds', d['workflow_complete'] and d['rounds_completed'] == 2 and 2 <= len(report['batch_sources']) <= 21)
                 elif mode == 'no_mates':
                     check('no mates is unknown not free', snap['known_constraint_nullity'] is None and not snap['motion_modes'])
                 else:
