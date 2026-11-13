@@ -11,7 +11,7 @@ conda activate 你的环境名
 python -m pip install -e ".[solidworks,templates]"
 ```
 
-已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 46 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 47 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11、NumPy 1.26–2.x及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
 
 在同一个已激活 Conda 的终端启动 OpenCode；MCP 子进程通过 PATH 找到该环境的 python。先执行 `python -c "import sys; print(sys.executable)"` 记录解释器路径，再让 OpenCode 调用 `sw_session_status`，比较 `data.runtime.python_executable`，且 `matches_conda_prefix` 应为 true。运行时同时返回 python_prefix、conda_prefix、python_version；软件未运行时也能检查。没有 CONDA_PREFIX 时匹配值为 null，不能据此声称已在 Conda 中。
 
@@ -202,3 +202,9 @@ MATCH_SEARCH_LIMIT为有预算结果，NO_SUPPORTED_MATCH表示本范围内没�
 已有同一target的check和约束报告时，用`python -m cadkin plan-evidence outputs/check.json --constraint-analysis outputs/constraints.json --output outputs/constraint-plan.json`规划。已有历史时加`--evidence-index 最新索引路径`；报告已绑定索引则自动继承。只执行continuation.action=collect的计划；stop时保留原因和未知。
 
 接着`execute-evidence`串行执行，保护通过后`reintegrate-evidence`回填。成功报告直接给出新check、index和constraint analysis；下一轮用新check/report，不重复索引同receipt。具体命令、结果字段和实机失败标准见[0.23.0验收](MCP_ACCEPTANCE.md#0230约束缺口自动补采与重算)。模拟验收入口为`python scripts/verify_constraint_followup.py --output outputs/verify-0.23`，预期38项通过。
+
+## 局部瞬时运动（0.24.0）
+
+已有原约束报告后，用`python -m cadkin solve-local-constraints outputs/constraints.json --characteristic-length-mm 100 --output outputs/local-motion-0.24.json`。100毫米是示例数值尺度，按当前链代表尺寸选择并说明。MCP等价cad_solve_local_constraints，由独立mechanism-local-motion负责调用与判读。
+
+先读每个快照的状态和缺口，再读矩阵秩/瞬时方向；不能将局部nullity写成目标DOF。无有效配合时仍未知，冲突/数值敏感时保留风险。继承已有来源/index/轮数，离线不连接SolidWorks；补采仍交接原analysis。验收与具体字段见[0.24.0验收](MCP_ACCEPTANCE.md#0240局部瞬时约束求解)，数学范围见[局部约束模型](LOCAL_CONSTRAINTS.md)。

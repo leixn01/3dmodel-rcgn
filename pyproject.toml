@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "3dmodel-rcgn"
-version = "0.23.0"
+version = "0.24.0"
 description = "Evidence-aware CAD intake for industrial kinematics reconstruction"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["numpy>=1.26,<3"]
 
 [project.optional-dependencies]
 solidworks = ["mcp==1.29.0", "pywin32>=306; sys_platform == 'win32'"]

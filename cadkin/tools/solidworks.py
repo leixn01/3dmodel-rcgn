@@ -186,6 +186,13 @@ TOOLS = [
           'max_partitions': {'type':'integer','minimum':1,'maximum':12,'default':8},
           'include_contact_hypotheses': {'type':'boolean','default':True}},
          ['target_graph_path','output_path'], False),
+    spec('cad_solve_local_constraints', 'Replay a constraint analysis and solve separate two-occurrence instantaneous velocity models from explicit root mate facts. Reports scaled Jacobian rows, rank sensitivity, nullspace motion directions and missing evidence; never infers target joint type or assembly DOF. No templates, CAD calls, edits or capture-round reset.',
+         {'constraint_analysis_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'characteristic_length_mm': {'type':'number','minimum':0.001,'maximum':1000000},
+          'relative_rank_tolerance': {'type':'number','minimum':1e-10,'maximum':1e-3,'default':1e-8},
+          'max_pairs': {'type':'integer','minimum':1,'maximum':1225,'default':200},
+          'max_constraints_per_snapshot': {'type':'integer','minimum':1,'maximum':2000,'default':200}},
+         ['constraint_analysis_path','output_path','characteristic_length_mm'], False),
     spec('cad_analyze_constraints', 'Replay a target graph and combine exact root mate constraints per occurrence pair and per source snapshot. Produces traceable local fixed/revolute/prismatic candidates, conflicts and missing evidence; target type/DOF remain unknown. Templates and geometric proximity cannot supply constraints. Offline; writes a new outputs JSON without CAD edits.',
          {'target_graph_path': {'type': 'string', 'minLength': 1}, 'output_path': {'type': 'string', 'minLength': 1},
           'distance_tolerance_mm': {'type': 'number', 'exclusiveMinimum': 0},
@@ -271,6 +278,9 @@ class SolidWorksTools:
                 from cadkin.tools.matching import build_target_graph, match_templates
                 handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
                 return handler(self.root, **arguments)
+            if name == 'cad_solve_local_constraints':
+                from cadkin.tools.local_motion import solve_local_constraints
+                return solve_local_constraints(self.root, **arguments)
             if name == 'cad_analyze_constraints':
                 from cadkin.tools.constraint_analysis import analyze_constraints
                 return analyze_constraints(self.root, **arguments)

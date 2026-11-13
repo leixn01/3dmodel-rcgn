@@ -1,5 +1,6 @@
 """Explicit synthetic root-face mates; never used by the production adapter."""
 import json
+import math
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -30,11 +31,15 @@ def attach_constraint_mates(app, mode='revolute'):
         records.append(feature)
     if mode == 'no_mates': pass
     elif mode == 'lock': add(16)
+    elif mode == 'plane': add(0, 'plane')
     else:
         add(1, rotation=mode in ('prismatic','fixed'))
         if mode in ('revolute','fixed','conflict'): add(0, 'plane', origin=(0,0,0 if mode!='conflict' else .01))
         if mode == 'parallel_axes': add(1, origin=(.02,0,0))
         if mode == 'duplicate_axis': add(1)
+        if mode == 'nonparallel_axes': add(1, direction=(1.,0.,0.))
+        if mode == 'oblique_plane': add(0, 'plane', direction=(math.sqrt(.5),0.,math.sqrt(.5)))
+        if mode == 'near_parallel_axes': add(1, origin=(2e-9,0,0))
     if mode == 'conflict': records[-1].mate.entities[1].EntityParams[2] = .02
     group = Feature(99, 'Mates', 'MateGroup', children=records)
     doc.FirstFeature = lambda: group

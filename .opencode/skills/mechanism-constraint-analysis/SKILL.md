@@ -12,6 +12,7 @@ description: 综合同一目标组件对的根装配配合、引用面与轴线�
 3. supported_local_pattern表示所实现的局部约束规则支持候选，conditional表示仍有缺口，opposed表示存在冲突。target_joint_kind和target_degrees_of_freedom仍保持unknown/null；不覆盖草案、不合并刚体、不宣称模型能运动。
 4. 缺配合引用几何或锁定旋转状态时，将原报告和同target的check交接evidence-task-plan，按需读[补采交接](references/followup.md)。已有采集历史必须沿用；本分析工具不触发COM或执行任务。
 5. 回填成功后读取新约束报告及其索引绑定，按原公差比较新旧候选、缺口和覆盖。仍缺证据、失败或不支持的规则保留未知，不循环重采或改写最终类型。
-6. STEP缺少配合时保留几何上下文与未知；名称、近接触、同轴或参考swivel都不填入约束。可以继续独立分析其它对，结论列风险，不设置人工复核。
+6. 需要计算已知约束下的瞬时运动方向时，将原报告和来源交接mechanism-local-motion，显式选择数值特征长度；不把局部维数写成目标DOF。
+7. STEP缺少配合时保留几何上下文与未知；名称、近接触、同轴或参考swivel都不填入约束。可以继续独立分析其它对，结论列风险，不设置人工复核。
 
 只有要解释实体绑定、不同快照或API语义时读[证据边界](references/evidence.md)。只需草案/补采时交接相应功能，不预加载其它skill。

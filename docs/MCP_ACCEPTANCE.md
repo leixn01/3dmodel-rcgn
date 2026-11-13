@@ -1089,3 +1089,59 @@ python -m cadkin plan-evidence outputs/constraint-update-0.23-derived/check.json
 | CAD和结论 | 原文档dirty/配置/位姿不变；目标unknown/null，requires_human_review=false | 修改模型、确认整机DOF或声称已完成拆卸路径 |
 
 保存Git SHA、环境版本、实际工具参数与耗时、原始返回和新派生路径；对窗口或文档状态无法核对的项记录未验证，不把它设成人工复核前置条件。已停止的增强读取仍可继续其它有独立依据的分析；保留不能自动收敛的原因。
+
+## 0.24.0：局部瞬时约束求解
+
+### A. 更新与可复现验收
+
+在项目根和已有Conda环境中更新并安装依赖；没有新增环境要求。升级后重启OpenCode，工具列表应为47个，功能skill40个。
+
+```powershell
+git pull --ff-only
+python -m pip install -e ".[solidworks,templates]"
+python scripts/verify_local_constraints.py --output outputs/verify-0.24
+```
+
+预期`passed=true`、63项检查。13种合成来源覆盖锁定、同心/锁转、轴+平面、重复/平行/非平行轴、单/斜平面、数值敏感、无配合、缺几何和冲突；检查秩/模式、预算、篡改拒绝、原文件/CAD状态不变。保存每次工具参数、原始响应、派生文件及report.json。此脚本不连接真实SolidWorks，不能代表本升降机已求解。输出目录必须新建；重跑换新目录。
+
+### B. 本机已有证据的求解
+
+前置：原cad_analyze_constraints报告及全部绑定来源可回读；0.23回填后优先使用返回的after_constraint_analysis_source。沿用该文件绑定的index/check/轮数。工具只分析记录的快照，因此无需启动SolidWorks；不能将旧快照结果冒称当前已改动的模型。缺报告先按0.22/0.23生成，原始文件不可手改。
+
+```powershell
+python -m cadkin solve-local-constraints outputs/constraints.json --characteristic-length-mm 100 --output outputs/local-motion-0.24.json
+```
+
+文件名替换为真实来源。100毫米是数值尺度示例，应结合该链已有几何跨度选择并记录依据，不代表行程或实际速度。可选--relative-rank-tolerance 1e-8、--max-pairs 200、--max-constraints-per-snapshot 200。不要调整阈值来追求预定DOF。
+
+MCP等价调用：
+
+```json
+{
+  "tool": "cad_solve_local_constraints",
+  "arguments": {
+    "constraint_analysis_path": "outputs/constraints.json",
+    "characteristic_length_mm": 100,
+    "output_path": "outputs/local-motion-0.24.json"
+  }
+}
+```
+
+给OpenCode：使用mechanism-local-motion按需加载细节，读取上述原报告；逐对逐快照报告状态、完整性、约束秩、剩余瞬时方向及纯平移子空间，记录原点和尺度，保留unknown/风险/历史，不设置人工复核。
+
+### C. 数据核对与失败标准
+
+| 检查 | 预期 | 失败标准 |
+|---|---|---|
+| 输入与快照 | 重放原analysis、target、raw sources；每源单独计算 | 手写矩阵代替来源，或跨快照拼约束 |
+| 矩阵与方向 | 仅有效lock/同心轴/重合平面建方程；每行追溯配合证据 | 使用端座/导轨名称、模板swivel、近接触或固定标志加方程 |
+| 范围完整 | coverage、source_missing_evidence、unresolved_evidence、source_conflicts保留 | 省略对/约束、未知LockRotation仍称完整求解 |
+| 无有效配合 | no_supported_constraint_model；维数null、模式空 | 声称6DOF或凭几何确认滑动 |
+| 数值敏感 | 秩阈值×0.1/×10比较，敏感时维数null、模式空、报告范围 | 强行挑一个秩作为真值；空模式解释成锁死 |
+| 局部结果 | modeled_instantaneous_dof仅属于建模快照，目标unknown/null | 局部维数改写成整机DOF或目标revolute/prismatic |
+| 方向语义 | 说明根坐标原点、L，保留耦合平移/旋转；纯平移单算 | 把基向量当独立关节/电机速度/枢轴/限位 |
+| 冲突与冗余 | 冲突模式不展示；相关方程仅作矩阵诊断 | 自动删配合，或以零空间证明非线性装配可解 |
+| 历史与补采 | index/check/rounds保持；补采用原analysis | 用本输出替换constraint_analysis_path，或换路径重置4轮 |
+| 副作用 | 所有输入字节不变，结果独占新建，0次CAD调用 | 修改模型/草案/原来源，自动移动或保存覆盖 |
+
+对真实升降机不要求出现预定DOF：STEP无配合时“未知”是有效结果。若同时开启SolidWorks，窗口、dirty、位姿、选择应完全不变；本工具不需窗口核对作为继续前置。保存Git SHA、Python/NumPy版本、尺度依据、完整调用/envelope和输出路径；需要进一步证据时由对应采集功能处理，并沿用停止规则。

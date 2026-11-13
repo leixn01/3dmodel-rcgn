@@ -90,6 +90,13 @@ def main():
     target.add_argument('chain_path')
     target.add_argument('--relations', dest='relation_paths', nargs='+')
     target.add_argument('--output', required=True)
+    local = commands.add_parser('solve-local-constraints', help='Solve a source-bound local instantaneous constraint model offline')
+    local.add_argument('constraint_analysis_path')
+    local.add_argument('--output', required=True)
+    local.add_argument('--characteristic-length-mm', type=float, required=True)
+    local.add_argument('--relative-rank-tolerance', type=float, default=1e-8)
+    local.add_argument('--max-pairs', type=int, default=200)
+    local.add_argument('--max-constraints-per-snapshot', type=int, default=200)
     constraint = commands.add_parser('analyze-constraints', help='Combine source-bound local mate constraints; no DOF solving')
     constraint.add_argument('target_graph_path')
     constraint.add_argument('--output', required=True)
@@ -166,7 +173,7 @@ def main():
     index.add_argument('--output', required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence', 'plan-face-probes', 'analyze-constraints'}:
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence', 'plan-face-probes', 'analyze-constraints', 'solve-local-constraints'}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
@@ -206,6 +213,9 @@ def main():
                         'max_candidates','max_states','beam_width','angle_tolerance_deg','axis_distance_tolerance_mm','axis_angle_tolerance_deg','max_target_pairs')}
                     if args.template_ids is not None:arguments['template_ids']=args.template_ids
                     result = service.call('cad_draft_joints',{**arguments,'output_path':args.output})
+                elif args.command == 'solve-local-constraints':
+                    arguments = {k: v for k, v in vars(args).items() if k not in ('command', 'output')}
+                    result = service.call('cad_solve_local_constraints', {**arguments, 'output_path':args.output})
                 elif args.command == 'analyze-constraints':
                     arguments = {k: v for k, v in vars(args).items() if k not in ('command', 'output') and v is not None}
                     result = service.call('cad_analyze_constraints', {**arguments, 'output_path': args.output})

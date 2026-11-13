@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.23.0（46 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.24.0（47 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -36,6 +36,7 @@
 | 参考局部子图匹配与候选解释 | `mechanism-template-match` |
 | 多零件刚体候选分组 | `mechanism-rigid-groups` |
 | 目标局部配合约束组合分析 | `mechanism-constraint-analysis` |
+| 两实例局部瞬时约束秩与运动方向 | `mechanism-local-motion` |
 | 目标关系草案与可选模板类比 | `mechanism-joint-draft` |
 | 草案结构/证据一致性检查 | `joint-draft-check` |
 | 最近点引导的面候选与有限面探测规划 | `face-probe-plan` |
@@ -110,3 +111,6 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 
 - 0.23.0 cad_plan_evidence_tasks可选constraint_analysis_path生成v4约束缺口计划；报告/check必须同target。只补配合面几何和LockRotation，基础采集不满足增强能力，增强成功/partial/failed均不自动重采。报告绑定索引则自动继承，不换旧索引或绕过共享4轮。全部实例保护计预算，STEP无配合、未知求解规则、多来源歧义不能靠重复扫描解决。
 - v4计划回填调用独立索引与分析工具，输出v3回填报告、新check/index及绑定索引的约束报告，保留原公差/范围/预算；partial失败但保护通过也保留尝试和轮数。成功后直接交接新check/report/index，不重复索引同receipt。pipeline_error时全部after来源null，中间文件只诊断。不同快照feature_id不做身份匹配；候选不写成目标类型或自由度。
+
+- 0.24.0 cad_solve_local_constraints独立重放原约束报告，仅显式有效lock/同心轴/重合平面建立缩放速度方程；characteristic_length_mm必填。每对每源独立求解，不把不同快照或近接触拼约束。原报告/index/check/轮数保留；补采仍用原报告，求解不重置历史。
+- modeled_instantaneous_dof仅是完整稳定的已建模局部瞬时维数；最终目标类型unknown/DOF=null。缺失/截断只保留已知子集，空模型不当6DOF；冲突/敏感不输出运动模式。相关方程不是可删除配合，基向量不是物理关节；原点与数值尺度必须说明。不认定有限运动、整机自由度或拆卸路径。

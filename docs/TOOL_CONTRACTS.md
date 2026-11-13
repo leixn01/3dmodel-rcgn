@@ -1,9 +1,10 @@
 # SolidWorks 工具接口
 
-版本：0.23.0。以下 46 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.24.0。以下 47 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `cad_solve_local_constraints` | constraint_analysis_path、characteristic_length_mm、output_path；可选relative_rank_tolerance/max_pairs/max_constraints_per_snapshot | 离线求解逐实例对/快照的瞬时约束矩阵，保留缺口/数值敏感性，不连接CAD或确认目标DOF |
 | `cad_plan_face_probes` | draft_check_path、evidence_index_path、output_path、max_component_gap_mm、surface_tolerance_mm；可选分层预算/迭代参数 | 离线安排缺目录补采或最近点引导的有限面探测，保留竞争面和历史 |
 | `sw_execute_evidence_task` | plan_path、output_path；可选previous_execution_path | 每次至多一个已有只读CAD调用，保存原始返回和receipt，自动上下文校验 |
 | `cad_reintegrate_evidence` | execution_path、output_path；可选face_review_path | 离线回填兼容完整观测，保留旧源、阈值与预算，重算草案检查 |
@@ -748,3 +749,17 @@ v4计划的`cad_reintegrate_evidence`在原派生链后调用`cad_index_evidence
 `cad_analyze_constraints`新增可选evidence_index_path（CLI `--evidence-index`）；索引check必须对应同一target，默认无索引的输出仍v1。constraint_changes只比较同实例对的独立来源观测及覆盖，不跨源匹配feature_id，不将no_longer_observed解释成问题解决。任何回填步骤失败则recomputation_complete=false、全部after来源null，已生成文件仅诊断。
 
 保护通过的失败/partial增强也计一轮，自动写索引并根据仍有效的旧来源重算分析；再规划传新check/report可自动继承历史并停止重复。约束候选不自动确认刚体或覆盖目标类型，最终unknown/null不变。
+
+## 0.24.0：局部瞬时约束求解
+
+新增cad_solve_local_constraints（总47工具、40功能skill），纯离线。必填constraint_analysis_path、characteristic_length_mm、output_path。特征长度0.001–1000000mm；relative_rank_tolerance默认1e-8、范围1e-10–1e-3；max_pairs默认200、1–1225；max_constraints_per_snapshot默认200、1–2000。原constraint analysis v1/v2及全部输入可回读，v2的index/check/rounds/max_rounds原样继承。
+
+输出local_constraint_solution_schema_version=1、algorithm_version=1，含constraint_analysis_source、target_source、analysis_parameters、input_files、parameters、pairs和coverage。每对保留独立snapshots，不跨源组合。每快照含相对参考实例、根坐标原点、尺度、逐行归一化方程及原配合证据、线性秩/零空间/阈值敏感性、纯平移方向、缺口/冲突和预算。详细方程见[LOCAL_CONSTRAINTS.md](LOCAL_CONSTRAINTS.md)。
+
+status为modeled_local_snapshot、partial_constraint_model、no_supported_constraint_model、numerically_sensitive或conflicting_source。modeled_instantaneous_dof仅在完整稳定局部模型给值；其余null。known_constraint_nullity/linear_solution在部分/冲突时仅诊断；空模型也为null，不能当6DOF。冲突/数值秩敏感不输出motion_modes。constraint_system_solved只指本次局部线性系统；assembly_dof_solved、finite_motion_verified、mechanically_verified始终false，target_joint_kind/target_degrees_of_freedom仍unknown/null。
+
+motion_modes的scaled_twist顺序[vx/L,vy/L,vz/L,wx,wy,wz]，附根坐标原点线速度与角速度的任意单位参数表示。pure_translation_directions_root单独计算omega=0的子空间；dependent_linear_equations为相关矩阵行数，不是可删除配合数。源几何公差内的理想化、原残差和未支持范围必须一同报告。
+
+工具envelope的ok表示完成计算，仍可能含无可建模/冲突快照；语义结论先看快照status。全局来源错误、LOCAL_CONSTRAINT_LIMIT、NUMERICAL_RANK_SENSITIVE产生partial及errors。依赖缺失、SVD失败、原源/数值/离散字段不一致、非法参数和已有输出明确拒绝。仅计算浮点结果允许rel1e-9/abs1e-10舍入差异，所有来源和方程输入保持精确校验。
+
+CLI：`solve-local-constraints <constraint_analysis> --characteristic-length-mm <mm> --output <new.json>`，其余参数为对应连字符选项。求解不调用CAD、不写草案、不重置4轮；后续补采继续使用原constraint analysis及同target的check，而不是本报告。
