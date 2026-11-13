@@ -11,7 +11,7 @@ conda activate 你的环境名
 python -m pip install -e ".[solidworks,templates]"
 ```
 
-已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 57 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11、NumPy 1.26–2.x及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 59 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11、NumPy 1.26–2.x及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
 
 在同一个已激活 Conda 的终端启动 OpenCode；MCP 子进程通过 PATH 找到该环境的 python。先执行 `python -c "import sys; print(sys.executable)"` 记录解释器路径，再让 OpenCode 调用 `sw_session_status`，比较 `data.runtime.python_executable`，且 `matches_conda_prefix` 应为 true。运行时同时返回 python_prefix、conda_prefix、python_version；软件未运行时也能检查。没有 CONDA_PREFIX 时匹配值为 null，不能据此声称已在 Conda 中。
 
@@ -236,4 +236,8 @@ MATCH_SEARCH_LIMIT为有预算结果，NO_SUPPORTED_MATCH表示本范围内没�
 
 ## 0.30 表面补证
 
-当前57工具、50个功能skill。已有finite/check和最新index时交surface-engagement-analysis，按缺口进入engagement_analysis_path规划、批次读取、索引与重算。每面点查询合在一次工具内，采样与邻接分开；同一四轮预算不归零。验证与实机操作见[表面补证](SURFACE_ENGAGEMENT.md)和[新增验收](MCP_ACCEPTANCE.md#0300表面采样与邻接补证)。
+0.30目录为57工具、50个功能skill。已有finite/check和最新index时交surface-engagement-analysis，按缺口进入engagement_analysis_path规划、批次读取、索引与重算。每面点查询合在一次工具内，采样与邻接分开；同一四轮预算不归零。验证与实机操作见[表面补证](SURFACE_ENGAGEMENT.md)和[新增验收](MCP_ACCEPTANCE.md#0300表面采样与邻接补证)。
+
+## 0.31 有限端面
+
+当前59工具、52个功能skill。已有engagement/check/latest index时交planar-contact-analysis，按缺口规划planar_analysis_path、批次执行、索引与重算；仍共享四轮。验证见[有限端面](PLANAR_CONTACTS.md)。支持圆盘、同心环和无孔凸多边形，不支持轮廓保留未知，当前不移动模型。

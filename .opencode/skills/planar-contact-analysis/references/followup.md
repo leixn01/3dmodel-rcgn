@@ -1,0 +1,9 @@
+# 规划与执行
+
+cad_plan_evidence_tasks传draft_check_path、planar_analysis_path、output_path，可选max_tasks。v9与所有其它profile互斥；自动继承报告exact index，不能新索引搭旧报告。只补原始邻接中的缺失平面区域，一面一次，max_loops=8/max_edges=64。
+
+两个实例、四个端面通常4capture+6guard=10调用；优先sw_execute_evidence_batch，预算内服务端串行执行。未完整则以execution_source续跑同计划，不能重启批次覆盖输出或删除失败receipt。
+
+完整receipt用同check调用cad_index_evidence；随后cad_analyze_planar_contacts传原engagement报告+最新index，写新文件；再规划确认停止。已读/失败/partial不重试，不能换参数扩大预算或重建会话归零。与之前距离、目录、边界、采样全部共享四轮，已耗尽必须保留未知停止。
+
+只交接planar-face-region所需的原始邻接文件及持久引用，不加载全部采集skill。这个分支不创建mate，不进原生约束求解器。

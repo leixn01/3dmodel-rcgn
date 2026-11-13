@@ -74,6 +74,15 @@ TOOLS = [
           "max_cylinders": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100},
           "include_face_references": {"type": "boolean", "default": False, "description": "Capture and round-trip persistent part-face references for later live mate-face matching; adds COM reads."}},
          ["expected_document_token", "occurrence_path"]),
+    spec('sw_read_planar_face', 'Read exact loops of one persisted planar neighbor from a complete adjacency capture. Supports full disks/concentric annuli and single convex straight-edge loops with area checks. Unsupported curves/holes remain partial; identity, body, adjacency and loops are rechecked. No CAD modification or contact claim.',
+         {'expected_document_token':TOKEN,'adjacency_path':{'type':'string','minLength':1},
+          'face_reference':{'type':'object','additionalProperties':False,'properties':{'encoding':{'const':'base64'},'scope':{'const':'referenced_part_definition'},'id':{'type':'string','minLength':1,'maxLength':5464}},'required':['encoding','scope','id']},
+          'max_loops':{'type':'integer','minimum':1,'maximum':8,'default':8},'max_edges':{'type':'integer','minimum':3,'maximum':128,'default':64}},
+         ['expected_document_token','adjacency_path','face_reference']),
+    spec('cad_analyze_planar_contacts', 'Replay guarded finite regions of actual adjacent end planes and compute projected overlap and oriented plane gap. Disk/annulus pairs account for holes; convex polygon pairs use clipping. Generates missing reads through v9 planning. Offline; contact, retention, motion and joint type remain unconfirmed.',
+         {'engagement_analysis_path':{'type':'string','minLength':1},'evidence_index_path':{'type':'string','minLength':1},
+          'output_path':{'type':'string','minLength':1},'max_plane_pairs':{'type':'integer','minimum':1,'maximum':100,'default':20}},
+         ['engagement_analysis_path','output_path'],False),
     spec('sw_sample_cylinder_face', 'Read finite-face point membership and oriented normals at 1–32 explicit root-frame queries on a source-bound cylinder. Rechecks persisted identity and saved boundary; solid inner/outer orientation is sampled only. No continuous coverage, contact, fit or motion verdict.',
          {'expected_document_token':TOKEN,'boundary_path':{'type':'string','minLength':1},
           'query_points_root_mm':{'type':'array','minItems':1,'maxItems':32,'items':{'type':'array','minItems':3,'maxItems':3,'items':{'type':'number'}}},
@@ -266,6 +275,7 @@ TOOLS = [
          {'draft_check_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'max_tasks': {'type':'integer','minimum':3,'maximum':200,'default':20},
           'evidence_index_path': {'type':'string','minLength':1},
+          'planar_analysis_path': {'type':'string','minLength':1,'description':'Optional planar contact report; v9 reads missing actual neighboring finite regions. Mutually exclusive with other profiles; preserves the same four rounds.'},
           'engagement_analysis_path': {'type':'string','minLength':1,'description':'Optional surface engagement report; v8 plans missing sample/adjacency captures. Exclusive with other planning profiles; same shared four rounds.'},
           'finite_analysis_path': {'type':'string','minLength':1,'description':'Optional finite connection report; v7 plans missing cylindrical face boundaries, preserving exact index lineage. Exclusive with all other planning profiles.'},
           'geometry_analysis_path': {'type':'string','minLength':1,'description':'Optional geometry connection report. Plans only missing pair distances, preserving its exact index lineage. Mutually exclusive with constraint analysis or initial profile.'},
@@ -340,6 +350,12 @@ class SolidWorksTools:
                 from cadkin.tools.matching import build_target_graph, match_templates
                 handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
                 return handler(self.root, **arguments)
+            if name == 'cad_analyze_planar_contacts':
+                from cadkin.tools.planar_contacts import analyze_planar_contacts
+                return analyze_planar_contacts(self.root, **arguments)
+            if name == 'sw_read_planar_face':
+                from cadkin.tools.planar_sources import load_planar_source
+                arguments = load_planar_source(self.root, **arguments)
             if name == 'cad_analyze_surface_engagement':
                 from cadkin.tools.engagement import analyze_engagement
                 return analyze_engagement(self.root, **arguments)

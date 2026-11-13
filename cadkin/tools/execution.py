@@ -22,6 +22,12 @@ def assess_saved(root, task, envelope, document):
                 validate_enhanced_capture(envelope['data'], task['arguments'])
             except ToolFailure as exc:
                 return 'failed', codes + [exc.code], True
+    if task['tool']=='sw_read_planar_face':
+        if set(codes) & {'EVIDENCE_MISMATCH','GEOMETRY_CHANGED','FACE_GEOMETRY_MISMATCH','FACE_REFERENCE_UNRESOLVED'}:fatal=True
+        if state in ('passed','partial'):
+            from cadkin.tools.planar_sources import validate_planar_capture
+            try:validate_planar_capture(root,envelope)
+            except ToolFailure as exc:return 'failed',codes+[exc.code],True
     if task['tool'] in ('sw_sample_cylinder_face','sw_read_face_adjacency'):
         if set(codes) & {'EVIDENCE_MISMATCH','GEOMETRY_CHANGED','FACE_GEOMETRY_MISMATCH','FACE_REFERENCE_UNRESOLVED'}: fatal=True
         if state in ('passed','partial'):

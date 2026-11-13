@@ -22,12 +22,13 @@ from cadkin.adapters.faces import FaceOperations
 from cadkin.adapters.face_probe import FaceProbeOperations
 from cadkin.adapters.face_boundary import FaceBoundaryOperations
 from cadkin.adapters.face_engagement import FaceEngagementOperations
+from cadkin.adapters.planar_faces import PlanarFaceOperations
 
 DOC_TYPES = {1: "part", 2: "assembly", 3: "drawing"}
 NATIVE_TYPES = {".sldprt": 1, ".sldasm": 2, ".slddrw": 3}
 
 
-class SolidWorksAdapter(DisplayOperations, SpatialOperations, SessionOperations, EvidenceOperations, ConstraintOperations, CylinderOperations, MateInventoryOperations, MateFaceOperations, ComponentDistanceOperations, FaceOperations, FaceProbeOperations, FaceBoundaryOperations, FaceEngagementOperations):
+class SolidWorksAdapter(DisplayOperations, SpatialOperations, SessionOperations, EvidenceOperations, ConstraintOperations, CylinderOperations, MateInventoryOperations, MateFaceOperations, ComponentDistanceOperations, FaceOperations, FaceProbeOperations, FaceBoundaryOperations, FaceEngagementOperations, PlanarFaceOperations):
     def __init__(self, root=None, app=None, runtime=None):
         self.root = Path(root or Path.cwd()).resolve()
         self.app = app

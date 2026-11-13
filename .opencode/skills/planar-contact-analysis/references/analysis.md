@@ -1,0 +1,14 @@
+# 来源与判读
+
+必填engagement_analysis_path、output_path；可选evidence_index_path、max_plane_pairs（1–100，默认20）。默认继承报告索引；有新index则须同目标并完整延续历史。工具内部重算旧engagement依据，原文件不覆盖。
+
+只枚举已有真实邻接、法向相反且平面位置接近的端面候选，不扫描所有面。每面来源绑定adjacency文件哈希与该文件的持久引用；同来源同面去重，不跨快照猜身份。
+
+- 圆盘/同心圆环对用圆盘交集的容斥面积，真正扣除孔区；无孔凸多边形对用有限多边形裁剪。混合类型、不平行端面或不支持轮廓不输出面积。
+- 投影面积在左面法向平面内计算，单位mm²；正面积必须大于resolved_area_threshold_mm2（浮点阈值+基于轮廓周长/闭合公差的保守面积裕量）。no_resolved_positive_area包括无区域交集或数值阈值下的面积，不排除边/点接触。
+- signed_plane_gap_mm以左面定向法向为正。opposed_regions_near_tolerance是相向、有正投影面积且在原距离容差内的候选；negative_oriented_plane_gap单独保留，不能等同全模型穿透。
+- hypothetical_closing_direction_right_wrt_left只是固定左实例时右实例使定向间隙减小的假设平移方向。没有真实接触、接地、刚体、单/双侧保持、有限运动或行程结论。
+
+数据仍来自放置后的零件定义，未参与装配级特征。区域公差/浮点误差、继承的遗漏、竞争解释、失败/partial、共享四轮全部保留。来源/派生字段可重放，输出新文件。
+
+接近相切的微小交面积还需超过resolved_area_threshold_mm2；geometry_area_margin_mm2计入闭合公差与周长的裕量，不只看浮点消去误差。这是条件几何判读裕量，不是严格区间算术误差证明或物理接触公差。

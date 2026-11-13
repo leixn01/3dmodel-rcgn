@@ -1,11 +1,11 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前57个工具（含补采执行、回填、比较及证据关联复用），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前59个工具（含补采执行、回填、比较及证据关联复用），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
 1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks,templates]`，退出并重启 OpenCode。先完成 0.6.0 的 Conda 环境核对；SolidWorks 未运行时再按 0.4.0 启动，无需手动提前打开。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 57 个工具。客户端可能给工具名添加服务器前缀。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 59 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
@@ -1383,3 +1383,28 @@ python scripts/verify_surface_engagement.py --output outputs/verify-surface-enga
 | 效率与停止 | 批次内实际调用/各耗时、共享rounds_completed；已有完整/失败不再读 | 合成速度等于实机加速比 |
 
 记录本机SolidWorks版本、提交SHA、原envelope/receipt/index与耗时；本轮只读，不移动或保存模型。风险直接写入结论，不增加人工复核节点。
+
+## 0.31.0：有限端面区域与方向
+
+当前59工具、52个功能skill。已有Conda执行README更新安装并重启OpenCode；自动验收命令：
+
+```powershell
+python scripts/verify_planar_contacts.py --output outputs/verify-planar-contacts-0.31
+```
+
+预期82项`passed: true`；六种显式合成情境，不是升降机实机结果。重跑换新目录。
+
+实机复用当前原始engagement报告、同check及最新index，输出均用新路径：
+
+1. `cad_analyze_planar_contacts`：`{"engagement_analysis_path":"outputs/engagement.json","evidence_index_path":"outputs/latest-index.json","output_path":"outputs/planar-031.json","max_plane_pairs":20}`。无更新索引时继承报告，不丢弃已有历史；查看coverage、rounds_completed、源错误与缺口。
+2. `cad_plan_evidence_tasks`：`{"draft_check_path":"outputs/check.json","planar_analysis_path":"outputs/planar-031.json","output_path":"outputs/planar-plan-031.json","max_tasks":20}`。应algorithm_version=9；两个实例四面通常4capture+6guard。任务使用原邻接文件和原持久引用，不猜face索引；与其他profile互斥。
+3. `sw_execute_evidence_batch`：`{"plan_path":"outputs/planar-plan-031.json","output_path":"outputs/planar-batch-031-01.json","max_steps":20,"time_budget_seconds":60}`。只有有capture才执行，未完成以execution_source作previous_execution_path续跑同计划，换新输出。
+4. 完整receipt交`cad_index_evidence`：`{"draft_check_path":"outputs/check.json","execution_path":"实际最终receipt路径","output_path":"outputs/planar-index-031.json"}`；用原engagement+此新index重算至新planar报告，再规划确认已尝试的面不重读、第四轮后停止。
+
+| 新能力 | 核验内容 | 失败/未知标准 |
+| --- | --- | --- |
+| sw_read_planar_face | 原adjacency持久引用/同体与上下文；loops数量、边数、完整圆周期或凸闭合直边；面积和GetArea一致 | 数量/身份/来源变化拒绝；预算、复杂轮廓、圆弧、偏心/多孔、凹轮廓或面积不符保留partial/错误 |
+| cad_analyze_planar_contacts | 圆环扣孔，区域投影面积mm²；原容差下的signed_plane_gap_mm；正/负间隙与条件闭合方向 | 不支持混合/倾斜面比较为unknown；没有正解析面积不证明绝无边接触；接触/保持false，类型unknown、DOF/行程null |
+| 规划与效率 | 一面一次、含全部保护的预算、batch实际耗时、receipt/index历史 | 失败/partial不扩参数重试，四轮不重置；无空保护、无整装配扫描 |
+
+保存每次原envelope、receipt/index、提交SHA及本机版本/耗时，核对SolidWorks无选择/位姿/保存变化。范围为零件定义、不含装配级特征；未在实机运行不能标记通过，不设置人工复核节点。

@@ -156,6 +156,7 @@ def main():
     plan.add_argument('--evidence-index', dest='evidence_index_path')
     plan.add_argument('--constraint-analysis', dest='constraint_analysis_path')
     plan.add_argument('--geometry-analysis', dest='geometry_analysis_path')
+    plan.add_argument('--planar-analysis', dest='planar_analysis_path')
     plan.add_argument('--engagement-analysis', dest='engagement_analysis_path')
     plan.add_argument('--finite-analysis', dest='finite_analysis_path')
     plan.add_argument('--initial-capture-profile', choices=['root_mates'])
@@ -219,6 +220,7 @@ def main():
                     arguments = {'draft_check_path':args.draft_check_path, 'output_path':args.output, 'max_tasks':args.max_tasks}
                     if args.evidence_index_path is not None: arguments['evidence_index_path'] = args.evidence_index_path
                     if args.constraint_analysis_path is not None: arguments['constraint_analysis_path'] = args.constraint_analysis_path
+                    if args.planar_analysis_path is not None: arguments['planar_analysis_path'] = args.planar_analysis_path
                     if args.engagement_analysis_path is not None: arguments['engagement_analysis_path'] = args.engagement_analysis_path
                     if args.finite_analysis_path is not None: arguments['finite_analysis_path'] = args.finite_analysis_path
                     if args.geometry_analysis_path is not None: arguments['geometry_analysis_path'] = args.geometry_analysis_path

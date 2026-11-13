@@ -144,3 +144,7 @@ raw evidence_execution_schema_version=1记录原计划哈希、上一步receipt�
 ## 表面补证（0.30）
 
 `adapters/face_engagement.py`只读COM，`engagement.py`做纯采样/邻面数学，`tools/engagement_sources.py`校验原始来源，`tools/engagement.py`离线重放/汇总，`tools/engagement_planning.py`复用原保护/预算/四轮历史。三个新skill互相交接，不含实现或启动代码，工具不读取skill。旧v1–v7计划不改变工具scope或重放语义。
+
+## 有限端面（0.31）
+
+`adapters/planar_faces.py`读原始loops；`planar_regions.py`做纯闭合形状/投影面积计算；`tools/planar_sources.py`校验原邻接来源；`tools/planar_contacts.py`离线重放汇总；`tools/planar_planning.py`仅生成v9有界计划。新增两个独立skill，参数/判读/续轮细节按需加载；旧计划与保护不变。

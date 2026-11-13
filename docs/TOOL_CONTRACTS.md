@@ -1,9 +1,11 @@
 # SolidWorks 工具接口
 
-版本：0.30.0。以下 57 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.31.0。以下 59 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `sw_read_planar_face` | expected_document_token、adjacency_path、face_reference；可选max_loops=8/max_edges=64 | 单真实邻接平面loops及有限region，只读/身份与邻接回读，不支持轮廓partial |
+| `cad_analyze_planar_contacts` | engagement_analysis_path、output_path；可选evidence_index_path/max_plane_pairs=20 | 离线有限投影面积与定向间隙，圆环扣孔，接触/保持/运动未知 |
 | `sw_sample_cylinder_face` | expected_document_token、boundary_path、query_points_root_mm（1–32点）、membership_tolerance_mm（0–0.1，开下界） | 单面点成员关系与采样内外侧，只读；不证明连续覆盖/配合 |
 | `sw_read_face_adjacency` | expected_document_token、boundary_path；可选max_edges=64（1–256） | 单面真实边邻接，同体/身份与回读，保留缝边/null；不证明限位 |
 | `cad_analyze_surface_engagement` | finite_analysis_path、output_path；可选evidence_index_path | 离线点成员关系/内外互补/真实邻接端面汇总与缺口，物理类型/DOF/行程未知 |
@@ -20,7 +22,7 @@
 | `cad_index_evidence` | draft_check_path、execution_path、output_path；可选max_contexts | 离线关联已采集观测与当前候选，供后续规划复用及停止 |
 | `cad_compare_draft_checks` | before_check_path、after_check_path、output_path | 离线比较返回候选/发现与覆盖，不声明物理问题解决 |
 | `cad_check_joint_draft` | joint_draft_path、output_path；可选max_findings | 重放原始草案，报告结构、证据冲突、竞争解释与覆盖缺口，离线新输出 |
-| `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks、evidence_index_path、constraint_analysis_path、geometry_analysis_path、finite_analysis_path、engagement_analysis_path、initial_capture_profile（profile互斥） | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
+| `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks、evidence_index_path、constraint_analysis_path、geometry_analysis_path、finite_analysis_path、engagement_analysis_path、planar_analysis_path、initial_capture_profile（profile互斥） | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
 | `cad_build_rigid_candidates` | target_graph_path、output_path；可选max_group_size/max_partitions/include_contact_hypotheses | 重放目标图并生成多零件刚体候选，保留不合并基线/竞争解释，不修改CAD |
 | `cad_draft_joints` | rigid_candidates_path、output_path；可选max_target_pairs、显式模板、搜索/轴线参数 | 默认不加载模板，输出目标关系证据；类型unknown/DOF=null，参考语义分开 |
 | `cad_build_target_graph` | chain_path、output_path，可选relation_paths | 重放链及来源为实例图；轴线关系自动/显式读取，保留冲突，离线新输出 |

@@ -53,3 +53,8 @@
 
 - [IEdge.GetTwoAdjacentFaces2](https://help.solidworks.com/2016/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IEdge~GetTwoAdjacentFaces2.html)：两槽邻面，可有空邻面；结合IsSame同体和持久引用回读，不用坐标猜拓扑。
 - [ISurface.EvaluateAtPoint](https://help.solidworks.com/2024/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ISurface~EvaluateAtPoint.html)：法向等11值；FaceInSurfaceSense为true时反向得到面法向。有限成员关系仍来自IFace2.GetClosestPointOn，曲面求值不证明有限裁剪范围。
+
+## 有限端面 API（0.31）
+
+- [IFace2.GetLoopCount](https://help.solidworks.com/2024/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IFace2~GetLoopCount.html)及GetLoops；[ILoop2接口](https://help.solidworks.com/2024/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ILoop2.html)：读取闭合外环和孔环，不假设边返回顺序。
+- [IEdge.GetCurveParams3](https://help.solidworks.com/2012/english/api/sldworksapi/solidworks.interop.sldworks~solidworks.interop.sldworks.iedge~getcurveparams3.html)：先GetCurve，再读取参数对象；用参数范围区分完整圆与圆弧。[UMinValue](https://help.solidworks.com/2012/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ICurveParamData~UMinValue.html)说明闭合曲线起终参数相隔一个周期。

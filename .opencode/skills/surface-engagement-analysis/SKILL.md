@@ -14,3 +14,5 @@ description: 从原始finite连接报告及最新索引汇总圆柱面点成员�
 5. 结论保留alternatives、遗漏、未命中、来源错误和未确认事项。目标类型unknown、DOF与行程null，不写入原生约束求解器，也不移动零件。
 
 离线分析不启动CAD；不设人工复核节点。
+
+已有真实邻接轴向平面，继续核对有限区域和方向时交planar-contact-analysis；传本报告及最新index，保留同一四轮历史。
