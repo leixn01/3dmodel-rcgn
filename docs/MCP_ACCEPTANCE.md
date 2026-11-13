@@ -1313,3 +1313,44 @@ cad_plan_evidence_tasks传同target的draft_check_path、新geometry_analysis_pa
 把几何candidate_kind写成目标已确认类型/DOF、把同轴偏移当组件表面间隙、把局部样点当持续接触、用模板替代目标约束、删除失败历史/换报告绕过索引、忽略源公差或未测范围均判失败。将几何报告传入cad_solve_chain_constraints应报INVALID_CONSTRAINT_SOURCE，禁止混用。
 
 保存原始target/check/index、全部来源、geometry report、v6/v3 plan、原始envelope、receipt及更新index到outputs新路径。报告可因原target缺口继续partial，不能因一次成功测量清除所有风险。不要求人工复核；物理连接、接触持续性和有限运动缺能力时明确保留未知。完整说明见[GEOMETRIC_CONNECTIONS.md](GEOMETRIC_CONNECTIONS.md)。
+
+
+## 0.29.0有限圆柱边界与轴向范围
+
+### A. 更新与可复现验证
+
+在用户已有Conda环境、仓库根目录执行：
+
+```powershell
+git pull --ff-only
+python -m pip install -e ".[solidworks,templates]"
+python scripts/verify_finite_connections.py --output outputs/verify-finite-connections-0.29
+```
+
+预期passed=true、47项；重跑换新目录。脚本为明确合成CAD，不能代替实机COM。重启OpenCode，list_tools应54，版本0.29.0。
+
+### B. 本机读取边界
+
+前置：活动根装配、相同配置/实例位姿，已有当前原始face catalog与准确圆柱face选择。expected_document_token使用实际返回。调用sw_read_face_boundary：
+
+```json
+{"expected_document_token":"实际24位token","face":{"face_inventory_path":"outputs/faces.json","body_index":0,"face_index":2},"max_edges":64}
+```
+
+例中索引须替换成真实目录所选圆柱，不能沿用示例猜测。预期原始envelope含face_boundary_schema_version=1、source原目录哈希、直线endpoints_part_m或circle_parameters_part、read/reported_edge_count及complete/truncated。圆弧可能没有顶点，工具只对直线读取端点；不把圆参数当完整圆周。预算截断/复杂曲线/读取失败应partial或error，不补零范围。相同面身份、描述、位姿及边界回读改变应拒绝。窗口选择、零件位置、模型dirty状态不应被此只读工具修改。
+
+### C. 自动分析—补采—索引
+
+复用原geometry报告、check和最新index，调用cad_analyze_finite_connections，参数geometry_analysis_path、output_path，可选evidence_index_path和max_face_pairs。优先读摘要coverage/analysis_source，再按需读pairs。缺目录时返回缺口，不扫描目录；已有完整无冲突目录中的圆柱候选面可用于补边界。
+
+cad_plan_evidence_tasks传draft_check_path、finite_analysis_path、output_path；不要混传其他profile。预期v7未执行计划；两实例一面各1次，2采集+6保护=8次。max_tasks=4无法容纳单面5次时应stop，不省保护。实际预算允许只采一面时保留另一面的deferred；不可把只采一面算成完整关系。
+
+sw_execute_evidence_batch按原保护执行，必要时按execution_source续跑。guard通过且完整后cad_index_evidence传同check与receipt；包括失败/partial尝试。再cad_analyze_finite_connections传原geometry及新index，重算后才能继续规划。当前或后继index必须同target且历史连续，新index不能直接替换旧finite计划的历史。第四轮后停止剩余边界采集，不从0开始。
+
+预期comparison的投影区间/重叠/间隔来自原解析边界。axially_separated_face_enclosures只针对指定面；axial_enclosures_overlap并不证明角向裁剪对应。radius_difference_mm不是配合间隙。局部轴向平面即使接近投影端点，也未证明与圆柱同实体/邻接，retention_confirmed=false、travel_limit_mm=null。
+
+### D. 失败标准和留档
+
+未知/部分边界变成完整区间、失败后换预算自动重试、通过删index/新建链清轮数、把投影包络变成行程、直接认定转动/滑动或把finite报告传入原生求解器，都判失败。几何报告/输入被改应EVIDENCE_MISMATCH；目标类型unknown、DOF及motion_limits_mm仍null。
+
+保存原catalog/geometry/check/index、原始边界envelope、plan/receipt、更新index与finite报告到outputs新路径；不覆盖模型或旧证据。不设人工复核门槛，未完成的互补表面、角向覆盖、邻接、接触持续性和有限运动在结论说明。详情见[FINITE_CONNECTIONS](FINITE_CONNECTIONS.md)。

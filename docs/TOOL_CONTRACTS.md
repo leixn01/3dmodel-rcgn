@@ -1,9 +1,11 @@
 # SolidWorks 工具接口
 
-版本：0.28.0。以下 52 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.29.0。以下 54 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `sw_read_face_boundary` | expected_document_token、face{face_inventory_path,body_index,face_index}；可选max_edges=64（1–256） | 单圆柱面直线/圆弧边界，持久身份/描述/位姿及边界回读；只读，复杂/截断保留partial |
+| `cad_analyze_finite_connections` | geometry_analysis_path、output_path；可选evidence_index_path/max_face_pairs=20（1–100） | 离线有限轴向包络及局部轴向平面上下文，摘要与完整文件；不确定物理类型或行程 |
 | `cad_analyze_geometric_connections` | target_graph_path、output_path、distance_tolerance_mm、angle_tolerance_deg；可选max_pairs/evidence_index_path | 几何连接竞争解释及缺口，绑定目标/索引来源；不产生物理约束，返回摘要与文件路径 |
 | `cad_review_root_mates` | inventory_path、mate_inventory_path、output_path | 原始根配合直接关联准确实例对，schema v2来源可重放，不依赖圆柱或调用CAD |
 | `cad_solve_chain_constraints` | constraint_analysis_path、reference_occurrence_path、characteristic_length_mm、output_path；可选relative_rank_tolerance/max_constraints_per_pair | 单链同快照约束组装、闭环限制和瞬时方向；完整文件+紧凑摘要，无CAD调用 |
@@ -819,3 +821,12 @@ cad_analyze_geometric_connections要求原target、毫米公差(0,10]、角度�
 cad_plan_evidence_tasks可选geometry_analysis_path，与constraint_analysis_path/initial_capture_profile互斥。报告/check同target，index须与报告完全相同（可自动继承）；新index必须先重算新报告，禁止旧缺口重采。v6只生成缺失组件对的sw_component_distance及全部保护，无圆柱/配合扫描。执行后用同check+新receipt索引，再同target+新index分析；近距离有限面验证交原v3 face planner。
 
 SOURCE_INCOMPLETE/GEOMETRY_ANALYSIS_LIMIT和原target错误保留；EVIDENCE_MISMATCH拒绝篡改/旧来源/混用历史；NO_CAPTURE_TASKS阻止空转。完整原始来源、receipt、index和新报告保留，不改变v1–v5重放，不把几何报告传给原生约束求解器。详见[几何连接分析](GEOMETRIC_CONNECTIONS.md)。
+
+
+## 0.29 有限边界分支
+
+cad_plan_evidence_tasks可选finite_analysis_path，与geometry_analysis_path、constraint_analysis_path和initial_capture_profile互斥。重放生成v7：同check/target、报告的exact index；只有缺失且未尝试的指定圆柱面边界。默认边数64，整项保护计预算，失败/partial/完整均不自动重读，继承共享四轮。
+
+sw_read_face_boundary的face索引只定位指定哈希面目录，后续解析持久引用与实时描述。GetEdges读取直线两端顶点或圆弧底层圆参数，全部原始米值保存；回读改变拒绝。复杂曲线/截断不支持完整投影。数据范围不含装配级特征，原子几何快照未保证。
+
+cad_analyze_finite_connections允许geometry原index的后继索引，不能切换无关历史。每目录最多20圆柱面，max_face_pairs控制返回面对；遗漏和原geometry覆盖均保留。圆弧用整圆投影包络，但不认为存在完整圆周。半径差、重叠、轴向平面样点均不提供运动方程/已确认类型或行程。详见[FINITE_CONNECTIONS](FINITE_CONNECTIONS.md)。

@@ -1,0 +1,14 @@
+# 判读
+
+comparison给出统一轴线下的left/right_projection、signed_interval_overlap_mm、axial_gap_mm、半径差和轴向平面样点。
+
+- axially_separated_face_enclosures：这两张指定零件定义面的轴向包络有间隔；不否定其它面或间接连接。
+- axial_enclosures_overlap：轴向包络重叠；尚不知角向裁剪区域是否对应，也不证明轴孔啮合。
+- axial_endpoint_near_tolerance：端点在公差附近；不是止挡或行程端点。
+- finite_extent_unavailable：缺/失败/复杂边界或来源歧义；保持未知，不能用AABB、UV范围或显示网格代替。
+
+直线用两端顶点，圆弧用完整圆的投影包络；倾斜圆弧可能扩大范围。旋转、镜像和统一尺度只变换一次。radius_difference_mm是半径差，不是已验证配合间隙。
+
+axial_plane_observations是原有限面探测的局部相对法向样点。与圆柱是否同实体、邻接未验证，即使near_any_cylinder_interval_endpoint=true也不能认定该圆柱的端面、双向轴向保持或travel limit。
+
+alternatives沿用原几何解释；新静态数据不能决定revolute/prismatic/fixed。target_joint_kind仍unknown、target_degrees_of_freedom与motion_limits_mm仍null。报告不能作为cad_solve_chain_constraints输入。

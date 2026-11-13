@@ -14,3 +14,5 @@ description: 从已有目标图的轴线、局部面探测和距离证据提出�
 5. 没有几何来源就保留source_gap，并只交接缺失的component-relations或face-contact-review能力。已有配合可另交mechanism-constraint-analysis；此报告不能传入运动求解器，也不改草案/分组。
 
 不为离线分析启动SolidWorks；不设置人工复核。需要的运动、保持接触或连接验证尚无能力时，在结论明确保留缺口。
+
+同轴解释需要有限轴向范围时交接finite-connection-analysis，带本报告及最新index；缺目录/距离时只补对应能力，仍不确认运动副。

@@ -1,0 +1,9 @@
+# 来源与调用
+
+cad_analyze_finite_connections必填geometry_analysis_path、output_path，max_face_pairs默认20、范围1–100。使用同target/check的最新evidence_index_path；省略时只继承geometry报告原index，不能理解为工具发现了全局最新文件。
+
+允许显式传原index的后继index；必须同target且原绑定存在于后继来源。不会扫描outputs，或把其它会话观测拼进来。报告重放所有源与数值；新index需要新finite报告，规划时不能拿旧报告替换索引。
+
+候选限于原geometry报告已有同轴解释的组件对，以及完整且无冲突面目录里的圆柱面。每目录最多20个圆柱面；最多输出max_face_pairs对，coverage与inherited_geometry_coverage保留省略。支持的边界只来自guard通过的sw_read_face_boundary观测；失败/partial仍留在attempts。
+
+返回仅analysis_source、coverage、轮数等摘要，完整pairs保存在outputs新JSON。参数公差继承原geometry报告，不暗改原来源或规则。

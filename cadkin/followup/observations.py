@@ -10,7 +10,7 @@ def require(condition, message, code):
 
 FAMILIES = {'sw_component_constraints': 'constraints', 'sw_component_faces': 'faces',
             'sw_component_cylinders': 'cylinders', 'sw_component_distance': 'distance',
-            'sw_mate_inventory': 'root_mates', 'sw_probe_face_pair': 'face_probes'}
+            'sw_mate_inventory': 'root_mates', 'sw_probe_face_pair': 'face_probes', 'sw_read_face_boundary':'face_boundaries'}
 MAX_ROUNDS = 4
 
 
@@ -21,6 +21,10 @@ def request_key(tool, paths):
 
 def describe_capture(tool, data):
     """Summarize only verified complete observations, retaining the original source elsewhere."""
+    if tool == 'sw_read_face_boundary':
+        return {'reported_edge_count':data['reported_edge_count'],'read_edge_count':data['read_edge_count'],
+            'face_selection':{k:data['source']['face'][k] for k in ('body_index','face_index')},
+            'physical_engagement_confirmed':False,'available_for_existing_reintegration':False,'next_tool':'cad_analyze_finite_connections'}
     if tool == 'sw_probe_face_pair':
         best = data['best_seed_index']
         return {'best_seed_index': best, 'sampled_metrics': None if best is None else data['samples'][best]['metrics'],
@@ -134,5 +138,5 @@ def reuse_facts(index):
         family = row['family']
         if family == 'root_mates': facts[family].append(row['source'])
         elif family in ('distance', 'face_probes'): facts[family].setdefault(tuple(row['occurrence_paths']), []).append(row['source'])
-        else: facts[family].setdefault(row['occurrence_paths'][0], []).append(row['source'])
+        else: facts.setdefault(family,{}).setdefault(row['occurrence_paths'][0], []).append(row['source'])
     return facts

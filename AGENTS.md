@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.28.0（52 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.29.0（54 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -38,6 +38,8 @@
 | 来源重放与目标实例图 | `mechanism-target-graph` |
 | 参考局部子图匹配与候选解释 | `mechanism-template-match` |
 | 多零件刚体候选分组 | `mechanism-rigid-groups` |
+| 指定圆柱面的解析边界读取 | `face-boundary` |
+| 有限轴向范围及局部端面方向证据 | `finite-connection-analysis` |
 | 无配合几何连接的竞争解释 | `geometric-connection-analysis` |
 | 目标局部配合约束组合分析 | `mechanism-constraint-analysis` |
 | 两实例局部瞬时约束秩与运动方向 | `mechanism-local-motion` |
@@ -133,3 +135,7 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 
 - 0.28.0 cad_analyze_geometric_connections独立解释目标圆柱关系、局部平面采样和距离，复用同target的最新index。重复面不投票，多轴防转仅为啮合条件成立时的推论；缺啮合/保持/运动证据不选唯一类型。no_direct_joint/other_relationship保留，名称、模板、AABB不确定类型。报告不进入原生约束求解器或覆盖草案，target类型unknown/DOF=null。
 - 几何报告可交cad_plan_evidence_tasks的geometry_analysis_path分支，v6只安排缺失组件对距离与全部保护，和constraint/initial profile互斥。报告必须先绑定最新index，禁止新索引配旧缺口或替换历史。执行→同check索引→同target几何重算；不要求先有proximity来源。近距离有限面验证交原face planner，仍共享4轮和失败/partial不重试。面探测和几何分类不证明真实关节/有限运动。
+
+- 0.29.0 sw_read_face_boundary只读取已绑定圆柱面的GetEdges、直线顶点/圆弧参数并回读；不读AABB/显示网格代替有限边界。复杂曲线、零边界、数量不符、失败、预算截断保持未知；圆弧不当完整圆周。referenced_part_definition不含装配级特征，前后回读不是原子拓扑指纹。
+- cad_analyze_finite_connections使用原geometry报告及其同target的当前/后继index，解析轴向投影包络；圆弧投影用完整圆的保守包络。重叠不证明角向覆盖或轴孔啮合；分离只针对指定面，半径差不当配合间隙。轴向局部平面样点未证明与圆柱同实体/邻接，更不能确认限位。unknown/null保持，报告不传原生运动求解器。
+- finite_analysis_path生成v7补采，和其他profile互斥；只采候选面未尝试边界，同面去重、64边预算不自动提高、全部文档/位姿保护计成本。批次→同check索引→原geometry+最新index重算finite，保留失败/partial与共享4轮。新index不得配旧finite报告，既有v1–v6计划重放语义不改。

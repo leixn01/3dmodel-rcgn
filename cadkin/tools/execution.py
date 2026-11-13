@@ -22,6 +22,12 @@ def assess_saved(root, task, envelope, document):
                 validate_enhanced_capture(envelope['data'], task['arguments'])
             except ToolFailure as exc:
                 return 'failed', codes + [exc.code], True
+    if task['tool'] == 'sw_read_face_boundary':
+        if set(codes) & {'EVIDENCE_MISMATCH','GEOMETRY_CHANGED','FACE_GEOMETRY_MISMATCH','FACE_REFERENCE_UNRESOLVED'}: fatal=True
+        if state in ('passed','partial'):
+            from cadkin.tools.face_boundaries import validate_boundary
+            try: validate_boundary(root,envelope)
+            except ToolFailure as exc: return 'failed',codes+[exc.code],True
     if task['tool'] == 'sw_probe_face_pair':
         if set(codes) & {'EVIDENCE_MISMATCH', 'GEOMETRY_CHANGED', 'FACE_GEOMETRY_MISMATCH', 'FACE_REFERENCE_UNRESOLVED'}:
             fatal = True

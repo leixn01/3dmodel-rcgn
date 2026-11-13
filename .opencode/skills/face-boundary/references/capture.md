@@ -1,0 +1,9 @@
+# 参数与边界
+
+sw_read_face_boundary必填expected_document_token与face对象：face_inventory_path、body_index、face_index。max_edges默认64，范围1–256。正式自动计划固定64，不通过提高预算自动重试。
+
+工具解析持久面引用、核对原描述/实例配置/位姿，读取GetEdges、直线两端顶点或圆弧CircleParams，再回读边界及面身份。圆曲线可能只是圆弧；没有推定完整圆周。超边预算、未知曲线和读取失败保留partial/错误，不造近似范围。
+
+几何范围是referenced_part_definition，未参与装配级特征。来源和回读不是原子拓扑快照。返回含源目录绑定、原始米制解析数据、read/reported_edge_count、complete/truncated与errors。独占保存outputs新文件；自动批次由执行器保存原始envelope与receipt。
+
+单独工具调用结果不会自动获得guarded索引资格；正式自动流程优先使用现有计划/批次/索引能力。超时不代表取消，先检查状态，不盲重试。完整边界也不证明啮合、限位或运动。

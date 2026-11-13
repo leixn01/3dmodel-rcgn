@@ -74,6 +74,14 @@ TOOLS = [
           "max_cylinders": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100},
           "include_face_references": {"type": "boolean", "default": False, "description": "Capture and round-trip persistent part-face references for later live mate-face matching; adds COM reads."}},
          ["expected_document_token", "occurrence_path"]),
+    spec('sw_read_face_boundary', 'Read bounded analytic line/circle edges of one persisted cylindrical face, resolving its identity and checking geometry before and after. No tessellation, selection, CAD edits or guessed extent for unsupported curves. Save the original envelope for guarded indexing.',
+         {'expected_document_token':TOKEN,
+          'face':{'type':'object','additionalProperties':False,'properties':{'face_inventory_path':{'type':'string','minLength':1},'body_index':{'type':'integer','minimum':0},'face_index':{'type':'integer','minimum':0}},'required':['face_inventory_path','body_index','face_index']},
+          'max_edges':{'type':'integer','minimum':1,'maximum':256,'default':64}}, ['expected_document_token','face']),
+    spec('cad_analyze_finite_connections', 'Compare source-bound cylindrical face boundary projections and local axial plane samples. Uses the geometry report plus its current or descendant observation index; only guarded boundary captures are consumed. Preserves alternatives and unknown motion limits. Offline, compact summary; no CAD calls or physical joint determination.',
+         {'geometry_analysis_path':{'type':'string','minLength':1},'output_path':{'type':'string','minLength':1},
+          'max_face_pairs':{'type':'integer','minimum':1,'maximum':100,'default':20},'evidence_index_path':{'type':'string','minLength':1}},
+         ['geometry_analysis_path','output_path'],False),
     spec('cad_analyze_geometric_connections', 'Explain target geometry using competing conditional connection hypotheses. Replays cylinder relations, source-bound local face samples and measured distances, optionally consuming a current observation index. No templates, CAD calls, physical joint decisions or invented constraints. Writes full details and returns a compact summary.',
          {'target_graph_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'distance_tolerance_mm': {'type':'number','exclusiveMinimum':0,'maximum':10},
@@ -247,6 +255,7 @@ TOOLS = [
          {'draft_check_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'max_tasks': {'type':'integer','minimum':3,'maximum':200,'default':20},
           'evidence_index_path': {'type':'string','minLength':1},
+          'finite_analysis_path': {'type':'string','minLength':1,'description':'Optional finite connection report; v7 plans missing cylindrical face boundaries, preserving exact index lineage. Exclusive with all other planning profiles.'},
           'geometry_analysis_path': {'type':'string','minLength':1,'description':'Optional geometry connection report. Plans only missing pair distances, preserving its exact index lineage. Mutually exclusive with constraint analysis or initial profile.'},
           'initial_capture_profile': {'type':'string','enum':['root_mates'], 'description':'Only for an empty-evidence first chain: one enhanced root-mate capture plus all guards, independent of cylinders.'},
           'constraint_analysis_path': {'type':'string','minLength':1, 'description':'Optional source-bound constraint report. Plan only missing enhanced mate evidence, inheriting its index and four-round budget.'}},
@@ -319,6 +328,12 @@ class SolidWorksTools:
                 from cadkin.tools.matching import build_target_graph, match_templates
                 handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
                 return handler(self.root, **arguments)
+            if name == 'cad_analyze_finite_connections':
+                from cadkin.tools.finite_connections import analyze_finite_connections
+                return analyze_finite_connections(self.root, **arguments)
+            if name == 'sw_read_face_boundary':
+                from cadkin.tools.face_boundaries import load_boundary_source
+                arguments = load_boundary_source(self.root, **arguments)
             if name == 'cad_analyze_geometric_connections':
                 from cadkin.tools.geometric_connections import analyze_geometric_connections
                 return analyze_geometric_connections(self.root, **arguments)

@@ -18,3 +18,5 @@ description: 将草案检查或目标约束缺口转换成有预算的只读补�
 5. 带索引或约束报告的计划先读continuation：stop时报告原因和剩余风险，不执行保护空转或丢弃索引重新规划；collect时将原始计划路径交接evidence-task-execute；执行后的回填与比较继续由独立能力处理。当前入口只生成计划。
 
 继续独立分析，在结论保留能力缺口与延期事项，不设置人工复核节点。
+
+已有finite connection报告且缺圆柱面的有限边界时，按[有限边界分支](references/finite.md)使用finite_analysis_path；不要同时传其它profile。

@@ -68,3 +68,6 @@ python scripts/verify_chain_session.py --output outputs/verify-chain-session-0.2
 ## 0.28.0 后续几何分析
 
 chain-session本身仍完成原生约束流程；其最新handoffs.target/check/index可交给独立cad_analyze_geometric_connections，处理已有几何关系的竞争解释。root_mates模式未采几何，缺口保持未知；不切模式重跑首轮或重复读取配合。几何取证/索引及面探测沿用同一四轮历史，见[几何连接分析](GEOMETRIC_CONNECTIONS.md)。
+
+
+0.29有限边界仍是首次session后的独立分支：geometry report + 最新index → finite分析 → v7边界计划 → 批次 → 同check索引 → finite重算。不存在新的一键运动识别或自动行程确认；原session/geometry/finite共享历史，不能重启session绕过四轮。

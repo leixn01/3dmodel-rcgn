@@ -57,12 +57,16 @@ def source_facts(root, target):
 
 @replay_reads
 def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinations=True, evidence_index_path=None,
-               constraint_analysis_path=None, initial_capture_profile=None, geometry_analysis_path=None):
-    require(sum(x is not None for x in (initial_capture_profile, constraint_analysis_path, geometry_analysis_path)) <= 1,
+               constraint_analysis_path=None, initial_capture_profile=None, geometry_analysis_path=None, finite_analysis_path=None):
+    require(sum(x is not None for x in (initial_capture_profile, constraint_analysis_path, geometry_analysis_path, finite_analysis_path)) <= 1,
             'Choose only one evidence planning profile.', 'INVALID_ARGUMENTS')
     require(initial_capture_profile in (None, 'root_mates') and not (initial_capture_profile and
             (evidence_index_path is not None or constraint_analysis_path is not None)),
             'The initial root-mate profile cannot replace an existing index or constraint history.', 'INVALID_ARGUMENTS')
+    if finite_analysis_path is not None:
+        from cadkin.tools.finite_planning import build_finite_plan
+        return build_finite_plan(root, draft_check_path, finite_analysis_path, output_path,
+                                 max_tasks, evidence_index_path, check_destinations)
     if geometry_analysis_path is not None:
         from cadkin.tools.geometry_planning import build_geometry_plan
         return build_geometry_plan(root, draft_check_path, geometry_analysis_path, output_path,
@@ -129,6 +133,9 @@ def replay_plan(root, plan_path):
     path = json_path(root, plan_path)
     original, digest = read_json(path)
     version = original.get('algorithm_version') if isinstance(original, dict) else None
+    if version == 7:
+        from cadkin.tools.finite_planning import replay_finite_plan
+        return replay_finite_plan(root, path, original, digest)
     if version == 6:
         from cadkin.tools.geometry_planning import replay_geometry_plan
         return replay_geometry_plan(root, path, original, digest)
@@ -149,11 +156,11 @@ def replay_plan(root, plan_path):
 
 
 def evidence_task_plan(root, draft_check_path, output_path, max_tasks=20, evidence_index_path=None,
-                       constraint_analysis_path=None, initial_capture_profile=None, geometry_analysis_path=None):
+                       constraint_analysis_path=None, initial_capture_profile=None, geometry_analysis_path=None, finite_analysis_path=None):
     output = json_path(root, output_path, output=True)
     data, check, _ = build_plan(root, draft_check_path, output_path, max_tasks, evidence_index_path=evidence_index_path,
                               constraint_analysis_path=constraint_analysis_path, initial_capture_profile=initial_capture_profile,
-                              geometry_analysis_path=geometry_analysis_path)
+                              geometry_analysis_path=geometry_analysis_path, finite_analysis_path=finite_analysis_path)
     write_result(output, data)
     errors = []
     if data['output_truncated']:

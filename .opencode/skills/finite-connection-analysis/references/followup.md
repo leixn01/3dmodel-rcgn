@@ -1,0 +1,9 @@
+# 有界补采
+
+调用cad_plan_evidence_tasks时传draft_check_path、finite_analysis_path、output_path；可传max_tasks。finite分支与geometry_analysis_path、constraint_analysis_path、initial_capture_profile互斥。
+
+v7只选未尝试的已有圆柱候选面边界，一面一次，max_edges固定64；同一面被多个候选用到会去重。报告已绑定的index自动继承，显式index必须完全相同；换新index先重算finite分析。预算包括2个文档保护和每个参与实例2个位姿保护，两实例两面共8次调用；不足不删保护。
+
+优先sw_execute_evidence_batch；未完成用execution_source续跑。完成且guard通过后cad_index_evidence传同check与新receipt，再cad_analyze_finite_connections传原geometry报告和最新index。失败/partial仍索引留档、自动不重采；与距离/目录/面探测共享四轮，不能重建初始链绕过。
+
+不调用reintegrate来把边界伪装成mate；不直接改旧报告。停止只说明没有预算内的新取证，不说明运动识别完成。
