@@ -45,6 +45,9 @@ def reintegrate(root, execution_path, output_path, face_review_path=None):
     face_reasons = {e['task_id']: e['reason'] for e in routed['entries']}
     reused = set(routed['reused_capture_ids']); face_updates = []
     steps=[];used=set();superseded=[];relation_map={};evidence=[];final_check=None;pipeline_error=None
+    constraint_followup = plan.get('algorithm_version') == 4
+    constraint_outputs = {'before_constraint_analysis_source': plan.get('constraint_analysis_source'),
+        'after_constraint_analysis_source': None, 'after_evidence_index_source': None, 'constraint_changes': None}
     folder.mkdir(parents=True,exist_ok=False)
 
     def run(name,handler,arguments):
@@ -120,10 +123,14 @@ def reintegrate(root, execution_path, output_path, face_review_path=None):
             **draft['parameters'],'output_path':dest('joints')})
         final_check=run('cad_check_joint_draft',check_joint_draft,{'joint_draft_path':new_draft,
             'max_findings':check['parameters']['max_findings'],'output_path':dest('check')})
+        if constraint_followup:
+            from cadkin.tools.constraint_reintegration import continue_constraints
+            constraint_outputs = continue_constraints(root, plan, eb['path'], new_target, final_check, run, dest, binding)
         recheck(root,plan['input_files']+[plan['check_source'],execution['plan_source'],eb]+[c['source'] for c in captures.values()]+routed['input_files'])
     except Exception as exc:
         pipeline_error=failure(exc)['errors'][0]
         final_check=None
+        constraint_outputs.update(after_constraint_analysis_source=None, after_evidence_index_source=None, constraint_changes=None)
     supplemental=[]
     for task_id,capture in captures.items():
         if task_id not in used and task_id not in reused:
@@ -153,6 +160,9 @@ def reintegrate(root, execution_path, output_path, face_review_path=None):
               'Face thresholds with multiple interpretations, already-observed face snapshots and capacity limits remain supplemental. Local near points still do not confirm contact or joints.',
               'Constraints and face catalogs remain supplemental; they do not directly establish joints or resolve findings. Use cad_index_evidence to associate guarded observations and pass its index to subsequent planning; this report alone is not an index.',
               'Completed recomputation is not physical confirmation. Compare before/after checks separately; disappeared findings do not prove resolution.']}
+    if constraint_followup:
+        data.update(algorithm_version=3, **constraint_outputs)
+        data['limitations'].append('Constraint follow-up also writes a current observation index and a lineage-bound constraint report. Pass both new check and report to planning; the report inherits the index automatically. Failed/partial captures still consume one guarded round and are never retried automatically.')
     write_result(output,data)
     errors=[]
     if pipeline_error:errors.append({'code':'REINTEGRATION_FAILED','message':'Derived files before failure remain diagnostic; no final draft is accepted.','cause':pipeline_error})

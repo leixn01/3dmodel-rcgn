@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.22.0（46 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.23.0（46 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -107,3 +107,6 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 - 新草案与check的algorithm_version=2；目标实例对输出预算max_target_pairs由全部分组方案共享，未知/省略分别报告。没有参考匹配不阻断检查、补采、回填、索引和比较。索引v2区分目标上下文与参考类比，并更正完整面probe的条件回填提示。旧草案/check/index按版本重放，不篡改旧字段/哈希；升级目标结论时从原rigid source生成新草案，不在旧计划中换token或草案。
 
 - 0.22.0新增独立cad_analyze_constraints，逐实例对、逐根mate源输出局部固定/旋转/滑动候选及支持/冲突/缺口。sw_mate_inventory可选include_reference_geometry读取直接引用面和LockRotation；未知不默认false。近接触、同轴、名称和模板不提供约束，不跨快照合并，不把重复轴计为独立约束。目标类型仍unknown、DOF仍null。新报告暂不进入自动补采/草案修改，保留旧文件重放与4轮历史；增强采集必须重新形成绑定来源。
+
+- 0.23.0 cad_plan_evidence_tasks可选constraint_analysis_path生成v4约束缺口计划；报告/check必须同target。只补配合面几何和LockRotation，基础采集不满足增强能力，增强成功/partial/failed均不自动重采。报告绑定索引则自动继承，不换旧索引或绕过共享4轮。全部实例保护计预算，STEP无配合、未知求解规则、多来源歧义不能靠重复扫描解决。
+- v4计划回填调用独立索引与分析工具，输出v3回填报告、新check/index及绑定索引的约束报告，保留原公差/范围/预算；partial失败但保护通过也保留尝试和轮数。成功后直接交接新check/report/index，不重复索引同receipt。pipeline_error时全部after来源null，中间文件只诊断。不同快照feature_id不做身份匹配；候选不写成目标类型或自由度。

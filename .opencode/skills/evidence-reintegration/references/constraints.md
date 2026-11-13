@@ -1,0 +1,11 @@
+# 约束缺口回填（0.23）
+
+输入为algorithm_version=4计划的完整、guards_passed receipt；cad_reintegrate_evidence参数不变。只有完整增强mate capture替换兼容connection基础；partial/failed保留excluded_captures，不能把未知锁转状态当false。
+
+重建connection→chain→target→rigid→draft→check后，调用独立cad_index_evidence保留原计划历史和本轮尝试，再调用cad_analyze_constraints，沿用原distance_tolerance_mm、angle_tolerance_deg、max_pairs。原索引max_contexts也保留。默认草案仍无模板；原来显式使用的模板集合不会改变。
+
+成功报告algorithm_version=3，新增before_constraint_analysis_source、after_constraint_analysis_source、after_evidence_index_source与constraint_changes。新分析绑定新索引，下一轮传after_check_source.path和after_constraint_analysis_source.path即可自动继承轮数；不要再次对同receipt建索引。普通计划仍保持原回填版本/行为。
+
+constraint_changes按实例对比较独立快照，保留新旧源、候选规则/状态、缺口码、冲突码和覆盖。没有跨来源feature_id身份匹配，不把“本轮未再观察到缺口”当机械确定。所有目标最终类型unknown、DOF=null。
+
+即使没有可回填capture，保护通过的partial/failed仍计入新索引并重算基于有效来源的报告，后续停止同类增强。任一步失败，recomputation_complete=false、after_check_source及两个after来源为null、applied_capture_ids为空；中间文件仅诊断，不交接为完成。该工具不启动下一轮、不连接CAD、不调整阈值或求解运动。

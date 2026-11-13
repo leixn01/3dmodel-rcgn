@@ -1,11 +1,11 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前45个工具（含补采执行、回填、比较及证据关联复用），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前46个工具（含补采执行、回填、比较及证据关联复用），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
 1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks,templates]`，退出并重启 OpenCode。先完成 0.6.0 的 Conda 环境核对；SolidWorks 未运行时再按 0.4.0 启动，无需手动提前打开。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 45 个工具。客户端可能给工具名添加服务器前缀。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 46 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
@@ -1028,3 +1028,64 @@ python -m cadkin analyze-constraints outputs/target.json --distance-tolerance-mm
 预期窗口选择/dirty/位姿/配置保持原状，无修改配合或重建。变化被捕获时返回MATE_STATE_CHANGED/GEOMETRY_CHANGED/COMPONENT_CHANGED/DOCUMENT_CHANGED，混合快照不可用于分析。保存原始envelope、新派生JSON和结果，不仅保存聊天结论。
 
 本版增强采集和约束报告缺口尚未接入自动计划/receipt闭环；已有4轮上限及索引历史继续保留，不把本机单次验收称为自动补采已完成，也不通过新文件名绕过停止规则。
+
+## 0.23.0：约束缺口自动补采与重算
+
+### A. 可复现验收
+
+在已有Conda环境更新仓库、重新安装`.[solidworks,templates]`并重启OpenCode。工具仍46个，功能skill仍39个。
+
+```powershell
+python scripts/verify_constraint_followup.py --output outputs/verify-0.23
+```
+
+预期passed=true、38项检查。覆盖基础→增强→回填→索引/约束重算→停止、API失败、部分读取、配合状态变化、无配合与已增强来源。原始envelope、逐步receipt、派生文件和调用记录保存在该新目录。脚本使用显式合成CAD，不调用本机SolidWorks；真实stdio和完整4轮共享历史另由回归测试覆盖。重复验收换新输出目录。
+
+### B. 本机已有单链证据的自动流程
+
+前置：已有同一target graph的原始check及约束报告；所有绑定来源可回读。已有补采历史保留最新index。SolidWorks当前文档/token/配置/实例位姿与原采集一致；若模型已改变，先重新采集快照并重建来源，不改旧token/哈希。只读流程不重建、不移动、不改配合、不保存覆盖原STEP。
+
+以下使用示例文件名；换成实际来源。缺约束报告时先按0.22.A明确公差生成，不从模板取类型。
+
+```powershell
+python -m cadkin plan-evidence outputs/check.json --constraint-analysis outputs/constraints.json --output outputs/constraint-plan-0.23.json
+```
+
+已有索引时加`--evidence-index outputs/当前索引.json`；报告本身绑定索引可省略。MCP等价`cad_plan_evidence_tasks`，参数draft_check_path、constraint_analysis_path、output_path及可选evidence_index_path/max_tasks。规划只落盘，不连接CAD。
+
+先读continuation与summary。collect才执行下面命令；stop不执行，也不改文件名重新采。N个实例的单次增强需2N+3总调用；默认max_tasks=20，预算不足明确延期，不能删除保护步骤。报告中的其它未知/未实现规则仍保留。
+
+```powershell
+python -m cadkin execute-evidence outputs/constraint-plan-0.23.json --output outputs/constraint-run-0.23.json
+```
+
+MCP逐步调用`sw_execute_evidence_task`，每步新output_path，第二步起传previous_execution_path，保持同一plan_path，直到execution_complete。核对guards_passed、records、eligible_capture_ids；失败/partial保留真实envelope。前后保护失败则停止复用，记录状态/错误，不执行后续回填。
+
+当完整且guards_passed=true时：
+
+```powershell
+python -m cadkin reintegrate-evidence outputs/constraint-run-0.23.json --output outputs/constraint-update-0.23.json
+```
+
+MCP等价`cad_reintegrate_evidence(execution_path, output_path)`。成功后读取after_check_source、after_evidence_index_source、after_constraint_analysis_source、constraint_changes。下一轮规划传新的check/report；本例派生路径如下，实际以返回为准：
+
+```powershell
+python -m cadkin plan-evidence outputs/constraint-update-0.23-derived/check.json --constraint-analysis outputs/constraint-update-0.23-derived/constraints.json --output outputs/constraint-next-0.23.json
+```
+
+无需对同一receipt再次索引；新报告会继承本轮index。普通失败/partial但保护通过也会保存尝试并占一轮，下轮不自动重试。合成夹具预期可出现局部revolute候选；真实升降机不要求出现该候选。
+
+### C. 数据与失败标准
+
+| 检查 | 预期 | 失败标准 |
+|---|---|---|
+| 缺口和采集 | 仅缺几何/LockRotation时最多一次include_reference_geometry=true；基础观测不误当增强 | 重复基础扫描称已补足，或加未授权编辑操作 |
+| 无配合/不支持 | STEP完整空配合或已增强仍不支持时stop，保留未知/冲突 | 凭导轨名字、近接触或台钳swivel认定运动类型 |
+| 执行证据 | 前后文档/全范围位姿通过；增强参数、持久面引用、原始根参数一致 | 基础响应冒充增强；几何/状态变化后继续复用 |
+| 部分/失败 | 原始错误保留，不回填；保护通过才记入索引并计轮 | LockRotation读取失败默认为false；失败记录消失 |
+| 回填与重算 | 原公差、max_pairs及历史保留，成功给出3份after来源 | pipeline_error仍对外提供有效after结论 |
+| 续轮 | 最新index自动继承；与通用采集和选面共享4轮 | 换文件名、旧索引或更大预算重试增强 |
+| 比较 | 按实例对保留独立快照、覆盖、候选和缺口变化 | 不同源feature_id直接匹配、缺口消失等于机械确认 |
+| CAD和结论 | 原文档dirty/配置/位姿不变；目标unknown/null，requires_human_review=false | 修改模型、确认整机DOF或声称已完成拆卸路径 |
+
+保存Git SHA、环境版本、实际工具参数与耗时、原始返回和新派生路径；对窗口或文档状态无法核对的项记录未验证，不把它设成人工复核前置条件。已停止的增强读取仍可继续其它有独立依据的分析；保留不能自动收敛的原因。

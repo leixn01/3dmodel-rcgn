@@ -11,3 +11,5 @@
 execution_complete只代表计划任务都有终态，不等于采集成功。guards_passed=true且完成后，eligible_capture_ids才列出可回填的完整capture；部分观测仍留档但本轮不自动回填。后置检查失败时所有capture只作诊断。缺少字段时拒绝校验，不把空值当一致。
 
 不将补采计划之外的操作加入执行器；没有启动/打开/重建/选择/隐藏/移动/保存调用。原计划的deferred_tasks并未执行。哈希和receipt验证一致性，不证明来源真实性或真实CAD执行；显式测试后端结果必须标注为模拟。
+
+增强根配合任务还校验include_reference_geometry及全部读取预算、identity_rechecked标志、面持久引用、根参数与派生几何的一致性，不能用基础返回替代增强结果。MATE_STATE_CHANGED、GEOMETRY_CHANGED或身份验证失败会停止后续任务；普通读取失败保留失败记录并继续后置保护。partial不进入eligible_capture_ids。

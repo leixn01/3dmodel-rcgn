@@ -96,6 +96,7 @@ def main():
     constraint.add_argument('--distance-tolerance-mm', type=float, required=True)
     constraint.add_argument('--angle-tolerance-deg', type=float, required=True)
     constraint.add_argument('--max-pairs', type=int, default=200)
+    constraint.add_argument('--evidence-index', dest='evidence_index_path')
     match = commands.add_parser('match-templates', help='Rank bounded reference subgraph hypotheses against a target graph')
     match.add_argument('target_graph_path')
     match.add_argument('--template-ids', nargs='+')
@@ -133,6 +134,7 @@ def main():
     plan.add_argument('draft_check_path')
     plan.add_argument('--max-tasks', type=int, default=20)
     plan.add_argument('--evidence-index', dest='evidence_index_path')
+    plan.add_argument('--constraint-analysis', dest='constraint_analysis_path')
     plan.add_argument('--output', required=True)
     face_plan = commands.add_parser('plan-face-probes', help='Plan witness-guided finite-face probes from a current check and latest index')
     face_plan.add_argument('draft_check_path')
@@ -186,6 +188,7 @@ def main():
                 elif args.command == 'plan-evidence':
                     arguments = {'draft_check_path':args.draft_check_path, 'output_path':args.output, 'max_tasks':args.max_tasks}
                     if args.evidence_index_path is not None: arguments['evidence_index_path'] = args.evidence_index_path
+                    if args.constraint_analysis_path is not None: arguments['constraint_analysis_path'] = args.constraint_analysis_path
                     result = service.call('cad_plan_evidence_tasks', arguments)
                 elif args.command == 'index-evidence':
                     result = service.call('cad_index_evidence', {'draft_check_path':args.draft_check_path,
@@ -204,7 +207,7 @@ def main():
                     if args.template_ids is not None:arguments['template_ids']=args.template_ids
                     result = service.call('cad_draft_joints',{**arguments,'output_path':args.output})
                 elif args.command == 'analyze-constraints':
-                    arguments = {k: v for k, v in vars(args).items() if k not in ('command', 'output')}
+                    arguments = {k: v for k, v in vars(args).items() if k not in ('command', 'output') and v is not None}
                     result = service.call('cad_analyze_constraints', {**arguments, 'output_path': args.output})
                 elif args.command == 'target-graph':
                     arguments = {'chain_path':args.chain_path,'output_path':args.output}

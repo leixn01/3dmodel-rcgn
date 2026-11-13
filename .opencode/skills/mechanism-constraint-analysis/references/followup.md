@@ -1,0 +1,11 @@
+# 约束分析的补采交接
+
+报告中的缺口由evidence-task-plan消费，调用cad_plan_evidence_tasks时同时传draft_check_path与constraint_analysis_path。只处理可由增强根配合读取补足的字段；需要check时交接joint-draft-check，不能伪造check或另建历史绕过停止。
+
+已有最新evidence index时，cad_analyze_constraints可传evidence_index_path，把历史绑定到报告；要求索引的check属于同一target graph。输出algorithm_version=2，保留evidence_index_source、check_source、rounds_completed/max_rounds。无索引仍输出兼容v1。CLI对应--evidence-index。
+
+v4计划回填成功会产出after_check_source、after_evidence_index_source、after_constraint_analysis_source。后两者由独立索引/分析工具生成；报告绑定新索引，下一次规划自动继承。不再为同一receipt重复索引，也不另生成不带索引的报告来刷新轮数。
+
+constraint_changes按实例对列新旧候选、缺口、冲突、源快照及覆盖。feature_identity_matched=false；不同来源feature_id不视为同一观测，missing_codes_no_longer_observed不表示机械问题已解决。目标类型/DOF继续unknown/null；新报告不把局部规则候选填入草案的最终类型。
+
+失败/partial增强只保留诊断与尝试，不回填几何；保护通过时仍生成新索引和基于有效旧证据的报告，并阻止再次扫描。保护失败时停止复用，保留原错误与记录；不得另建新文件名重试。STEP没有配合或无法支持的几何不会凭模板补约束。

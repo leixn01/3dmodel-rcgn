@@ -65,3 +65,22 @@ def write_constraint_fixture(root, mode='revolute', enriched=True):
         r=offline.call('cad_build_target_graph',{'chain_path':args['output_path'],'output_path':'outputs/target.json'});assert r['status']=='ok',r
     finally:offline.close()
     return app, records, envelope
+
+
+def write_constraint_followup_fixture(root, mode='revolute', enriched=False):
+    app, records, envelope = write_constraint_fixture(root, mode, enriched)
+    service = SolidWorksTools(root)
+    try:
+        for name, args in [
+            ('cad_build_rigid_candidates', {'target_graph_path': 'outputs/target.json', 'output_path': 'outputs/rigid.json'}),
+            ('cad_draft_joints', {'rigid_candidates_path': 'outputs/rigid.json', 'output_path': 'outputs/drafts.json'}),
+            ('cad_check_joint_draft', {'joint_draft_path': 'outputs/drafts.json', 'output_path': 'outputs/check.json'}),
+            ('cad_analyze_constraints', {'target_graph_path': 'outputs/target.json', 'output_path': 'outputs/constraints.json',
+                'distance_tolerance_mm': .1, 'angle_tolerance_deg': .1}),
+            ('cad_plan_evidence_tasks', {'draft_check_path': 'outputs/check.json', 'constraint_analysis_path': 'outputs/constraints.json',
+                'output_path': 'outputs/plan.json'})]:
+            result = service.call(name, args)
+            assert result['status'] != 'error', result
+    finally:
+        service.close()
+    return app, records, envelope

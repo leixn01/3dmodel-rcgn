@@ -8,8 +8,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "size_bytes": 3012,
-      "sha256": "410ab7634a409c242e3ada0fec0dcf2e4f743f43a1c776ac42084adfd487a667"
+      "size_bytes": 3158,
+      "sha256": "a3f4e877a94d64df7c43e8a35724e37f7728e636567012da977f7c18a301c081"
     },
     {
       "path": ".gitignore",
@@ -178,18 +178,23 @@
     },
     {
       "path": ".opencode/skills/evidence-observation-index/SKILL.md",
-      "size_bytes": 1897,
-      "sha256": "86551ae3bc44a9138810ddca157d08140ef2da69b09f6aae70dc0ad283360c52"
+      "size_bytes": 2068,
+      "sha256": "df100efaca66bc4a506bddadafb12dd2042040a36d88628ee646966e1b2990ad"
     },
     {
       "path": ".opencode/skills/evidence-observation-index/references/index.md",
-      "size_bytes": 3004,
-      "sha256": "03a25a1039f30f099e934c2a3053c1f4446ef04bb1eee6347ebad83b9a134d22"
+      "size_bytes": 3384,
+      "sha256": "db084c870b6c6c7c18688b0479a1a764453d850693a0b8ce8b522d0694f594da"
     },
     {
       "path": ".opencode/skills/evidence-reintegration/SKILL.md",
-      "size_bytes": 1587,
-      "sha256": "a6ad9d9e349ad97a819569c603193e1154b00c9d51deac58783c41550a162298"
+      "size_bytes": 1807,
+      "sha256": "286365a5c60e738701675d38532af5abe8afcad8f172353c13fb77ba0adcffda"
+    },
+    {
+      "path": ".opencode/skills/evidence-reintegration/references/constraints.md",
+      "size_bytes": 1663,
+      "sha256": "894e227ee1ac80fe4c2ba20b8df0503f6f3da3dcf3c0af7fa3e5ad09b5f245b9"
     },
     {
       "path": ".opencode/skills/evidence-reintegration/references/reintegration.md",
@@ -198,18 +203,23 @@
     },
     {
       "path": ".opencode/skills/evidence-task-execute/SKILL.md",
-      "size_bytes": 1697,
-      "sha256": "d8a1bfa29cb25df865b0de8cf1a472fce118145cc5bcbc9c38d538e359b6e5af"
+      "size_bytes": 1769,
+      "sha256": "66b6cb23d8c466c0d023e9bcdfa271dc1bb48c76a09102e919cc927d0d5ef1b3"
     },
     {
       "path": ".opencode/skills/evidence-task-execute/references/execution.md",
-      "size_bytes": 2224,
-      "sha256": "891f50ac0837b688a607c4f33640723edde6dce32fe27847f1b3da6ccba192df"
+      "size_bytes": 2613,
+      "sha256": "335885f79ff7682ae710fd6fa6c717df942d77c836190408d5b21037b49d1750"
     },
     {
       "path": ".opencode/skills/evidence-task-plan/SKILL.md",
-      "size_bytes": 1564,
-      "sha256": "7cc8fe23ddfb42e3860de5527634a26a6f41c6afcdb20d074265c0cf3b1fad65"
+      "size_bytes": 1871,
+      "sha256": "84d2399f0603f0561b4ab071b74126dac92d1f33419a176028b6af39c11765c8"
+    },
+    {
+      "path": ".opencode/skills/evidence-task-plan/references/constraints.md",
+      "size_bytes": 1979,
+      "sha256": "7b131054fa7191512408ceb03962d0c8287f3b42bfbeac6e4e530343abd5c2a7"
     },
     {
       "path": ".opencode/skills/evidence-task-plan/references/tasks.md",
@@ -283,8 +293,8 @@
     },
     {
       "path": ".opencode/skills/mechanism-constraint-analysis/SKILL.md",
-      "size_bytes": 2228,
-      "sha256": "2dced3bc6357aa3a7e112a9f1d069f8fc1719913e8853671d96295d980e8ec71"
+      "size_bytes": 2061,
+      "sha256": "632e11a1468ee5faf02f327a5b3494078537e7e5db16c8309797d3e597d2a9e7"
     },
     {
       "path": ".opencode/skills/mechanism-constraint-analysis/references/analysis.md",
@@ -295,6 +305,11 @@
       "path": ".opencode/skills/mechanism-constraint-analysis/references/evidence.md",
       "size_bytes": 1256,
       "sha256": "f7ee9003ae0caf81bb457781f24b4f84f337db191133f3b6cf511c16d105cd0e"
+    },
+    {
+      "path": ".opencode/skills/mechanism-constraint-analysis/references/followup.md",
+      "size_bytes": 1585,
+      "sha256": "b20578c331e0217fa0928fd825f11bb68d78d2c039ee98673da80bf48ac1a063"
     },
     {
       "path": ".opencode/skills/mechanism-joint-draft/SKILL.md",
@@ -428,8 +443,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size_bytes": 17186,
-      "sha256": "7e3f52b9e6b0f41faf5a03f7c29098cbed1710acbbb896cab19353e2f1bcf90c"
+      "size_bytes": 18050,
+      "sha256": "161c26a1e254bd5a4c7187ccfa713705293e8d495fa5c0bd8b13cf24d9068591"
     },
     {
       "path": "LICENSE.md",
@@ -438,8 +453,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 1784,
-      "sha256": "3c9c45b4d830ab802d2f6360770678e7f57a20c75b76cc75745f6cd177d221a2"
+      "size_bytes": 1716,
+      "sha256": "c0057ebdcfbad7aa06f742ec748ac4b7507429817b499ce1c6fa44eec5e174ce"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -449,12 +464,12 @@
     {
       "path": "cadkin/__init__.py",
       "size_bytes": 99,
-      "sha256": "9e04fd78cc663235bc7d3a191042e5c01e5e7c63f04956ce0c8f8536d8a181a6"
+      "sha256": "c087f139692bd275da9721f3d378978884793b79267536498800678df160f43b"
     },
     {
       "path": "cadkin/__main__.py",
-      "size_bytes": 21391,
-      "sha256": "898e6b673a5f2775def9ea17f070ba48c102d9a85911b1110f025d106e3d37f1"
+      "size_bytes": 21701,
+      "sha256": "d64257eeb8ae4174a62edfdd417523430d545bd98d043000bec957259ecca341"
     },
     {
       "path": "cadkin/_vendor/__init__.py",
@@ -572,6 +587,11 @@
       "sha256": "9ed58f0f9a1f5c51814c3ca17891e2bec189dc28b59553a3953e35982c50bb91"
     },
     {
+      "path": "cadkin/constraints/capture.py",
+      "size_bytes": 4295,
+      "sha256": "25cceb8a042287f5984504612b25b3d3d3f5221c024e5d3b4369bf9f453b1071"
+    },
+    {
       "path": "cadkin/distance.py",
       "size_bytes": 1289,
       "sha256": "18887f75b1c66ddd72e025e24d81c0dc2035bcddaeb322275cd34d9b2cdb801d"
@@ -602,6 +622,16 @@
       "sha256": "5e0b1676d7f2dec845b0cb12633cea7b36823e1750699f581a39439bcf6629c7"
     },
     {
+      "path": "cadkin/followup/constraint_changes.py",
+      "size_bytes": 2027,
+      "sha256": "c78affa446a4fde0ee5df3902160c2f2b17d0e123c08e75dd18972d328c8eb16"
+    },
+    {
+      "path": "cadkin/followup/constraint_planning.py",
+      "size_bytes": 5081,
+      "sha256": "7a86ee1f5f8773ab483f5338c567af86c426f59888e831d7b478b0e2cb5740c3"
+    },
+    {
       "path": "cadkin/followup/execution.py",
       "size_bytes": 7701,
       "sha256": "d0a1d465b0bb5e5dcc8cba797ee9a5c2bb632d4cc2e4690a3a8fc91c154fc516"
@@ -623,8 +653,8 @@
     },
     {
       "path": "cadkin/followup/planning.py",
-      "size_bytes": 14677,
-      "sha256": "ad1e62de8fcd6901fae5ef4cc822deecafb31edad524fba8d2d601ef79cef44d"
+      "size_bytes": 15268,
+      "sha256": "810b9bfc03acec45257cfc8d045c5cbc5f5a268209002421e53e7b5bf821d7f9"
     },
     {
       "path": "cadkin/geometry.py",
@@ -778,13 +808,23 @@
     },
     {
       "path": "cadkin/tools/constraint_analysis.py",
-      "size_bytes": 2519,
-      "sha256": "fbf092ff7ac6e02cb458d766741dc75d123c38fe1bf35bd817d8a76b714bd128"
+      "size_bytes": 3502,
+      "sha256": "abc9835cda383fdfbfbb964a3635ae4fac2df27adf120c259e35c935ea0c4557"
+    },
+    {
+      "path": "cadkin/tools/constraint_planning.py",
+      "size_bytes": 3953,
+      "sha256": "80e3dfec5a43469ce8917e378e93d68d169f154baa29609f58d3cd1526bfcc6d"
+    },
+    {
+      "path": "cadkin/tools/constraint_reintegration.py",
+      "size_bytes": 1577,
+      "sha256": "d22c63412f92ef7de7946417766f624e753fdfae677eb834062c76b3fa1dabd5"
     },
     {
       "path": "cadkin/tools/execution.py",
-      "size_bytes": 9620,
-      "sha256": "deb2d2613e9f4ffb16cea734c3541ce2f5e0ff9ec9a0acde01ac3d3b2b9a00f6"
+      "size_bytes": 10245,
+      "sha256": "d1c289170ba062d325dd2b1ee184ce11489dafc63af258c9f39debef960f37ac"
     },
     {
       "path": "cadkin/tools/face_contacts.py",
@@ -818,8 +858,8 @@
     },
     {
       "path": "cadkin/tools/followup.py",
-      "size_bytes": 8279,
-      "sha256": "183cbf609e8d77bf8aaade32fc608c866a2c625f9db1d229848989623930d8c7"
+      "size_bytes": 8866,
+      "sha256": "77224e361ff451287d24cbd9091f8a57181dfe740512a80e4f4cd9d0b127a903"
     },
     {
       "path": "cadkin/tools/grouping.py",
@@ -868,8 +908,8 @@
     },
     {
       "path": "cadkin/tools/reintegration.py",
-      "size_bytes": 13435,
-      "sha256": "013d266b7ecc495335172c9eb5a79319321f91140354f0e57e407f576b32af0c"
+      "size_bytes": 14495,
+      "sha256": "fd65510b52315863d4df6bf30d75b3c3f3ce84e13e312d69c62f390b41ad00d7"
     },
     {
       "path": "cadkin/tools/relations.py",
@@ -888,8 +928,8 @@
     },
     {
       "path": "cadkin/tools/solidworks.py",
-      "size_bytes": 38245,
-      "sha256": "57c3adc39b7f44caf369af6b5a99e865b88d12bea573585696fb81dad0e18779"
+      "size_bytes": 38918,
+      "sha256": "afb08168592eb1231ccad25a718dc1db0c06f16d087fad4802333f52b420318d"
     },
     {
       "path": "cadkin/tools/spatial.py",
@@ -918,23 +958,23 @@
     },
     {
       "path": "docs/DEVELOPMENT_PLAN.md",
-      "size_bytes": 2397,
-      "sha256": "65477d9b0da9b0efbf0750859df144a16946eb8ada4e6befefe6797d3ce54a28"
+      "size_bytes": 2400,
+      "sha256": "58e5f6dcfa0e2ceb2e17286a2e71b0a2178aad72debc20a4bff0db300c06a99c"
     },
     {
       "path": "docs/MCP_ACCEPTANCE.md",
-      "size_bytes": 111785,
-      "sha256": "77b32491296c2e501ae8ed0d9b3780dada6e01d855eb6f7b293aaff1ffd4d1de"
+      "size_bytes": 116786,
+      "sha256": "2099d03c4e327ad9b416d1f9000914e9dd1753e15615a430585c26c8cc024660"
     },
     {
       "path": "docs/MODEL_PROGRESS.md",
-      "size_bytes": 9227,
-      "sha256": "df923363d816a0d3e06f270954e2a1514c23a84333cb65c4e1d1dcacdac3bea8"
+      "size_bytes": 9891,
+      "sha256": "a88cdd9944938ee7d4e2ddbf41d3e4300aff07d66a7e0c567b945615fd914ac6"
     },
     {
       "path": "docs/OPENCODE_START.md",
-      "size_bytes": 21608,
-      "sha256": "a6381bdb7abe7bde6196e2432c67e6d35d59e5e9d59c427f7f3c710ba9d5d610"
+      "size_bytes": 22501,
+      "sha256": "04b79557079b0b1df22562c4c77317fc1f08cfcc70d425cc3f2854bf1fea76e8"
     },
     {
       "path": "docs/ROADMAP.md",
@@ -948,13 +988,13 @@
     },
     {
       "path": "docs/TOOL_CONTRACTS.md",
-      "size_bytes": 104122,
-      "sha256": "35eb48a0beec7e370477938a78e4881eaf86f5b2b775be742702b993acc13140"
+      "size_bytes": 107090,
+      "sha256": "d05465a460166dd44b2e0e97e093a67b44e2ee835f1d760f00495eccc9e21546"
     },
     {
       "path": "docs/VALIDATION.md",
-      "size_bytes": 28791,
-      "sha256": "fd940667eadfc70eba9bcaa1de77234ca34be7d54d9ffb7a6a6fbde52ca04a9f"
+      "size_bytes": 31269,
+      "sha256": "d403db6547974604bfa4acbf3b5d6e375b0a9c19d12b6c5cc4285f7cf083dfcc"
     },
     {
       "path": "examples/three_servo_lift/3X Lift Assembly.STEP",
@@ -979,7 +1019,7 @@
     {
       "path": "pyproject.toml",
       "size_bytes": 724,
-      "sha256": "884dc81bb2d354d8b2eca985e21ac67cab3836928982d5850f6a7942198a91b8"
+      "sha256": "f9263285dcf0f988624a5fe61c51eb010051b4328d3d506e90a96f716a0f88a1"
     },
     {
       "path": "scripts/build_reference_templates.py",
@@ -990,6 +1030,11 @@
       "path": "scripts/verify_constraint_analysis.py",
       "size_bytes": 5056,
       "sha256": "71975b6bc24ce8bf4ee890a3bfcc790d5e5dcc0962c23c94087e5ea429c73942"
+    },
+    {
+      "path": "scripts/verify_constraint_followup.py",
+      "size_bytes": 8332,
+      "sha256": "2f75f909097a54c628fcb1479a7ecd8ca06bb04e9d32be123116c60de0476a74"
     },
     {
       "path": "scripts/verify_evidence_execution.py",
@@ -1048,8 +1093,13 @@
     },
     {
       "path": "tests/constraint_fakes.py",
-      "size_bytes": 3543,
-      "sha256": "91c99a1dc5611c07331c2a88aec828de5a401420e07898fad82c3b3eeac59a36"
+      "size_bytes": 4709,
+      "sha256": "c4a8d8e1da975d9f1c0bbb284a1d786a345a483e509e7b9791df08bf0a9cde6b"
+    },
+    {
+      "path": "tests/constraint_followup_mcp_fixture.py",
+      "size_bytes": 854,
+      "sha256": "c60573dd284ca2cddc9fe01029ff1aacc912d05b19accdd680550af3e83c658e"
     },
     {
       "path": "tests/distance_fakes.py",
@@ -1132,6 +1182,11 @@
       "sha256": "557632bb35c56ff69c032d31e55fb9bd2566f9586b675d2da965c5673cb48887"
     },
     {
+      "path": "tests/test_constraint_followup.py",
+      "size_bytes": 16579,
+      "sha256": "116a740e20317b4e15928e89be7f3fe79d38e2fb9ed4973d193fbbc1d8a7130b"
+    },
+    {
       "path": "tests/test_display.py",
       "size_bytes": 12064,
       "sha256": "5209bfb53d7afdced42c438817f6173e7277756b66a00431c19ce0647914a57a"
@@ -1193,8 +1248,8 @@
     },
     {
       "path": "tests/test_mcp.py",
-      "size_bytes": 59255,
-      "sha256": "fa07264a1e68aaa68febf307d909023c2ac99d4e679ca9be185706fac24f4bd2"
+      "size_bytes": 62741,
+      "sha256": "01e2ae8ef0ab49778ac7074dde00b379a16cb1f5823ac7bc62e3a0c99b3c175a"
     },
     {
       "path": "tests/test_observation_index.py",

@@ -195,4 +195,10 @@ MATCH_SEARCH_LIMIT为有预算结果，NO_SUPPORTED_MATCH表示本范围内没�
 
 从原target graph运行`python -m cadkin analyze-constraints outputs/target.json --distance-tolerance-mm 0.1 --angle-tolerance-deg 0.1 --output outputs/constraints-0.22.json`。MCP等价cad_analyze_constraints。按实例对和源快照读取具体配合、面/轴约束、局部候选、冲突和缺失证据；目标最终类型/DOF仍未知。模板不是此阶段输入。
 
-需要直接配合面和锁定旋转状态时，assembly-mates负责按需传include_reference_geometry=true，保存新原始文件，再重建连接复核/链/目标图；旧基础mates不具备新字段。增强采集尚未被自动规划器调度，不能重置4轮索引或重复基础采集冒充已补足。原文件重放兼容，新的约束报告独立于draft/check。详见[0.22.0验收](MCP_ACCEPTANCE.md#0220目标约束组合分析)。
+需要直接配合面和锁定旋转状态时，assembly-mates负责按需传include_reference_geometry=true，保存新原始文件，再重建连接复核/链/目标图；旧基础mates不具备新字段。0.23起增强采集可通过约束缺口计划调度（见下节），不能重置4轮索引或重复基础采集冒充已补足。原文件重放兼容，新的约束报告独立于draft/check。详见[0.22.0验收](MCP_ACCEPTANCE.md#0220目标约束组合分析)。
+
+## 约束缺口自动补采（0.23.0）
+
+已有同一target的check和约束报告时，用`python -m cadkin plan-evidence outputs/check.json --constraint-analysis outputs/constraints.json --output outputs/constraint-plan.json`规划。已有历史时加`--evidence-index 最新索引路径`；报告已绑定索引则自动继承。只执行continuation.action=collect的计划；stop时保留原因和未知。
+
+接着`execute-evidence`串行执行，保护通过后`reintegrate-evidence`回填。成功报告直接给出新check、index和constraint analysis；下一轮用新check/report，不重复索引同receipt。具体命令、结果字段和实机失败标准见[0.23.0验收](MCP_ACCEPTANCE.md#0230约束缺口自动补采与重算)。模拟验收入口为`python scripts/verify_constraint_followup.py --output outputs/verify-0.23`，预期38项通过。

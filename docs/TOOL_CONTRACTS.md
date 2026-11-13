@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.22.0。以下 46 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.23.0。以下 46 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -723,10 +723,28 @@ sw_mate_inventory增加include_reference_geometry=false，可选true后增加只
 
 新增数据：data.reference_geometry_capture（scope=direct_root_mate_face_references）、entities[].reference_geometry（status、surface_type、entity_params_raw、point_root_m、direction_root_unit、radius_m、persistent_reference、identity_method）、mates[].constraint_options（status、concentric_lock_rotation）。根持久引用scope=active_root_assembly，不能当零件目录body/face索引或跨快照稳定身份。引用类型ReferenceType2是选择类型，仅“面”不意味着圆柱；根EntityParams不重复乘实例变换。
 
-本工具结果独立于draft/check；暂不被自动补采规划器消费。旧文件不改版本/哈希，增强采集后新建连接复核→链→目标图→约束分析；原draft/check及索引历史保留。几何观察只在geometry_context，不生成约束方程。完全没有配合的STEP保留未知，不强制参考匹配。
+本工具结果独立于draft/check；0.23起可由约束缺口规划消费（见下节）。旧文件不改版本/哈希，增强采集后新建连接复核→链→目标图→约束分析；原draft/check及索引历史保留。几何观察只在geometry_context，不生成约束方程。完全没有配合的STEP保留未知，不强制参考匹配。
 
 API依据：
 - [ReferenceType2：swSelectType_e](https://help.solidworks.com/2025/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMateEntity2~ReferenceType2.html)
 - [EntityParams：所属装配坐标与参数定义](https://help.solidworks.com/2026/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IMateEntity2~EntityParams.html)
 - [LockRotation](https://help.solidworks.com/2024/English/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.IConcentricMateFeatureData~LockRotation.html)
 - [局部配合与整机自由度/冗余的区别](https://help.solidworks.com/2016/english/solidworks/motionstudies/c_degrees_freedom_motion.htm)
+
+## 0.23.0：约束缺口自动补采与重算
+
+不新增工具，仍46个。`cad_plan_evidence_tasks`可选`constraint_analysis_path`，生成algorithm_version=4、plan_kind=target_constraint_gaps；无此参数保持旧版行为。报告与check必须绑定同一target graph。`evidence_index_path`仍可显式传；报告自带索引时自动继承，禁止替换成不同索引。
+
+仅将MATE_REFERENCE_GEOMETRY_MISSING_OR_UNSUPPORTED、CONCENTRIC_ROTATION_LOCK_UNKNOWN归并为一次`sw_mate_inventory(include_reference_geometry=true)`，固定预算max_features=2000/max_mates=200/max_entities=16/max_depth=32。N个目标实例需2N+3次调用（一个capture、前后文档及全体位姿保护）；max_tasks仍3–200，默认20，不足整项延期。首次v4同样明确collect/stop；stop时tasks为空。
+
+基础mate与增强mate按能力区分；索引arguments或目标绑定的增强来源证明已尝试后，不自动重试、更名重试或扩预算。与原有补采/选面共享4轮。多mate快照不任取最后一个覆盖，没有兼容connection基础不补采。无配合STEP、已读但不支持的曲面/规则与冲突保持未知。
+
+新增计划字段：constraint_analysis_source、constraint_findings、constraint_coverage、retained_constraint_conflicts、constraint_pair_flags、enhanced_capture_already_attempted；remaining_findings保留原check发现。所有来源继续哈希绑定和重放；省略对使output_truncated=true。
+
+执行器校验增强参数、回读身份标志、持久面引用、根原始参数/派生几何、条数和完整性，基础返回不能冒充增强。配合/几何变化或身份失效会终止后续任务；普通读取错误可继续后置保护。完整且保护通过才进入eligible_capture_ids，partial/failed仅保留诊断。
+
+v4计划的`cad_reintegrate_evidence`在原派生链后调用`cad_index_evidence`与`cad_analyze_constraints`，保留原索引max_contexts及分析distance_tolerance_mm/angle_tolerance_deg/max_pairs。回填报告algorithm_version=3，新增before/after_constraint_analysis_source、after_evidence_index_source和constraint_changes；新分析algorithm_version=2且绑定索引、check、rounds_completed/max_rounds。一般计划仍输出v2回填报告。
+
+`cad_analyze_constraints`新增可选evidence_index_path（CLI `--evidence-index`）；索引check必须对应同一target，默认无索引的输出仍v1。constraint_changes只比较同实例对的独立来源观测及覆盖，不跨源匹配feature_id，不将no_longer_observed解释成问题解决。任何回填步骤失败则recomputation_complete=false、全部after来源null，已生成文件仅诊断。
+
+保护通过的失败/partial增强也计一轮，自动写索引并根据仍有效的旧来源重算分析；再规划传新check/report可自动继承历史并停止重复。约束候选不自动确认刚体或覆盖目标类型，最终unknown/null不变。

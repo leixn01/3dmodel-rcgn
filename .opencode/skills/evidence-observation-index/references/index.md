@@ -20,3 +20,5 @@ EXECUTION_NOT_COMPLETE/EXECUTION_GUARDS_FAILED禁止复用；EVIDENCE_MISMATCH�
 
 
 0.21.0新索引algorithm_version=2：joint_contexts中basis=target_evidence时template_id=null，目标类型unknown、DOF=null；basis=optional_reference_analogy保留reference_joint_kind。默认无模板也有目标关系上下文。完整face_probes可条件回填，details.available_for_existing_reintegration=true且reintegration_requires_compatible_face_review=true，仍只消费当前receipt、沿用兼容复核依据。旧v1按旧规则重放；不得修改旧索引字段绕过校验。
+
+0.23约束补采仍使用同一索引格式。observations.arguments.include_reference_geometry区分基础/增强mate能力；基础尝试不阻止首次增强，增强尝试无论完整/partial/failed都禁止自动重试。约束报告可绑定最新索引，后续约束规划自动继承；4轮是通用采集、选面和约束增强共享的总预算，不是各有4轮。

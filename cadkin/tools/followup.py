@@ -56,7 +56,11 @@ def source_facts(root, target):
 
 
 @replay_reads
-def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinations=True, evidence_index_path=None):
+def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinations=True, evidence_index_path=None, constraint_analysis_path=None):
+    if constraint_analysis_path is not None:
+        from cadkin.tools.constraint_planning import build_constraint_plan
+        return build_constraint_plan(root, draft_check_path, constraint_analysis_path, output_path,
+                                     max_tasks, evidence_index_path, check_destinations)
     from jsonschema import Draft202012Validator
     from cadkin.tools.solidworks import CATALOG
     output = json_path(root, output_path, output=check_destinations)
@@ -109,6 +113,9 @@ def replay_plan(root, plan_path):
     path = json_path(root, plan_path)
     original, digest = read_json(path)
     version = original.get('algorithm_version') if isinstance(original, dict) else None
+    if version == 4:
+        from cadkin.tools.constraint_planning import replay_constraint_plan
+        return replay_constraint_plan(root, path, original, digest)
     if version == 3:
         from cadkin.tools.face_planning import replay_face_plan
         return replay_face_plan(root, path, original, digest)
@@ -121,9 +128,9 @@ def replay_plan(root, plan_path):
     return data, check, target, {'path': str(path), 'sha256': digest}
 
 
-def evidence_task_plan(root, draft_check_path, output_path, max_tasks=20, evidence_index_path=None):
+def evidence_task_plan(root, draft_check_path, output_path, max_tasks=20, evidence_index_path=None, constraint_analysis_path=None):
     output = json_path(root, output_path, output=True)
-    data, check, _ = build_plan(root, draft_check_path, output_path, max_tasks, evidence_index_path=evidence_index_path)
+    data, check, _ = build_plan(root, draft_check_path, output_path, max_tasks, evidence_index_path=evidence_index_path, constraint_analysis_path=constraint_analysis_path)
     write_result(output, data)
     errors = []
     if data['output_truncated']:

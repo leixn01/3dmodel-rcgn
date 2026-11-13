@@ -12,6 +12,16 @@ from cadkin.followup.execution import assess, skip_reason, execution_state
 
 def assess_saved(root, task, envelope, document):
     state, codes, fatal = assess(task, envelope, document)
+    if task['tool'] == 'sw_mate_inventory' and task['arguments'].get('include_reference_geometry') is True:
+        if set(codes) & {'MATE_STATE_CHANGED', 'GEOMETRY_CHANGED', 'FACE_REFERENCE_UNRESOLVED',
+                         'COMPONENT_CONFIGURATION_MISMATCH', 'EVIDENCE_MISMATCH'}:
+            fatal = True
+        if state in ('passed', 'partial'):
+            from cadkin.constraints.capture import validate_enhanced_capture
+            try:
+                validate_enhanced_capture(envelope['data'], task['arguments'])
+            except ToolFailure as exc:
+                return 'failed', codes + [exc.code], True
     if task['tool'] == 'sw_probe_face_pair':
         if set(codes) & {'EVIDENCE_MISMATCH', 'GEOMETRY_CHANGED', 'FACE_GEOMETRY_MISMATCH', 'FACE_REFERENCE_UNRESOLVED'}:
             fatal = True

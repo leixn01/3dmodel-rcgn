@@ -104,6 +104,15 @@ def plan_tasks(target, check, facts, capture_directory, max_tasks=20):
             unresolved.append({'finding_id': issue['id'], 'reason': code,
                 'meaning': 'Retain this finding; collection success alone does not resolve it. Recompute/reconcile scopes, search or constraints as applicable.'})
 
+    return assemble_plan(target, check, facts, capture_directory, max_tasks, requests, reused, unresolved, blocked)
+
+
+def assemble_plan(target, check, facts, capture_directory, max_tasks, requests, reused, unresolved, blocked):
+    """Shared task budget, dependencies and guards for independently generated requests."""
+    if type(max_tasks) is not int or not 3 <= max_tasks <= 200:
+        raise ToolFailure('INVALID_ARGUMENTS', 'max_tasks must be 3–200, including before/after guards.')
+    nodes = {n['id']: n for n in target['nodes']}
+    token = target['document']['document_token']
     ordered = sorted(requests.values(), key=lambda r: (r['priority'], r['tool'], r['id']))
     selected, deferred, guarded = [], [], set()
     for request_row in ordered:
