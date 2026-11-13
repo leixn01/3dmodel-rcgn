@@ -1,9 +1,11 @@
 # SolidWorks 工具接口
 
-版本：0.24.0。以下 47 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.25.0。以下 49 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `cad_solve_chain_constraints` | constraint_analysis_path、reference_occurrence_path、characteristic_length_mm、output_path；可选relative_rank_tolerance/max_constraints_per_pair | 单链同快照约束组装、闭环限制和瞬时方向；完整文件+紧凑摘要，无CAD调用 |
+| `sw_execute_evidence_batch` | plan_path、output_path；可选previous_execution_path/max_steps/time_budget_seconds | 有预算串行执行已有计划前缀，保留逐步receipt/保护/停止，返回摘要与计时 |
 | `cad_solve_local_constraints` | constraint_analysis_path、characteristic_length_mm、output_path；可选relative_rank_tolerance/max_pairs/max_constraints_per_snapshot | 离线求解逐实例对/快照的瞬时约束矩阵，保留缺口/数值敏感性，不连接CAD或确认目标DOF |
 | `cad_plan_face_probes` | draft_check_path、evidence_index_path、output_path、max_component_gap_mm、surface_tolerance_mm；可选分层预算/迭代参数 | 离线安排缺目录补采或最近点引导的有限面探测，保留竞争面和历史 |
 | `sw_execute_evidence_task` | plan_path、output_path；可选previous_execution_path | 每次至多一个已有只读CAD调用，保存原始返回和receipt，自动上下文校验 |
@@ -763,3 +765,29 @@ motion_modes的scaled_twist顺序[vx/L,vy/L,vz/L,wx,wy,wz]，附根坐标原点�
 工具envelope的ok表示完成计算，仍可能含无可建模/冲突快照；语义结论先看快照status。全局来源错误、LOCAL_CONSTRAINT_LIMIT、NUMERICAL_RANK_SENSITIVE产生partial及errors。依赖缺失、SVD失败、原源/数值/离散字段不一致、非法参数和已有输出明确拒绝。仅计算浮点结果允许rel1e-9/abs1e-10舍入差异，所有来源和方程输入保持精确校验。
 
 CLI：`solve-local-constraints <constraint_analysis> --characteristic-length-mm <mm> --output <new.json>`，其余参数为对应连字符选项。求解不调用CAD、不写草案、不重置4轮；后续补采继续使用原constraint analysis及同target的check，而不是本报告。
+
+## 0.25.0：单链约束与批量执行
+
+工具总数49，功能skill41；新增两个独立接口，原工具仍兼容。
+
+### cad_solve_chain_constraints
+
+必填constraint_analysis_path、reference_occurrence_path、characteristic_length_mm、output_path。特征长度0.001–1000000mm；relative_rank_tolerance默认1e-8、1e-10–1e-3；max_constraints_per_pair默认200、1–200。原链范围2–20叶实例，每份快照硬上限6000行方程；超出分别CHAIN_SCOPE_LIMIT/CHAIN_EQUATION_LIMIT，不静默缩小链。
+
+重放原analysis/target/raw来源，不接受手工矩阵或local solution替代。输出文件chain_constraint_solution_schema_version=1、algorithm_version=1，含parameters、input_files、constraint_analysis_source/target_source、analysis_parameters、occurrence_paths、独立snapshots与已有index/check/rounds/max_rounds。
+
+各快照统一速度原点，变量每非参考实例6个；rows保存配合来源，edges保存实例对/方程/闭合边标志，motion_modes保存每个模式下全部实例速度。constraint_graph_components、graph_cycle_count与spanning_forest_diagnostics报告连通和闭环新增秩；无物理接地、运动或非线性可行性断言。详见[CHAIN_CONSTRAINTS.md](CHAIN_CONSTRAINTS.md)。
+
+仅modeled_chain_snapshot给modeled_chain_instantaneous_dof；partial/no_supported/conflicting/numerically_sensitive保持null，后两者模式空；known_constraint_nullity只为已知子集诊断。目标DOF仍null、assembly_dof_solved/finite_motion_verified=false。返回默认紧凑summary和solution_source，完整矩阵/模式在文件；缺口/冲突按code计数，需具体ID时再展开。数值舍入重放沿用0.24容差，来源/方程/离散字段精确核对。
+
+### sw_execute_evidence_batch
+
+必填plan_path、output_path；可选previous_execution_path、max_steps默认12（1–20）、time_budget_seconds默认30（1–60）。不接受任意工具列表，只串行调用原execute_task，保留每步所有保护、来源重放、原envelope和receipt。整个批次占用服务进程CAD调度锁；其它CAD请求BUSY不排队，内部同线程可串行调用。
+
+output_path是独占新建的batch report，旁边新建`<stem>-steps/step-NNN.json`保存原格式receipt。原始capture路径仍由计划规定。失败/崩溃留下占用路径，不删除后重试。时间预算仅在步间检查，不能取消COM。取消MCP请求标worker不确定，未入队的后续调用拒绝；原180秒超时保持。
+
+返回batch_report_source、execution_source、execution_complete、guards_passed、eligible_capture_ids、summary、stop_reason、continuation、observation_error_codes与performance摘要。continue时下批传同plan和execution_source.path作previous_execution_path；complete还须保护通过才能回填；blocked停止。execution_complete包括被停止后skipped的终态，不能独立证明成功。batch report不可作为执行receipt输入。
+
+计时report为evidence_batch_schema_version=1，保存参数、源、每步receipt、逐工具时间与完整错误；不是机械证据，也没有通过计时跳过重放。工具时间含验证/STA/适配器，非纯COMAPI耗时；client_tool_round_trips=1指本批外部调用，数据不含agent思考或网络时间。错误摘要去重，但完整错误/原始返回保留。
+
+CLI：`execute-evidence-batch <plan> --output <new-report> [--previous-execution <receipt>] [--max-steps N] [--time-budget-seconds S]`；链级为`solve-chain-constraints <analysis> --reference-occurrence-path <path> --characteristic-length-mm L --output <new.json>`。效率边界与实机判读见[MCP_EFFICIENCY.md](MCP_EFFICIENCY.md)。

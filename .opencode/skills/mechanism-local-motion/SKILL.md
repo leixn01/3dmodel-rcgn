@@ -14,3 +14,5 @@ description: 从目标配合约束报告计算两个组件之间当前姿态的�
 5. 缺几何/LockRotation才将**原constraint analysis**及同target的check交接evidence-task-plan；沿用最新索引与共享4轮历史。求解结果不能替代规划器的约束报告。无配合/不支持/已停止时保留风险，继续有独立依据的其它对，不设置人工复核。
 
 不把模板、名称、近接触、CAD固定标志当约束，不改配合、移动零件或保存原模型。该结果不证明整机自由度、有限行程、避碰或拆卸路径。
+
+需要联合多个组件或检查闭环额外限制时，交接原analysis给mechanism-chain-motion；不能直接相加局部维数。

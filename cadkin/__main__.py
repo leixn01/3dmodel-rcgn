@@ -90,6 +90,19 @@ def main():
     target.add_argument('chain_path')
     target.add_argument('--relations', dest='relation_paths', nargs='+')
     target.add_argument('--output', required=True)
+    batch = commands.add_parser('execute-evidence-batch', help='Execute a bounded serial plan prefix and return a compact handoff')
+    batch.add_argument('plan_path')
+    batch.add_argument('--output', required=True)
+    batch.add_argument('--previous-execution', dest='previous_execution_path')
+    batch.add_argument('--max-steps', type=int, default=12)
+    batch.add_argument('--time-budget-seconds', type=float, default=30)
+    chain = commands.add_parser('solve-chain-constraints', help='Solve source-bound multi-component instantaneous constraints offline')
+    chain.add_argument('constraint_analysis_path')
+    chain.add_argument('--output', required=True)
+    chain.add_argument('--reference-occurrence-path', required=True)
+    chain.add_argument('--characteristic-length-mm', type=float, required=True)
+    chain.add_argument('--relative-rank-tolerance', type=float, default=1e-8)
+    chain.add_argument('--max-constraints-per-pair', type=int, default=200)
     local = commands.add_parser('solve-local-constraints', help='Solve a source-bound local instantaneous constraint model offline')
     local.add_argument('constraint_analysis_path')
     local.add_argument('--output', required=True)
@@ -173,7 +186,7 @@ def main():
     index.add_argument('--output', required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence', 'plan-face-probes', 'analyze-constraints', 'solve-local-constraints'}:
+        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence', 'plan-face-probes', 'analyze-constraints', 'solve-local-constraints', 'solve-chain-constraints', 'execute-evidence-batch'}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
@@ -213,6 +226,10 @@ def main():
                         'max_candidates','max_states','beam_width','angle_tolerance_deg','axis_distance_tolerance_mm','axis_angle_tolerance_deg','max_target_pairs')}
                     if args.template_ids is not None:arguments['template_ids']=args.template_ids
                     result = service.call('cad_draft_joints',{**arguments,'output_path':args.output})
+                elif args.command in ('solve-chain-constraints','execute-evidence-batch'):
+                    arguments = {k:v for k,v in vars(args).items() if k not in ('command','output') and v is not None}
+                    tool = 'cad_solve_chain_constraints' if args.command=='solve-chain-constraints' else 'sw_execute_evidence_batch'
+                    result = service.call(tool, {**arguments,'output_path':args.output})
                 elif args.command == 'solve-local-constraints':
                     arguments = {k: v for k, v in vars(args).items() if k not in ('command', 'output')}
                     result = service.call('cad_solve_local_constraints', {**arguments, 'output_path':args.output})

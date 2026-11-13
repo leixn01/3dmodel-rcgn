@@ -1145,3 +1145,75 @@ MCP等价调用：
 | 副作用 | 所有输入字节不变，结果独占新建，0次CAD调用 | 修改模型/草案/原来源，自动移动或保存覆盖 |
 
 对真实升降机不要求出现预定DOF：STEP无配合时“未知”是有效结果。若同时开启SolidWorks，窗口、dirty、位姿、选择应完全不变；本工具不需窗口核对作为继续前置。保存Git SHA、Python/NumPy版本、尺度依据、完整调用/envelope和输出路径；需要进一步证据时由对应采集功能处理，并沿用停止规则。
+
+## 0.25.0：单链约束与批量执行
+
+### A. 更新和可复现验证
+
+在已有Conda环境、仓库根目录运行，之后重启OpenCode（49工具、41功能skill）：
+
+```powershell
+git pull --ff-only
+python -m pip install -e ".[solidworks,templates]"
+python scripts/verify_chain_constraints.py --output outputs/verify-chain-0.25
+python scripts/verify_mcp_efficiency.py --output outputs/verify-speed-0.25
+```
+
+两个脚本分别预期43项、10项检查，passed=true。前者使用合成配合的原始绑定来源检查开链/闭环/重复约束、耦合模式、不连通、无配合和篡改拒绝；后者通过官方SDK和真实stdio比较单步/批次，保存完整响应、原始CAD返回及计时。均不连接本机SolidWorks，不代表升降机已求解。每次用新的输出目录。
+
+冷启动协议回归也可单独运行，保持原120秒测试上限：
+
+```powershell
+python -m unittest tests.test_mcp.McpTests.test_local_constraint_solution_over_production_stdio tests.test_mcp.McpTests.test_batched_capture_and_chain_solution_over_stdio -v
+```
+
+前一项检查0.24 Windows首次数值调用卡住的路径；服务端现在在stdio后台读管道之前初始化NumPy/数值库，不在第一个工具线程才首次导入。两项都应完成，错误后仍可调用，不靠提高该测试超时通过。
+
+### B. 本机有界批次
+
+前置：原plan与全部来源有效，当前SolidWorks文档/token/配置/实例位姿与计划一致。continuation.action=stop时不执行、不重采；工具不自动启动或打开其它文档。首次调用：
+
+```powershell
+python -m cadkin execute-evidence-batch outputs/plan.json --output outputs/batch-01.json
+```
+
+MCP为sw_execute_evidence_batch，参数plan_path、output_path；可选previous_execution_path、max_steps（默认12，上限20）、time_budget_seconds（默认30，上限60）。时间只在步骤间判断；原COM单步180秒超时不变。OpenCode客户端设300000ms供默认配置使用，不代表COM可取消或自动重试。
+
+如果continuation.action=continue，下一批用新output，并传**上一返回execution_source.path**：
+
+```powershell
+python -m cadkin execute-evidence-batch outputs/plan.json --previous-execution outputs/batch-01-steps/step-012.json --output outputs/batch-02.json
+```
+
+上述step-012仅举例，实际路径以返回为准；时间预算可能提前停止。保持同一plan，不从首步重新执行。单步诊断仍可使用原sw_execute_evidence_task，不与批次并行。完整且guards_passed=true时将最后execution_source.path交给cad_reintegrate_evidence；batch_report_source指向诊断文件，不能作execution_path。
+
+performance保存批次总时间、CAD工具调用时间之和、编排时间、工具调用/步数和逐工具明细；agent思考、网络和UI等待不在其中。仅需要定位具体慢工具时展开batch_report_source.path。失败和partial仍保留原始envelope及receipt，不会因批量执行提升为有效证据；TIMEOUT/OUTCOME_UNKNOWN和文档变化停止。
+
+### C. 本机单链求解
+
+前置：同一原链的约束报告、原始来源全部可回读；0.23/0.25回填后使用after_constraint_analysis_source。2–20个实例、每快照上限6000方程；参考路径必须属于链。无需连接CAD。
+
+```powershell
+python -m cadkin solve-chain-constraints outputs/constraints.json --reference-occurrence-path "实际实例路径" --characteristic-length-mm 100 --output outputs/chain-motion-0.25.json
+```
+
+MCP为cad_solve_chain_constraints，必填constraint_analysis_path、reference_occurrence_path、characteristic_length_mm、output_path；可选relative_rank_tolerance默认1e-8、max_constraints_per_pair默认200。100毫米仅示例尺度；记录选择依据。参考仅去掉共同刚体运动，不凭名称或IsFixed认定接地。
+
+先读summary、coverage和逐源status/缺口计数；需要具体模式/证据时读取solution_source.path。每个模式同时包含各组件的耦合速度。缺失/不连通/冲突/敏感均保留未知，不强制产生某种自由度或关节类型。
+
+### D. 失败标准与证据
+
+| 检查 | 预期 | 失败标准 |
+|---|---|---|
+| 批次语义 | 与逐步相同的依赖、8项保护及1项采集（示例） | 为提速删保护、重试失败或并行COM |
+| 续跑 | 沿同plan和最新execution_source；只处理剩余前缀 | 把batch report作receipt、重复采集或增加轮数 |
+| 不确定状态 | blocked/TIMEOUT/OUTCOME_UNKNOWN不继续；已运行COM可能仍完成 | 将超时当取消后重试、宣称状态已恢复 |
+| 紧凑返回 | 摘要保留状态/缺口/错误码，完整raw/receipt/结果存盘 | 为缩短输出丢失证据或隐藏partial |
+| 链级组装 | 同快照、共同原点与显式相对参考；内部跨对联系联合处理 | 相加局部DOF、跨快照组装、删掉链外/未知联系 |
+| 闭环 | graph_cycle_count与additional_loop_rank仅线性诊断 | 自动删“重复”配合或宣称非线性闭合/有限行程可行 |
+| 空/断开模型 | modeled_chain_instantaneous_dof=null，诊断范围明确 | 无配合就确认12DOF或孤立节点当接地 |
+| 数值启动 | 冷stdio首次求解可完成，未提升原测试期限 | 第一次数值工具长时间无响应 |
+| 性能结论 | 保存本机时间，区分工具/编排/agent等待 | 用合成0.2秒或9→1往返当SolidWorks实机加速倍数 |
+| 原始模型/历史 | 0次额外编辑；源哈希、index/check与4轮不变 | 写回草案最终类型、移动组件或覆盖模型 |
+
+保存Git SHA、Python/NumPy版本、全部工具参数/响应、原始envelope、逐步receipt、批次计时和链结果。真实升降机没有配合时未知是有效结论；不需要人工复核作为继续前置。

@@ -186,6 +186,18 @@ TOOLS = [
           'max_partitions': {'type':'integer','minimum':1,'maximum':12,'default':8},
           'include_contact_hypotheses': {'type':'boolean','default':True}},
          ['target_graph_path','output_path'], False),
+    spec('cad_solve_chain_constraints', 'Assemble source-bound supported root mate equations across one explicit 2–20-component chain. Separate source snapshots, explicit relative reference, rank/nullspace and loop diagnostics; target DOF remains unknown. Saves full detail and returns a compact summary. No CAD calls.',
+         {'constraint_analysis_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'reference_occurrence_path': {'type':'string','minLength':1}, 'characteristic_length_mm': {'type':'number','minimum':0.001,'maximum':1000000},
+          'relative_rank_tolerance': {'type':'number','minimum':1e-10,'maximum':1e-3,'default':1e-8},
+          'max_constraints_per_pair': {'type':'integer','minimum':1,'maximum':200,'default':200}},
+         ['constraint_analysis_path','output_path','reference_occurrence_path','characteristic_length_mm'], False),
+    spec('sw_execute_evidence_batch', 'Execute a bounded serial prefix of an existing read-only evidence plan in one client round trip. Reuses every single-step guard, receipt and stop rule; no arbitrary commands, parallel COM, retries or new capture rounds. Saves detailed timing/receipts and returns compact execution_source for continuation/reintegration. Soft time budget applies between steps only.',
+         {'plan_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'previous_execution_path': {'type':'string','minLength':1},
+          'max_steps': {'type':'integer','minimum':1,'maximum':20,'default':12},
+          'time_budget_seconds': {'type':'number','minimum':1,'maximum':60,'default':30}},
+         ['plan_path','output_path'], False),
     spec('cad_solve_local_constraints', 'Replay a constraint analysis and solve separate two-occurrence instantaneous velocity models from explicit root mate facts. Reports scaled Jacobian rows, rank sensitivity, nullspace motion directions and missing evidence; never infers target joint type or assembly DOF. No templates, CAD calls, edits or capture-round reset.',
          {'constraint_analysis_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'characteristic_length_mm': {'type':'number','minimum':0.001,'maximum':1000000},
@@ -259,8 +271,20 @@ class SolidWorksTools:
         self.worker = StaWorker(factory, timeout=timeout)
         from cadkin.tools.plan_cache import PlanReplayCache
         self.plan_cache = PlanReplayCache()
+        import threading
+        self.operation_gate = threading.RLock()
 
     def call(self, name, arguments=None):
+        # One guarded operation/batch owns CAD dispatch; nested serial steps share this thread.
+        locked = isinstance(name,str) and name.startswith('sw_')
+        if locked and not self.operation_gate.acquire(blocking=False):
+            return failure(ToolFailure('BUSY','Another SOLIDWORKS operation/batch is running; no call was queued.'))
+        try:
+            return self._call(name, arguments)
+        finally:
+            if locked: self.operation_gate.release()
+
+    def _call(self, name, arguments=None):
         try:
             if name not in CATALOG:
                 raise ToolFailure("UNKNOWN_TOOL", f"Unknown tool: {name}")
@@ -278,6 +302,12 @@ class SolidWorksTools:
                 from cadkin.tools.matching import build_target_graph, match_templates
                 handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
                 return handler(self.root, **arguments)
+            if name == 'cad_solve_chain_constraints':
+                from cadkin.tools.chain_motion import solve_chain_constraints
+                return solve_chain_constraints(self.root, **arguments)
+            if name == 'sw_execute_evidence_batch':
+                from cadkin.tools.execution_batch import execute_batch
+                return execute_batch(self.root, self.call, plan_cache=self.plan_cache, **arguments)
             if name == 'cad_solve_local_constraints':
                 from cadkin.tools.local_motion import solve_local_constraints
                 return solve_local_constraints(self.root, **arguments)

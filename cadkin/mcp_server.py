@@ -10,6 +10,11 @@ from cadkin.tools.solidworks import SolidWorksTools, TOOLS
 
 
 def create_server(service):
+    # Load the native BLAS runtime before stdio starts its background pipe reader.
+    # A first NumPy import inside a tool can deadlock on Windows piped stdin
+    # (numpy/numpy#24290, modelcontextprotocol/python-sdk#2832).
+    import numpy as np
+    np.linalg.svd(np.zeros((1, 1)), full_matrices=False)
     from mcp.server import Server
     from mcp.types import Tool, TextContent, CallToolResult
     server = Server("3dmodel-rcgn-solidworks", version=__version__)

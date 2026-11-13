@@ -9,7 +9,7 @@
         "cadkin.mcp_server"
       ],
       "enabled": true,
-      "timeout": 190000
+      "timeout": 300000
     }
   }
 }

@@ -8,8 +8,8 @@ from tests.constraint_fakes import write_constraint_followup_fixture
 from tests.execution_fakes import live_service
 
 
-async def main(root):
-    app, _, _ = write_constraint_followup_fixture(root)
+async def main(root,mode='revolute'):
+    app, _, _ = write_constraint_followup_fixture(root,mode)
     service = live_service(root, app); server = create_server(service)
     try:
         async with stdio_server() as (read, write):
@@ -19,5 +19,5 @@ async def main(root):
 
 
 if __name__ == '__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,required=True)
-    asyncio.run(main(parser.parse_args().root))
+    parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,required=True);parser.add_argument('--mode',choices=['revolute','chain_closed'],default='revolute')
+    args=parser.parse_args();asyncio.run(main(args.root,args.mode))

@@ -20,6 +20,8 @@ jobs:
           channel-priority: strict
           auto-activate-base: false
       - run: conda run --no-capture-output -n cadkin-ci python -m pip install -e ".[solidworks,templates]"
+      - name: Verify cold stdio numeric runtime and batched chain workflow
+        run: conda run --no-capture-output -n cadkin-ci python -m unittest tests.test_mcp.McpTests.test_local_constraint_solution_over_production_stdio tests.test_mcp.McpTests.test_batched_capture_and_chain_solution_over_stdio -v
       - run: conda run --no-capture-output -n cadkin-ci python -m unittest discover -s tests -v
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_reference_templates.py --output outputs/ci-reference-0.13
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_template_matching.py --output outputs/ci-matching-0.14
@@ -33,6 +35,8 @@ jobs:
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_constraint_analysis.py --output outputs/ci-constraint-analysis-0.22
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_constraint_followup.py --output outputs/ci-constraint-followup-0.23
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_local_constraints.py --output outputs/ci-local-constraints-0.24
+      - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_chain_constraints.py --output outputs/ci-chain-constraints-0.25
+      - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_mcp_efficiency.py --output outputs/ci-mcp-efficiency-0.25
       - name: Verify bundled test model
         shell: pwsh
         run: |

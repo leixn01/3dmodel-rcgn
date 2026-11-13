@@ -16,9 +16,9 @@ def attach_constraint_mates(app, mode='revolute'):
     doc = app.ActiveDoc
     a, b = doc.root.children[:2]
     refs, records = {}, []
-    def add(kind, surface='cylinder', origin=(0.,0.,0.), direction=(0.,0.,1.), rotation=False):
+    def add(kind, surface='cylinder', origin=(0.,0.,0.), direction=(0.,0.,1.), rotation=False, pair=None):
         entities = []
-        for component in (a,b):
+        for component in pair or (a,b):
             entity = MateEntity(component)
             face = SimpleNamespace(GetSurface=lambda: SimpleNamespace(IsPlane=lambda:surface=='plane', IsCylinder=lambda:surface=='cylinder'))
             key = bytes((len(refs)+1,)); refs[key] = face
@@ -29,7 +29,17 @@ def attach_constraint_mates(app, mode='revolute'):
         feature = Feature(100+len(records), 'TargetConstraint'+str(len(records)), 'MateConcentric' if kind==1 else 'MateCoincident', mate)
         feature.GetDefinition = lambda: SimpleNamespace(LockRotation=rotation)
         records.append(feature)
-    if mode == 'no_mates': pass
+    if mode.startswith('chain_'):
+        c=doc.root.children[2]
+        add(1, rotation=mode!='chain_hinges')
+        add(1, origin=(.1,0,0) if mode=='chain_hinges' else (0,0,0), direction=(1.,0.,0.) if mode=='chain_closed' else (0.,0.,1.),rotation=mode!='chain_hinges',pair=(b,c))
+        if mode=='chain_hinges':
+            add(0,'plane');add(0,'plane',origin=(.1,0,0),pair=(b,c))
+        if mode=='chain_closed':add(1,direction=(0.,1.,0.),rotation=True,pair=(a,c))
+        if mode=='chain_redundant':add(1,rotation=True,pair=(a,c))
+        if mode=='chain_fixed':
+            add(16);add(16,pair=(b,c))
+    elif mode == 'no_mates': pass
     elif mode == 'lock': add(16)
     elif mode == 'plane': add(0, 'plane')
     else:

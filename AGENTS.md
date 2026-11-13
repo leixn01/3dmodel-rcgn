@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.24.0（47 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.25.0（49 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -37,6 +37,7 @@
 | 多零件刚体候选分组 | `mechanism-rigid-groups` |
 | 目标局部配合约束组合分析 | `mechanism-constraint-analysis` |
 | 两实例局部瞬时约束秩与运动方向 | `mechanism-local-motion` |
+| 单链多组件瞬时约束与闭环限制 | `mechanism-chain-motion` |
 | 目标关系草案与可选模板类比 | `mechanism-joint-draft` |
 | 草案结构/证据一致性检查 | `joint-draft-check` |
 | 最近点引导的面候选与有限面探测规划 | `face-probe-plan` |
@@ -114,3 +115,7 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 
 - 0.24.0 cad_solve_local_constraints独立重放原约束报告，仅显式有效lock/同心轴/重合平面建立缩放速度方程；characteristic_length_mm必填。每对每源独立求解，不把不同快照或近接触拼约束。原报告/index/check/轮数保留；补采仍用原报告，求解不重置历史。
 - modeled_instantaneous_dof仅是完整稳定的已建模局部瞬时维数；最终目标类型unknown/DOF=null。缺失/截断只保留已知子集，空模型不当6DOF；冲突/敏感不输出运动模式。相关方程不是可删除配合，基向量不是物理关节；原点与数值尺度必须说明。不认定有限运动、整机自由度或拆卸路径。
+
+- 0.25.0 cad_solve_chain_constraints从原analysis组装2–20个目标实例、同一源快照的约束；显式参考只是去掉整体刚体运动，不证明接地。链内跨对联系由共同未知量处理，链外/未绑定仍是缺口。不相加局部DOF，不跨快照组装；不连通/截断/冲突/敏感保留未知。硬上限每快照6000方程。
+- 常规补采优先sw_execute_evidence_batch，服务端串行复用单步执行/保护/停止/receipt，每批默认12步与30秒软预算，最多20步/60秒。不会取消已在执行的COM；批次独占本进程CAD调用，其他CAD请求BUSY，不并行排队。客户端timeout=300000ms；不是延长COM超时或重复失败调用。
+- 批次摘要的execution_source才是续跑/回填的receipt，batch_report_source仅计时诊断。未完整/保护失败不复用。计时区分CAD工具调用与编排开销，不包含agent思考/网络/UI；不能将合成时间当实机加速比。优先摘要和文件路径，需要具体证据才展开完整JSON，不重复读取会话/tool list/完整清单或已增强失败历史。
