@@ -1,6 +1,6 @@
-# 首次单链联调（0.26.0）
+# 首次单链联调（0.27.0）
 
-本版把首次“采集→建立来源→补充配合几何→单链瞬时求解→计时报告”串为一个可执行入口。CLI复用同一套MCP工具服务和STA；新MCP工具cad_create_chain_baseline只做离线初始化。工具、启动/选范围/流程说明仍分别组织。当前50工具、43个功能skill。
+本版把首次“采集→建立来源→补充配合几何→单链瞬时求解→计时报告”串为一个可执行入口。CLI复用同一套MCP工具服务和STA；新MCP工具cad_create_chain_baseline只做离线初始化。工具、启动/选范围/流程说明仍分别组织。当前51工具、44个功能skill。
 
 ## 在本机使用
 
@@ -25,19 +25,22 @@
 ```
 
 ```powershell
-python -m cadkin chain-session outputs/chain-session-config.json --output outputs/chain-session-0.26.json
+python -m cadkin chain-session outputs/chain-session-config.json --output outputs/chain-session-0.27.json
 ```
 
 参考实例只是相对坐标选择，不证明物理接地。尺度100mm、公差0.1mm/0.1度是示例，不是已校准的升降机参数。可选inventory_path复用已有完整空间清单；否则自动分页，跳过较慢的全量包围盒。目标实例的前后姿态保护仍保留。
 
+首次只需原生配合约束时，配置加`"capture_profile": "root_mates"`。该模式一次读取增强根配合，不做圆柱扫描；全部前后保护仍保留，总2N+3次采集/保护调用，通常1轮。无配合或partial保持未知，不自动切换扫描模式。字段省略时仍用geometry_and_mates；已有历史不得换模式重新初始化。详见[原生配合独立分析](ROOT_MATE_RELATIONS.md)。
+
 ## 执行和输出
 
-初始空证据链使用原规划器，任务预算为3N+3（N个实例的前后保护、两次文档保护、根配合及N个圆柱采集）；不修改任务。按每批20步/30秒软预算串行执行，完成后离线创建首次关系/连接基线和index。现有回填只能更新已有兼容来源，本工具补齐了首次“还没有来源”这一入口。
+默认geometry_and_mates模式的初始空证据链使用原规划器，任务预算为3N+3（N个实例的前后保护、两次文档保护、根配合及N个圆柱采集）；不修改任务。按每批20步/30秒软预算串行执行，完成后离线创建首次关系/连接基线和index。现有回填只能更新已有兼容来源，本工具补齐了首次“还没有来源”这一入口。
 
-至少两个完整圆柱envelope才建立现有关系基线，允许真实的完整空扫描，不伪造无圆柱。完整根配合还需关联到该基线；不足时记录未应用采集和未知。完整/失败/partial尝试都进入原索引，首轮计为1/4。最多再执行一次有依据的增强配合补采，通常1–2轮，不自动使用剩余轮数去盲扫。没有配合不会补造关节。
+0.27起完整根配合独立建立关联来源，无需圆柱。可选几何关系才要求至少两个完整圆柱envelope；允许真实完整空扫描，失败不伪造为空。完整/失败/partial尝试都进入原索引，首轮计为1/4。最多再执行一次有依据的增强配合补采，通常1–2轮，不自动使用剩余轮数去盲扫。没有配合不会补造关节。
 
 | 返回字段 | 含义 |
 | --- | --- |
+| capture_profile | 实际使用的geometry_and_mates或root_mates采集模式 |
 | workflow_complete | 受限流程正常结束；不是机械识别完成 |
 | stop_reason | 无新支持采集、已有增强尝试等停止原因 |
 | handoffs | 最新check、index、constraints、solution等路径及哈希 |
@@ -54,10 +57,10 @@ performance.stage_tool_timings记录入口调用及离线派生耗时；cad_capt
 
 本入口不自动恢复进程崩溃，也不扫描全目录猜测其它会话历史。原始STEP及所有输入不覆盖。框架能跑通，不代表这台升降机已有真实链级结果。下一步仍需在用户SolidWorks上取得原始report，按缺口补充几何推断/配合类型，再开发受控运动与干涉检查。
 
-## 本版验收
+## 验收
 
 ```powershell
 python scripts/verify_chain_session.py --output outputs/verify-chain-session-0.26
 ```
 
-35项检查使用显式合成装配与生产编排逻辑，覆盖闭环、无配合、增强失败、超时、历史与计时；不连接真实SolidWorks，不代表实机识别率。完整验收见[MCP_ACCEPTANCE.md](MCP_ACCEPTANCE.md#0260首次单链联调)。
+35项检查使用显式合成装配与生产编排逻辑，覆盖闭环、无配合、增强失败、超时、历史与计时；不连接真实SolidWorks，不代表实机识别率。0.27新增独立配合验收使用`python scripts/verify_root_mates.py --output outputs/verify-root-mates-0.27`，预期54项通过。完整验收见[MCP_ACCEPTANCE.md](MCP_ACCEPTANCE.md#0270原生配合独立分析)。

@@ -91,6 +91,15 @@ class ChainSources:
     def connections(self, raw):
         sources = raw.get('sources'); require(isinstance(sources, dict), 'Missing connection sources.')
         self.inventory_match(sources.get('inventory'))
+        if raw.get('connection_review_schema_version') == 2:
+            require(set(sources) == {'inventory', 'mates'}, 'Root mate review cannot hide additional source families.')
+            mates, mate_binding = self.bound(sources['mates'])
+            expected = review_connections(None, mates, self.inventory, self.inventory_binding['sha256'])
+            expected.update(sources=sources, geometry_candidates_evaluated=False, requires_human_review=False)
+            check_fields(raw, expected)
+            return 'connection', expected, {}, {'unmatched_mates': expected['unmatched_mates'],
+                'coverage': expected['coverage'], 'original_review_coverage': expected['coverage'],
+                'root_mate_source': mate_binding, 'replay_scope': 'verified_two_entity_root_mate_pairs'}
         _, rb = self.bound(sources.get('relations')); relations, _ = self.relations(rb['path'])
         mates, mate_binding = self.bound(sources.get('mates'))
         expected = review_connections(relations, mates, self.inventory, self.inventory_binding['sha256'])
@@ -156,7 +165,8 @@ class ChainSources:
     def evidence(self, path):
         raw, binding = self.read(path); require(isinstance(raw, dict), 'Invalid evidence file.')
         schemas = [('connection_review_schema_version',self.connections),('proximity_review_schema_version',self.proximity),('face_contact_review_schema_version',self.face_contacts)]
-        matches = [loader for key, loader in schemas if raw.get(key) == 1]
+        matches = [loader for key, loader in schemas if raw.get(key) == 1 or
+                   (key == 'connection_review_schema_version' and raw.get(key) == 2)]
         require(len(matches) == 1, 'Use a supported connection/proximity/face-contact review result file.')
         return (*matches[0](raw), binding)
 

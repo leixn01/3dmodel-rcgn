@@ -74,6 +74,9 @@ TOOLS = [
           "max_cylinders": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100},
           "include_face_references": {"type": "boolean", "default": False, "description": "Capture and round-trip persistent part-face references for later live mate-face matching; adds COM reads."}},
          ["expected_document_token", "occurrence_path"]),
+    spec('cad_review_root_mates', 'Associate exact root mate entity pairs directly with a complete spatial inventory, without cylinder scans or geometric relation files. Preserves activity, unmatched/boundary references, errors and source hashes; no joint/DOF confirmation. Original root-mate envelopes only, not cylinder-face matching outputs.',
+         {k: {'type':'string','minLength':1} for k in ('inventory_path','mate_inventory_path','output_path')},
+         ['inventory_path','mate_inventory_path','output_path'], False),
     spec("cad_group_components", "Create explainable role candidates from a complete exported spatial inventory JSON. No SOLIDWORKS connection or model modification. Classifies leaf occurrences, retains ambiguous names as pending, and writes a new JSON under outputs/. Optional review_path binds manual decisions to the inventory SHA256; never invent user confirmation.",
          {"inventory_path": {"type": "string", "minLength": 1},
           "output_path": {"type": "string", "minLength": 1},
@@ -237,6 +240,7 @@ TOOLS = [
          {'draft_check_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'max_tasks': {'type':'integer','minimum':3,'maximum':200,'default':20},
           'evidence_index_path': {'type':'string','minLength':1},
+          'initial_capture_profile': {'type':'string','enum':['root_mates'], 'description':'Only for an empty-evidence first chain: one enhanced root-mate capture plus all guards, independent of cylinders.'},
           'constraint_analysis_path': {'type':'string','minLength':1, 'description':'Optional source-bound constraint report. Plan only missing enhanced mate evidence, inheriting its index and four-round budget.'}},
          ['draft_check_path','output_path'], False),
     spec('sw_execute_evidence_task', 'Replay an evidence plan and optional previous receipt, then execute at most ONE next existing read-only CAD tool. Validate context, save original envelope and immutable receipt; block dependent tasks and stop on timeouts or context mismatch. Never start/open/edit/save CAD or retry. Reinvoke with the returned receipt until execution_complete.',
@@ -307,6 +311,9 @@ class SolidWorksTools:
                 from cadkin.tools.matching import build_target_graph, match_templates
                 handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
                 return handler(self.root, **arguments)
+            if name == 'cad_review_root_mates':
+                from cadkin.tools.root_mates import root_mate_review
+                return root_mate_review(self.root, **arguments)
             if name == 'cad_create_chain_baseline':
                 from cadkin.tools.chain_baseline import create_chain_baseline
                 return create_chain_baseline(self.root, self.call, **arguments)

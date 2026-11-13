@@ -1,0 +1,13 @@
+# 结果与边界
+
+cad_review_root_mates只接收三个必填路径：inventory_path、mate_inventory_path、output_path。输入必须可回读，输出在outputs内独占新建。原始空间清单与配合需同一根装配文档、配置、实例身份和根坐标位姿；原始hash绑定会在后续重放中复核。
+
+完整文件为connection_review_schema_version=2，sources只有inventory和mates，geometry_candidates_evaluated=false。工具返回摘要与review_source（path+sha256），详细pairs/unmatched_mates保存在文件，按需读取。无几何候选不表示没有连接；没有配合也不表示自由运动。
+
+只有两个实体均准确映射到两个不同根实例时建立实例对。实体多于两个、未映射、根引用和数量不一致保留unmatched_mates；即使已有同一实例对也不吸收歧义配合。抑制、回滚、特征错误、读取失败与干净未抑制状态分开；unsuppressed_no_feature_error不等于求解成功。
+
+该入口可读取基础或增强配合文件。要分析平面/同心约束需原始采集include_reference_geometry=true等相应证据；此工具不补造几何。增强缺失时交接现有约束缺口规划并保留index历史，失败/partial不盲目重采。
+
+EVIDENCE_MISMATCH：来源身份/配置/位姿或后续hash不一致；保留原文件并核对当前来源。FACE_MATCH_BASIS_REQUIRED：输入含依赖圆柱源的face_matching/face_match，交给connection-review连同原关系文件。OUTPUT_EXISTS：选择新输出，不覆盖已有结果。源码缺失/错误不可伪装成完整空列表。
+
+仅含活动根装配配合，不含子装配内部约束。sources和状态关联不能证明几何原子快照；仍在结论报告范围、替代解释和风险，不设置人工复核。

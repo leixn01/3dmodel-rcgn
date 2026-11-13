@@ -1,0 +1,9 @@
+# 初始配合模式
+
+仅对无relation/source coverage、无采集历史的2–20叶实例链，调用cad_plan_evidence_tasks时可传initial_capture_profile="root_mates"。仍必填draft_check_path、output_path；max_tasks至少2N+3才容纳一次增强根配合及全部保护。预算不足产生stop空任务，不能只执行保护。
+
+新计划algorithm_version=5、plan_kind=initial_root_mates。单次sw_mate_inventory包含include_reference_geometry=true，原限制max_features=2000、max_mates=200、max_entities=16、max_depth=32。不修改plan中的参数、顺序或token。
+
+此参数不得与evidence_index_path或constraint_analysis_path同传。已有结果沿用最新check/index/analysis，走原v2/v4规划；切模式不能清历史。原v1–v4计划仍按其原版本重放。
+
+collect时交接evidence-task-execute，完整receipt且保护通过后交给chain-baseline建立首次来源。已有原始配合/空间文件、只需离线关联则用root-mate-review，不创建重复采集任务。无配合或部分失败保留未知，不推自由度；不自动补圆柱或模板。

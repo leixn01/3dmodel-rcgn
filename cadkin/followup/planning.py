@@ -9,6 +9,33 @@ READ_TOOLS = {'sw_active_document', 'sw_component_spatial', 'sw_component_constr
               'sw_component_cylinders', 'sw_component_faces', 'sw_component_distance', 'sw_mate_inventory'}
 
 
+def plan_initial_root_mates(target, check, capture_directory, max_tasks):
+    """Explicit first-run profile: one enhanced root capture plus unchanged guards."""
+    nodes = {n['id']: n for n in target['nodes']}
+    requests, blocked = {}, {}
+    available = check['structural_checks_passed'] and all(n['eligible'] and not n.get('source_errors') and
+        n.get('to_root_column_vectors_m') for n in nodes.values())
+    args = {'expected_document_token': target['document']['document_token'], 'max_features': 2000,
+            'max_mates': 200, 'max_entities': 16, 'max_depth': 32, 'include_reference_geometry': True}
+    key = stable_id('capture-', ['sw_mate_inventory', args])
+    if available:
+        requests[key] = {'id': key, 'tool': 'sw_mate_inventory', 'arguments': args,
+            'occurrence_paths': sorted(nodes), 'finding_ids': [], 'priority': 10,
+            'integration': 'create_initial_root_mate_basis'}
+    else:
+        blocked[key] = {'tool': 'sw_mate_inventory', 'occurrence_paths': sorted(nodes),
+                        'finding_ids': [], 'reason': 'SOURCE_CONTEXT_UNAVAILABLE'}
+    result = assemble_plan(target, check, {'_indexed': True, 'rounds_completed': 0},
+                           capture_directory, max_tasks, requests, {}, [], blocked)
+    result.update(algorithm_version=5, plan_kind='initial_root_mates')
+    result['parameters']['initial_capture_profile'] = 'root_mates'
+    result['limitations'].extend([
+        'First empty-evidence chain only; use the existing index/constraint-gap planner for subsequent capture.',
+        'Collects root mates and direct reference geometry once. No cylinder/body scan, inferred joint or CAD edit.',
+        'All document and instance guards remain in the call budget; missing/partial data is not retried.'])
+    return result
+
+
 def plan_tasks(target, check, facts, capture_directory, max_tasks=20):
     if type(max_tasks) is not int or not 3 <= max_tasks <= 200:
         raise ToolFailure('INVALID_ARGUMENTS', 'max_tasks must be 3–200, including before/after guards.')

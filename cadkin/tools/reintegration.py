@@ -9,6 +9,7 @@ from cadkin.tools.execution import replay_execution
 from cadkin.tools.rigid import replay_draft, rigid_candidates, joint_drafts
 from cadkin.tools.relations import component_relations
 from cadkin.tools.connections import connection_review
+from cadkin.tools.root_mates import root_mate_review
 from cadkin.tools.proximity_review import proximity_review
 from cadkin.tools.chain import chain_dossier
 from cadkin.tools.matching import build_target_graph, recheck
@@ -88,11 +89,17 @@ def reintegrate(root, execution_path, output_path, face_review_path=None):
         for index,source in enumerate(chain['sources']):
             old,_=read_json(json_path(root,source['path']));new=source['path']
             if source['kind']=='connection':
-                original_relation=old['sources']['relations']['path']
-                relation=relation_map.get(original_relation,original_relation)
                 mate=mates[0][1] if mates else old['sources']['mates']['path']
-                if relation!=original_relation or mates:
-                    new=run('cad_review_connections',connection_review,{'relations_path':relation,'mate_inventory_path':mate,'output_path':dest(f'connections-{index:02d}')})
+                if old.get('connection_review_schema_version') == 2:
+                    if mates:
+                        new=run('cad_review_root_mates',root_mate_review,{'inventory_path':old['sources']['inventory']['path'],
+                            'mate_inventory_path':mate,'output_path':dest(f'connections-{index:02d}')})
+                else:
+                    original_relation=old['sources']['relations']['path']
+                    relation=relation_map.get(original_relation,original_relation)
+                    if relation!=original_relation or mates:
+                        new=run('cad_review_connections',connection_review,{'relations_path':relation,'mate_inventory_path':mate,'output_path':dest(f'connections-{index:02d}')})
+                if new!=source['path']:
                     if mates:
                         used.add(mates[0][0]);superseded.append({'task_id':mates[0][0],'old_path':old['sources']['mates']['path'],'new_path':mate,'family':'root_mates'})
             elif source['kind']=='component_proximity' and distances:

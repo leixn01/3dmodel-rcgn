@@ -1239,3 +1239,40 @@ python scripts/verify_chain_session.py --output outputs/verify-chain-session-0.2
 | 失败/续跑 | 原receipt、最新check/index/constraints交接独立工具 | 不改旧token/哈希、不删占用文件、不换文件名重采以绕过历史；TIMEOUT先核对软件状态 |
 
 证据保存在指定session JSON和同名-files目录。配置、原始envelope/receipt、基线、index、analysis和solution均保留，源文件不得覆盖。若用户运行被软件对话框/超时阻塞，应依据最末完整调用日志定位；不能把自动测试通过写成实机通过。窗口中模型的位姿、显隐和保存状态应保持不变；本入口不负责移动/碰撞验证。
+
+## 0.27.0：原生配合独立分析
+
+### 前置条件与自动检查
+
+Windows已有Conda环境更新：git pull --ff-only、python -m pip install -e ".[solidworks,templates]"，重启OpenCode。目录应列出51工具，包括cad_review_root_mates。以下命令使用显式合成CAD，不连接真实SolidWorks：
+
+```powershell
+python scripts/verify_root_mates.py --output outputs/verify-root-mates-0.27
+python -m unittest tests.test_root_mates tests.test_mcp.McpTests.test_root_mates_without_cylinders_over_production_stdio -v
+```
+
+脚本预期passed=true、54项，原始来源/receipt/索引/求解保存在指定新目录；重跑换新目录。测试覆盖平面/lock/闭合链、无配合、partial、圆柱全失败、身份/姿态/哈希/派生篡改、实体引用歧义、预算/历史、CLI及生产MCP协议。无真实COM机械结论。
+
+### 实机首次入口
+
+让agent读取当前活动装配token和准确叶实例路径，按CHAIN_SESSION.md创建2–20实例配置，增加capture_profile="root_mates"。reference_occurrence_path选实际链内实例；characteristic_length_mm及毫米/角度公差按任务尺度明确，不复制示例为校准结论。执行：
+
+```powershell
+python -m cadkin chain-session outputs/root-mates-config.json --output outputs/root-mates-session-0.27.json
+```
+
+已有check/index/receipt必须沿用，不为验收删除历史重跑。尚未打开模型可让agent用现有启动/打开能力处理；采集时保持文档/配置/位姿不变。
+
+核对：报告capture_profile=root_mates；首次v5计划只有一次include_reference_geometry=true的sw_mate_inventory采集，加前后2N+2个document/pose保护。无sw_component_cylinders/faces/distance调用；正常首轮计1/4，原始envelope和执行receipt均可回读。三实例的批内工具总数为9；入口活动文档/空间分页另计，不限制实际批次数。状态窗口不应出现零件移动、配合编辑或保存覆盖。
+
+有完整有效双实例配合时，baseline.outputs应有可读的target/index/constraints，连接来源schema=2且仅inventory/mates，relation_sources可为空；支持的lock/同心/重合平面进入瞬时求解。无配合时允许workflow_complete=true但维数仍null/无受支持模型。首轮增强partial不应重复采集；保留失败尝试，可能以NO_EXISTING_CONNECTION_BASIS停止。保护失败不得回填，TIMEOUT保留receipt并停止后续CAD调用。
+
+### 已有采集文件的离线入口
+
+无需启动CAD或重采，调用cad_review_root_mates：inventory_path=原完整空间清单路径，mate_inventory_path=原sw_mate_inventory envelope路径，output_path=outputs下新JSON。两来源须同一文档/配置/实例位姿。返回review_source和coverage；完整结果按需查看。再将review_source.path加入cad_build_chain_evidence的evidence_paths，交接原目标图/约束分析/链求解。已有基线更新仍用cad_reintegrate_evidence保留索引。
+
+含face_matching的输入应报FACE_MATCH_BASIS_REQUIRED，继续原cad_review_connections并携带几何来源；不能删除字段绕过。多实体/未映射引用在unmatched_mates，不应变成正常两端约束。旧schema v1链可重放；旧文件不改写。
+
+### 失败标准与保存
+
+把缺配合写为自由运动、把partial写成完整、无依据重复采集/清索引、模板类型写入目标、缺少保护、覆盖原文件、歧义配合进入确定模型，都判失败。完整输出保存在outputs的新目录：配置、原始返回、plan/receipt、baseline、index/check/constraints/solution和session计时报告。结论列出已支持约束、未知、来源范围与风险；不以人工复核作为继续条件。

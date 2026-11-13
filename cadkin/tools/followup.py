@@ -56,7 +56,11 @@ def source_facts(root, target):
 
 
 @replay_reads
-def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinations=True, evidence_index_path=None, constraint_analysis_path=None):
+def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinations=True, evidence_index_path=None,
+               constraint_analysis_path=None, initial_capture_profile=None):
+    require(initial_capture_profile in (None, 'root_mates') and not (initial_capture_profile and
+            (evidence_index_path is not None or constraint_analysis_path is not None)),
+            'The initial root-mate profile cannot replace an existing index or constraint history.', 'INVALID_ARGUMENTS')
     if constraint_analysis_path is not None:
         from cadkin.tools.constraint_planning import build_constraint_plan
         return build_constraint_plan(root, draft_check_path, constraint_analysis_path, output_path,
@@ -86,7 +90,13 @@ def build_plan(root, draft_check_path, output_path, max_tasks=20, check_destinat
             for key, values in extra[family].items(): facts[family].setdefault(key, []).extend(values)
         facts['root_mates'].extend(extra['root_mates'])
         facts.update({k: extra[k] for k in ('distance', 'attempted_requests', 'rounds_completed')}, _indexed=True)
-    data = plan_tasks(target, check, facts, capture_dir, max_tasks)
+    if initial_capture_profile == 'root_mates':
+        require(not target['source_coverage'] and not target['relation_sources'] and 2 <= len(target['nodes']) <= 20,
+                'Initial profile requires an empty-evidence 2–20-component chain.', 'BASELINE_ALREADY_EXISTS')
+        from cadkin.followup.planning import plan_initial_root_mates
+        data = plan_initial_root_mates(target, check, capture_dir, max_tasks)
+    else:
+        data = plan_tasks(target, check, facts, capture_dir, max_tasks)
     # Validate every concrete call against the production catalog, not a parallel copy of its schema.
     for task in data['tasks']:
         require(task['tool'] in READ_TOOLS and CATALOG[task['tool']]['annotations']['readOnlyHint'],
@@ -119,18 +129,21 @@ def replay_plan(root, plan_path):
     if version == 3:
         from cadkin.tools.face_planning import replay_face_plan
         return replay_face_plan(root, path, original, digest)
-    keys = {'draft_check_path', 'max_tasks'} | ({'evidence_index_path'} if version == 2 else set())
+    keys = {'draft_check_path', 'max_tasks'} | ({'evidence_index_path'} if version == 2 else
+           {'initial_capture_profile'} if version == 5 else set())
     require(isinstance(original, dict) and original.get('evidence_task_plan_schema_version') == 1 and
-            version in (1, 2) and isinstance(original.get('parameters'), dict) and set(original['parameters']) == keys,
+            version in (1, 2, 5) and isinstance(original.get('parameters'), dict) and set(original['parameters']) == keys,
             'Use the original evidence task plan.', 'INVALID_TASK_PLAN')
     data, check, target = build_plan(root, output_path=str(path), check_destinations=False, **original['parameters'])
     check_fields(original, data)
     return data, check, target, {'path': str(path), 'sha256': digest}
 
 
-def evidence_task_plan(root, draft_check_path, output_path, max_tasks=20, evidence_index_path=None, constraint_analysis_path=None):
+def evidence_task_plan(root, draft_check_path, output_path, max_tasks=20, evidence_index_path=None,
+                       constraint_analysis_path=None, initial_capture_profile=None):
     output = json_path(root, output_path, output=True)
-    data, check, _ = build_plan(root, draft_check_path, output_path, max_tasks, evidence_index_path=evidence_index_path, constraint_analysis_path=constraint_analysis_path)
+    data, check, _ = build_plan(root, draft_check_path, output_path, max_tasks, evidence_index_path=evidence_index_path,
+                              constraint_analysis_path=constraint_analysis_path, initial_capture_profile=initial_capture_profile)
     write_result(output, data)
     errors = []
     if data['output_truncated']:

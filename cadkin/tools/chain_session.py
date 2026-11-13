@@ -21,6 +21,7 @@ CONFIG_SCHEMA = {'type': 'object', 'additionalProperties': False, 'properties': 
     'characteristic_length_mm': {'type': 'number', 'minimum': .001, 'maximum': 1000000},
     'distance_tolerance_mm': {'type': 'number', 'exclusiveMinimum': 0},
     'angle_tolerance_deg': {'type': 'number', 'exclusiveMinimum': 0, 'maximum': 5},
+    'capture_profile': {'type': 'string', 'enum': ['geometry_and_mates', 'root_mates']},
     'inventory_path': {'type': 'string', 'minLength': 1}},
     'required': ['expected_document_token', 'occurrence_paths', 'chain_name',
         'reference_occurrence_path', 'characteristic_length_mm', 'distance_tolerance_mm', 'angle_tolerance_deg']}
@@ -104,6 +105,8 @@ def _run(service, config, config_binding, output_path):
                 # Reserve exactly enough for root mates, N cylinders and all guards.
                 # Existing planner priorities choose the actual tasks; no task is edited.
                 'max_tasks': 3 * len(config['occurrence_paths']) + 3})]
+        if config.get('capture_profile') == 'root_mates':
+            pipeline[-1][2].update(initial_capture_profile='root_mates', max_tasks=2 * len(config['occurrence_paths']) + 3)
         for tool, name, args in pipeline:
             log.run(tool, {**args, 'output_path': log.path(name)})
         receipt = execute(log.path('initial-plan'), 'initial')
@@ -166,6 +169,7 @@ def _run(service, config, config_binding, output_path):
         findings_summary = read_json(Path(current['check']['path']))[0]['summary']
     result = {'chain_session_schema_version': 1, 'algorithm_version': 1, 'config_source': config_binding,
         'workflow_complete': error is None, 'stop_reason': stop, 'pipeline_error': error,
+        'capture_profile': config.get('capture_profile', 'geometry_and_mates'),
         'handoffs': current, 'rounds_completed': rounds, 'max_rounds': 4,
         'batch_sources': batches, 'cad_capture_tool_timings': tool_timings,
         'evidence_summary': evidence_summary, 'remaining_findings_summary': findings_summary,
@@ -173,14 +177,14 @@ def _run(service, config, config_binding, output_path):
         'target_degrees_of_freedom': None, 'finite_motion_verified': False,
         'limitations': ['First-run workflow only. Reuse its latest check/analysis/index for follow-up; do not restart to bypass capture history.',
             'Explicit scope is not automatically recognized. Root mates exclude subassembly-internal constraints.',
-            'At most initial plus enhanced-mate rounds; no failed capture is retried, no template or inferred constraint is added.',
+            'At most initial plus enhanced-mate rounds. root_mates captures enhancement in the first round; no failure retry or invented constraint.',
             'Inventory omits slow bounding boxes. Each capture retains the existing document/pose guards and all raw receipts.',
             'Timing excludes agent thinking/network. Stage totals include nested batches; do not add them again to CAD timings.',
             'An error preserves handoffs for diagnosis/continuation, not a completed analysis. No assembly edits, motion or disassembly are executed.']}
     rb = log.finish(result)
     compact = {k: result[k] for k in ('workflow_complete', 'stop_reason', 'pipeline_error', 'handoffs',
         'rounds_completed', 'max_rounds', 'mechanically_verified', 'target_degrees_of_freedom', 'finite_motion_verified',
-        'evidence_summary', 'remaining_findings_summary')}
+        'evidence_summary', 'remaining_findings_summary', 'capture_profile')}
     compact.update(report_source=rb, detail_saved=True, performance=result['performance'])
     if error:
         return {'schema_version': 1, 'status': 'error', 'data': compact, 'errors': [error]}

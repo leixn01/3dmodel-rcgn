@@ -22,12 +22,14 @@ def identity(info):
 
 
 def review_connections(relations, mates, inventory, expected_inventory_sha256, extra_occurrence_pairs=()):
-    require(isinstance(relations, dict) and relations.get('relation_schema_version') == 1 and
-            isinstance(relations.get('candidates'), list) and len(relations['candidates']) <= 5000,
+    native = relations is None
+    require(native or (isinstance(relations, dict) and relations.get('relation_schema_version') == 1 and
+            isinstance(relations.get('candidates'), list) and len(relations['candidates']) <= 5000),
             'Expected a bounded cad_component_relations result file.')
     spatial, nodes = spatial_inventory(inventory)
-    require(relations.get('inventory_sha256') == expected_inventory_sha256 and
-            identity(relations.get('document')) == identity(spatial.get('document')), 'Relation inventory binding differs.', 'EVIDENCE_MISMATCH')
+    if not native:
+        require(relations.get('inventory_sha256') == expected_inventory_sha256 and
+                identity(relations.get('document')) == identity(spatial.get('document')), 'Relation inventory binding differs.', 'EVIDENCE_MISMATCH')
     require(isinstance(mates, dict) and mates.get('status') in ('ok', 'partial') and isinstance(mates.get('data'), dict),
             'Use the original sw_mate_inventory envelope.')
     data = mates['data']
@@ -50,7 +52,8 @@ def review_connections(relations, mates, inventory, expected_inventory_sha256, e
                 transform_from_sw(node['transform'].get('raw_array'))['raw_array'], 'Mate occurrence pose differs from inventory.', 'EVIDENCE_MISMATCH')
         contexts[path] = item
     pairs = {}
-    for index, candidate in enumerate(relations['candidates']):
+    candidates = [] if native else relations['candidates']
+    for index, candidate in enumerate(candidates):
         require(isinstance(candidate, dict) and candidate.get('kind') in ('coaxial_candidate', 'parallel_candidate') and
                 isinstance(candidate.get('left'), dict) and isinstance(candidate.get('right'), dict), 'Invalid geometric candidate.')
         paths = [candidate[side].get('occurrence_path') for side in ('left', 'right')]
@@ -63,7 +66,17 @@ def review_connections(relations, mates, inventory, expected_inventory_sha256, e
         require(isinstance(paths, (list, tuple)) and len(paths) == 2 and paths[0] != paths[1] and
                 all(isinstance(p, str) and p in nodes for p in paths), 'Invalid extra occurrence pair.')
         pairs.setdefault(tuple(sorted(paths)), {'geometric_candidate_indices': [], 'mate_evidence': []})
-    face_evidence = validate_face_matching(data, relations, expected_inventory_sha256)
+    if native:
+        require(all(isinstance(m, dict) and (m.get('entities') is None or
+                isinstance(m['entities'], list) and all(isinstance(e, dict) for e in m['entities']))
+                for m in data['mates']), 'Invalid mate/entity records.')
+        require(data.get('face_matching') is None and not any('face_match' in e
+                for m in data['mates'] for e in m.get('entities') or []),
+                'Use an original root-mate capture; cylinder-face matching requires its own bound relation sources.',
+                'FACE_MATCH_BASIS_REQUIRED')
+        face_evidence = None
+    else:
+        face_evidence = validate_face_matching(data, relations, expected_inventory_sha256)
     ids, unmatched = set(), []
     for record in data['mates']:
         require(isinstance(record, dict) and type(record.get('feature_id')) is int and record['feature_id'] not in ids,
@@ -85,8 +98,10 @@ def review_connections(relations, mates, inventory, expected_inventory_sha256, e
                 else:
                     fully_mapped = False
         pair = tuple(sorted(refs))
+        if native and fully_mapped and len(entities) == 2 and len(pair) == 2:
+            pairs.setdefault(pair, {'geometric_candidate_indices': [], 'mate_evidence': []})
         # Multi-component mates and root/unmapped references never become pair constraints by guesswork.
-        if len(pair) != 2 or pair not in pairs:
+        if len(pair) != 2 or pair not in pairs or (native and (not fully_mapped or len(entities) != 2)):
             unmatched.append({'feature_id': record['feature_id'], 'reason': 'No exact two-occurrence candidate pair.',
                               'verified_reference_paths': sorted(refs)})
             continue
@@ -128,19 +143,21 @@ def review_connections(relations, mates, inventory, expected_inventory_sha256, e
         reviewed.append({'occurrence_paths': list(pair), **item, 'review_state': state,
                          'requires_review': True, 'mechanical_relation_confirmed': False})
     source_errors = []
-    for name, complete, errors in [('relations', relations.get('complete'), relations.get('errors')),
-                                  ('mates', data.get('complete'), mates.get('errors')),
-                                  ('inventory', spatial.get('complete'), inventory.get('errors'))]:
+    completeness = [('mates', data.get('complete'), mates.get('errors')),
+                    ('inventory', spatial.get('complete'), inventory.get('errors'))]
+    if not native:
+        completeness.insert(0, ('relations', relations.get('complete'), relations.get('errors')))
+    for name, complete, errors in completeness:
         require(isinstance(errors, list) and all(isinstance(e, dict) for e in errors), 'Missing source errors.')
         if complete is not True or errors or (name == 'mates' and (mates['status'] != 'ok' or data.get('truncated'))):
             source_errors.append({'code': 'SOURCE_INCOMPLETE', 'source': name, 'message': 'Source is incomplete; retain unknown relationships.', 'source_errors': errors})
     counts = {state: sum(p['review_state'] == state for p in reviewed) for state in (
         'has_unsuppressed_mate_evidence', 'unresolved_mate_evidence', 'only_suppressed_or_feature_issue', 'geometry_only')}
-    return {'connection_review_schema_version': 1, 'document': spatial['document'],
+    return {'connection_review_schema_version': 2 if native else 1, 'document': spatial['document'],
             'captured_at_utc': datetime.now(timezone.utc).isoformat(), 'snapshot_atomic': False,
             'pairs': reviewed, 'counts': counts, 'unmatched_mates': unmatched,
-            'coverage': {'scope': 'provided_geometric_candidates_and_active_root_mates',
-                         'candidate_face_pairs': len(relations['candidates']), 'occurrence_pairs': len(reviewed),
+            'coverage': {'scope': 'verified_two_entity_root_mate_pairs' if native else 'provided_geometric_candidates_and_active_root_mates',
+                         'candidate_face_pairs': len(candidates), 'occurrence_pairs': len(reviewed),
                          'read_mate_records': len(data['mates']), 'unmatched_mate_records': len(unmatched),
                          'face_matched_mate_records': sum(m['face_match_confirmed'] for p in reviewed for m in p['mate_evidence'])},
             'face_matching': face_evidence,

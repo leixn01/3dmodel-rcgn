@@ -11,7 +11,7 @@ conda activate 你的环境名
 python -m pip install -e ".[solidworks,templates]"
 ```
 
-已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 50 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11、NumPy 1.26–2.x及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
+已有仓库先 `git pull --ff-only`，再执行依赖安装命令；升级后退出并重新启动 OpenCode，让本地 MCP 进程及工具目录刷新。当前应有 51 个工具。仅维护 Windows；自动启动的就绪检查使用 SolidWorks 2015+ API，旧版不保证可用。STEP 已随仓库提供，无需解压。依赖为官方 MCP SDK 1.29.0、Windows 上的 pywin32、OpenUSD usd-core 25.11、NumPy 1.26–2.x及其依赖；离线体检无需安装这些依赖。不要把第三方上游仓库也注册成同名 MCP，以免调用到另一套工具。
 
 在同一个已激活 Conda 的终端启动 OpenCode；MCP 子进程通过 PATH 找到该环境的 python。先执行 `python -c "import sys; print(sys.executable)"` 记录解释器路径，再让 OpenCode 调用 `sw_session_status`，比较 `data.runtime.python_executable`，且 `matches_conda_prefix` 应为 true。运行时同时返回 python_prefix、conda_prefix、python_version；软件未运行时也能检查。没有 CONDA_PREFIX 时匹配值为 null，不能据此声称已在 Conda 中。
 
@@ -218,3 +218,7 @@ MATCH_SEARCH_LIMIT为有预算结果，NO_SUPPORTED_MATCH表示本范围内没�
 ## 首次机构链联调（0.26.0）
 
 首次分析一条明确范围的链，按[CHAIN_SESSION.md](CHAIN_SESSION.md)创建当前配置并运行chain-session。打开模型可由现有启动/文档能力完成；本入口只读装配，自动串联初次采集、基线、一次可用增强与瞬时分析，输出逐步耗时。已有历史直接使用原check/index/receipt，不重跑初始化。新MCP目录应有50工具；本机仍使用现有Conda。
+
+## 原生配合独立分析（0.27.0）
+
+当前目录51工具、44个功能skill。已有原始空间/根配合文件可直接用cad_review_root_mates离线建源，不先补圆柱。首次只分析配合时，chain-session配置capture_profile="root_mates"，一次增强采集并保留全部保护。默认geometry_and_mates仍可用；已有check/index/receipt沿用历史。无配合STEP保持未知，不自动借模板补关节。详见[配合独立分析](ROOT_MATE_RELATIONS.md)和[验收](MCP_ACCEPTANCE.md#0270原生配合独立分析)。

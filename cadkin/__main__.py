@@ -155,6 +155,7 @@ def main():
     plan.add_argument('--max-tasks', type=int, default=20)
     plan.add_argument('--evidence-index', dest='evidence_index_path')
     plan.add_argument('--constraint-analysis', dest='constraint_analysis_path')
+    plan.add_argument('--initial-capture-profile', choices=['root_mates'])
     plan.add_argument('--output', required=True)
     face_plan = commands.add_parser('plan-face-probes', help='Plan witness-guided finite-face probes from a current check and latest index')
     face_plan.add_argument('draft_check_path')
@@ -215,6 +216,7 @@ def main():
                     arguments = {'draft_check_path':args.draft_check_path, 'output_path':args.output, 'max_tasks':args.max_tasks}
                     if args.evidence_index_path is not None: arguments['evidence_index_path'] = args.evidence_index_path
                     if args.constraint_analysis_path is not None: arguments['constraint_analysis_path'] = args.constraint_analysis_path
+                    if args.initial_capture_profile is not None: arguments['initial_capture_profile'] = args.initial_capture_profile
                     result = service.call('cad_plan_evidence_tasks', arguments)
                 elif args.command == 'index-evidence':
                     result = service.call('cad_index_evidence', {'draft_check_path':args.draft_check_path,

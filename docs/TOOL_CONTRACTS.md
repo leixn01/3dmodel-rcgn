@@ -1,9 +1,10 @@
 # SolidWorks 工具接口
 
-版本：0.26.0。以下 50 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.27.0。以下 51 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `cad_review_root_mates` | inventory_path、mate_inventory_path、output_path | 原始根配合直接关联准确实例对，schema v2来源可重放，不依赖圆柱或调用CAD |
 | `cad_solve_chain_constraints` | constraint_analysis_path、reference_occurrence_path、characteristic_length_mm、output_path；可选relative_rank_tolerance/max_constraints_per_pair | 单链同快照约束组装、闭环限制和瞬时方向；完整文件+紧凑摘要，无CAD调用 |
 | `sw_execute_evidence_batch` | plan_path、output_path；可选previous_execution_path/max_steps/time_budget_seconds | 有预算串行执行已有计划前缀，保留逐步receipt/保护/停止，返回摘要与计时 |
 | `cad_solve_local_constraints` | constraint_analysis_path、characteristic_length_mm、output_path；可选relative_rank_tolerance/max_pairs/max_constraints_per_snapshot | 离线求解逐实例对/快照的瞬时约束矩阵，保留缺口/数值敏感性，不连接CAD或确认目标DOF |
@@ -13,7 +14,7 @@
 | `cad_index_evidence` | draft_check_path、execution_path、output_path；可选max_contexts | 离线关联已采集观测与当前候选，供后续规划复用及停止 |
 | `cad_compare_draft_checks` | before_check_path、after_check_path、output_path | 离线比较返回候选/发现与覆盖，不声明物理问题解决 |
 | `cad_check_joint_draft` | joint_draft_path、output_path；可选max_findings | 重放原始草案，报告结构、证据冲突、竞争解释与覆盖缺口，离线新输出 |
-| `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks、evidence_index_path | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
+| `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks、evidence_index_path、constraint_analysis_path、initial_capture_profile | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
 | `cad_build_rigid_candidates` | target_graph_path、output_path；可选max_group_size/max_partitions/include_contact_hypotheses | 重放目标图并生成多零件刚体候选，保留不合并基线/竞争解释，不修改CAD |
 | `cad_draft_joints` | rigid_candidates_path、output_path；可选max_target_pairs、显式模板、搜索/轴线参数 | 默认不加载模板，输出目标关系证据；类型unknown/DOF=null，参考语义分开 |
 | `cad_build_target_graph` | chain_path、output_path，可选relation_paths | 重放链及来源为实例图；轴线关系自动/显式读取，保留冲突，离线新输出 |
@@ -799,3 +800,13 @@ CLI：`execute-evidence-batch <plan> --output <new-report> [--previous-execution
 返回baseline_created、pipeline_error、outputs（chain/target/rigid/draft/check/index/constraints的path+sha256）、baseline_source、applied/unapplied_capture_ids与rounds_completed。失败时outputs为空，中间文件只诊断；原始失败/partial尝试保留在成功建立的索引中。不会读取参考模板或调用CAD。已有来源/历史拒绝BASELINE_ALREADY_EXISTS；其余来源/输出保护同原工具。
 
 CLI `python -m cadkin chain-session <config.json> --output outputs/<new>.json` 是首次流程入口，配置/失败处理见[CHAIN_SESSION.md](CHAIN_SESSION.md)。它使用同一工具服务，不是新增自由脚本MCP，也不代替原有独立工具。只对活动装配运行；启动/打开/选择范围由对应能力处理。
+
+## 0.27.0 根配合独立来源
+
+cad_review_root_mates只读完整空间清单与原始sw_mate_inventory envelope，写新输出（MCP readOnlyHint=false表示写结果文件，不是修改CAD）。来源绑定文档/配置/实例身份/位姿及原文件sha256；完整文件connection_review_schema_version=2，只含inventory/mates来源，geometry_candidates_evaluated=false。输出摘要含review_source、counts/coverage/complete；完整pairs与unmatched_mates按需读文件。
+
+新来源可直接交给cad_build_chain_evidence→cad_build_target_graph→cad_analyze_constraints→cad_solve_chain_constraints。原cad_review_connections/schema v1仍绑定圆柱关系与可选面匹配，旧文件不改语义。含face_matching/face_match的输入不能省略原几何基础，否则FACE_MATCH_BASIS_REQUIRED。
+
+cad_plan_evidence_tasks的initial_capture_profile仅可为root_mates，只适用于2–20实例的首次空证据check，不可同时传index/analysis；生成v5计划，一次增强根配合+全部2N+2保护。预算不足空任务stop，不调用CAD。CLI plan-evidence对应--initial-capture-profile root_mates。
+
+cad_create_chain_baseline接受原v1或新v5首轮计划，完整根配合无需圆柱可独立建源；报告algorithm_version=2。chain-session配置可选capture_profile=geometry_and_mates（默认）或root_mates；后者首轮增强，不自动扫描圆柱，失败/partial/无配合均保留记录和未知。详见[配合独立分析](ROOT_MATE_RELATIONS.md)。

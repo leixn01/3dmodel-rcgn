@@ -30,7 +30,8 @@ def build_target(root,chain_path,relation_paths=None):
     for source in chain['sources']:
         if source['kind']=='connection':
             raw,_=reader.bound(source)
-            names.add(str(json_path(root,raw['sources']['relations']['path'])))
+            if raw['sources'].get('relations'):
+                names.add(str(json_path(root,raw['sources']['relations']['path'])))
     require(len(names)<=40,'Too many combined relation sources.','TARGET_SOURCE_LIMIT')
     relations=[];seen=set()
     for name in sorted(names):

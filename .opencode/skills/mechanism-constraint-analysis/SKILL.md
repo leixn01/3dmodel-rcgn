@@ -16,3 +16,5 @@ description: 综合同一目标组件对的根装配配合、引用面与轴线�
 7. STEP缺少配合时保留几何上下文与未知；名称、近接触、同轴或参考swivel都不填入约束。可以继续独立分析其它对，结论列风险，不设置人工复核。
 
 只有要解释实体绑定、不同快照或API语义时读[证据边界](references/evidence.md)。只需草案/补采时交接相应功能，不预加载其它skill。
+
+已有原始根配合但缺圆柱关系来源时，交接root-mate-review→chain-evidence→mechanism-target-graph；原生配合约束分析不要求先扫描圆柱。已有历史仍交给回填，不重新初始化。
