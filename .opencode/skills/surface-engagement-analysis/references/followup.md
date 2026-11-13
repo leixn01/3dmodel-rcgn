@@ -1,0 +1,9 @@
+# 单轮补采与续接
+
+cad_plan_evidence_tasks传draft_check_path、engagement_analysis_path、output_path；与finite/geometry/constraint/initial profile互斥。默认继承报告exact index；若已有更新index，先重算engagement。计划v8，两个独立能力sw_sample_cylinder_face与sw_read_face_adjacency，单面单工具一次，全部保护计入max_tasks。
+
+两个实例各一个面时：4次capture+6次文档/位姿保护=10次工具读取，sw_execute_evidence_batch可在一个请求内串行执行；依max_steps/time_budget_seconds返回前缀时，用execution_source续跑，不重起计划。采样默认一面16点，多对最多32；邻接max_edges固定64。
+
+完整receipt交cad_index_evidence，使用同check。随后cad_analyze_surface_engagement传原finite_analysis_path和最新index，写新输出；再规划确认停止。失败/partial同样留档，不扩参数重试。
+
+距离→目录→边界→本轮可共用四轮；若此前探测已耗尽预算，保留剩余未知并停止，不能新建初始链、会话或目录归零。没有capture任务时不执行空保护。缺边界/无正重叠会明确列出缺口，不自动猜测测点。

@@ -140,3 +140,7 @@ raw evidence_execution_schema_version=1记录原计划哈希、上一步receipt�
 约束/面目录按已有实例成员关联到组件对、发现与候选；不调用COM，不改候选得分，不捏造面配对。planner保留旧algorithm=1；有索引时algorithm=2，显式blocked_requests和continuation。stop计划没有任何工具任务，执行器不创建receipt。索引沿执行计划引用继承历史，每一层重放与哈希校验，不扫描其他文件。最多4轮、12层重放、512来源/128MiB。
 
 计划缓存为单服务容量4的内存对象，每步重新校验全部输入及参考资源后才复用已重算结果，返回独立副本。变更拒绝并清除缓存；缓存不替代原始receipt/envelope核对，不跨进程持久化。
+
+## 表面补证（0.30）
+
+`adapters/face_engagement.py`只读COM，`engagement.py`做纯采样/邻面数学，`tools/engagement_sources.py`校验原始来源，`tools/engagement.py`离线重放/汇总，`tools/engagement_planning.py`复用原保护/预算/四轮历史。三个新skill互相交接，不含实现或启动代码，工具不读取skill。旧v1–v7计划不改变工具scope或重放语义。

@@ -21,7 +21,7 @@ jobs:
           auto-activate-base: false
       - run: conda run --no-capture-output -n cadkin-ci python -m pip install -e ".[solidworks,templates]"
       - name: Verify cold stdio numeric runtime and batched chain workflow
-        run: conda run --no-capture-output -n cadkin-ci python -m unittest tests.test_mcp.McpTests.test_local_constraint_solution_over_production_stdio tests.test_mcp.McpTests.test_batched_capture_and_chain_solution_over_stdio tests.test_mcp.McpTests.test_first_chain_baseline_over_production_stdio tests.test_mcp.McpTests.test_root_mates_without_cylinders_over_production_stdio tests.test_mcp.McpTests.test_geometry_analysis_capture_and_stop_over_stdio tests.test_mcp.McpTests.test_finite_boundaries_capture_index_and_stop_over_stdio -v
+        run: conda run --no-capture-output -n cadkin-ci python -m unittest tests.test_mcp.McpTests.test_local_constraint_solution_over_production_stdio tests.test_mcp.McpTests.test_batched_capture_and_chain_solution_over_stdio tests.test_mcp.McpTests.test_first_chain_baseline_over_production_stdio tests.test_mcp.McpTests.test_root_mates_without_cylinders_over_production_stdio tests.test_mcp.McpTests.test_geometry_analysis_capture_and_stop_over_stdio tests.test_mcp.McpTests.test_finite_boundaries_capture_index_and_stop_over_stdio tests.test_mcp.McpTests.test_surface_engagement_capture_index_and_stop_over_stdio -v
       - run: conda run --no-capture-output -n cadkin-ci python -m unittest discover -s tests -v
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_reference_templates.py --output outputs/ci-reference-0.13
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_template_matching.py --output outputs/ci-matching-0.14
@@ -41,6 +41,7 @@ jobs:
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_root_mates.py --output outputs/ci-root-mates-0.27
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_geometric_connections.py --output outputs/ci-geometric-connections-0.28
       - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_finite_connections.py --output outputs/ci-finite-connections-0.29
+      - run: conda run --no-capture-output -n cadkin-ci python scripts/verify_surface_engagement.py --output outputs/ci-surface-engagement-0.30
       - name: Verify bundled test model
         shell: pwsh
         run: |

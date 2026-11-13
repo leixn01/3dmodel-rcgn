@@ -64,6 +64,14 @@ def assess(task, envelope, document):
             valid = (data.get('component_distance_schema_version')==1 and len(targets)==2 and
                      {t.get('occurrence_path') for t in targets}==set(expected) and
                      all(pose_matches(t,expected.get(t.get('occurrence_path'))) for t in targets))
+        elif name in ('sw_sample_cylinder_face','sw_read_face_adjacency'):
+            source=data.get('source')
+            schema='cylinder_sample_schema_version' if name=='sw_sample_cylinder_face' else 'face_adjacency_schema_version'
+            valid=(data.get(schema)==1 and isinstance(source,dict) and source==task.get('expected_inspection_source') and
+                data.get('boundary_source')==task.get('expected_boundary_binding') and len(expected)==1 and
+                pose_matches(source.get('target'),next(iter(expected.values()))) and
+                data.get('parameters')=={k:v for k,v in task['arguments'].items() if k not in ('expected_document_token','boundary_path')} and
+                data.get('physical_engagement_confirmed') is False)
         elif name == 'sw_read_face_boundary':
             source=data.get('source')
             valid=(data.get('face_boundary_schema_version')==1 and isinstance(source,dict) and source==task.get('expected_boundary_source') and

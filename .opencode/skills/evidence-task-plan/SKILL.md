@@ -20,3 +20,5 @@ description: 将草案检查或目标约束缺口转换成有预算的只读补�
 继续独立分析，在结论保留能力缺口与延期事项，不设置人工复核节点。
 
 已有finite connection报告且缺圆柱面的有限边界时，按[有限边界分支](references/finite.md)使用finite_analysis_path；不要同时传其它profile。
+
+已有engagement报告需补点成员关系/内外侧和实际邻面时，按[表面补证分支](references/engagement.md)使用engagement_analysis_path，与其它profile互斥。

@@ -48,3 +48,8 @@
 同时检查过 AvishakeAdhikary/solidworks-mcp-server 的连接代码与 MIT 声明，其连接策略包含自动新建实例的路径；本项目没有复用该连接实现。最终采用已有会话连接、独立 STA 调度和固定工具目录。
 
 官方 MCP Python SDK 使用维护线 1.29.0，按 [官方 1.x 文档](https://py.sdk.modelcontextprotocol.io/v1/)固定版本，避免无意升级到接口不同的 2.x。OpenCode 项目配置使用官方说明兼容的 V1 格式；工具协议已由真实 MCP 客户端测试，OpenCode 与 SolidWorks 的现场联调仍待完成。
+
+## 表面补证 API（0.30）
+
+- [IEdge.GetTwoAdjacentFaces2](https://help.solidworks.com/2016/english/api/sldworksapi/SOLIDWORKS.Interop.sldworks~SOLIDWORKS.Interop.sldworks.IEdge~GetTwoAdjacentFaces2.html)：两槽邻面，可有空邻面；结合IsSame同体和持久引用回读，不用坐标猜拓扑。
+- [ISurface.EvaluateAtPoint](https://help.solidworks.com/2024/english/api/sldworksapi/SolidWorks.Interop.sldworks~SolidWorks.Interop.sldworks.ISurface~EvaluateAtPoint.html)：法向等11值；FaceInSurfaceSense为true时反向得到面法向。有限成员关系仍来自IFace2.GetClosestPointOn，曲面求值不证明有限裁剪范围。

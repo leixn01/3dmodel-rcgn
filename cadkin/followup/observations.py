@@ -10,7 +10,8 @@ def require(condition, message, code):
 
 FAMILIES = {'sw_component_constraints': 'constraints', 'sw_component_faces': 'faces',
             'sw_component_cylinders': 'cylinders', 'sw_component_distance': 'distance',
-            'sw_mate_inventory': 'root_mates', 'sw_probe_face_pair': 'face_probes', 'sw_read_face_boundary':'face_boundaries'}
+            'sw_mate_inventory': 'root_mates', 'sw_probe_face_pair': 'face_probes', 'sw_read_face_boundary':'face_boundaries',
+            'sw_sample_cylinder_face':'cylinder_samples','sw_read_face_adjacency':'face_adjacency'}
 MAX_ROUNDS = 4
 
 
@@ -21,6 +22,11 @@ def request_key(tool, paths):
 
 def describe_capture(tool, data):
     """Summarize only verified complete observations, retaining the original source elsewhere."""
+    if tool in ('sw_sample_cylinder_face','sw_read_face_adjacency'):
+        return {'face_selection':{k:data['source']['face'][k] for k in ('body_index','face_index')},
+            'boundary_source':data['boundary_source'],'physical_engagement_confirmed':False,
+            'continuous_angular_coverage_proven':False,'available_for_existing_reintegration':False,
+            'next_tool':'cad_analyze_surface_engagement'}
     if tool == 'sw_read_face_boundary':
         return {'reported_edge_count':data['reported_edge_count'],'read_edge_count':data['read_edge_count'],
             'face_selection':{k:data['source']['face'][k] for k in ('body_index','face_index')},

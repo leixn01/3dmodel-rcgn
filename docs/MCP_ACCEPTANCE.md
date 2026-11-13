@@ -1,11 +1,11 @@
 # 当前版本 MCP 实机验收
 
-目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前46个工具（含补采执行、回填、比较及证据关联复用），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
+目标：在安装 SolidWorks 的 Windows 电脑，通过 OpenCode 实际调用当前57个工具（含补采执行、回填、比较及证据关联复用），核对返回值与 SolidWorks 窗口。离线测试及模拟后端不能作为实机通过证据。
 
 ## 准备与连接
 
 1. 在仓库根目录执行 `git pull --ff-only`，按 README 安装或更新 `.[solidworks,templates]`，退出并重启 OpenCode。先完成 0.6.0 的 Conda 环境核对；SolidWorks 未运行时再按 0.4.0 启动，无需手动提前打开。
-2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 46 个工具。客户端可能给工具名添加服务器前缀。
+2. 运行 `opencode mcp list`，确认 `solidworks` 已连接；进入 OpenCode，确认 MCP 工具目录包含当前 57 个工具。客户端可能给工具名添加服务器前缀。
 3. 记录提交 SHA（`git rev-parse HEAD`）、Windows/Python/OpenCode/SolidWorks 版本。MCP 已连接仅代表协议可用，必须继续检查 `sw_session_status`。
 
 用户最新反馈：在 SolidWorks 2025、STEP 导入装配的环境对旧版 15 个工具逐项调用，11 项 API 通过，2 项失败（辅助对象显示），2 项部分通过（组件隐藏实际生效但超时、空间清单小范围正确而全量超时）。原图报告 254 个组件、60 秒超时，未提供提交 SHA 或原始 JSON；该反馈不等于 0.5.0 已验收。0.4.0 起已有第 16 个启动工具、180 秒调用上限；本次修复不能仅靠调高超时宣称成功。先完成下面 0.5.0 复测。
@@ -1354,3 +1354,32 @@ sw_execute_evidence_batch按原保护执行，必要时按execution_source续跑
 未知/部分边界变成完整区间、失败后换预算自动重试、通过删index/新建链清轮数、把投影包络变成行程、直接认定转动/滑动或把finite报告传入原生求解器，都判失败。几何报告/输入被改应EVIDENCE_MISMATCH；目标类型unknown、DOF及motion_limits_mm仍null。
 
 保存原catalog/geometry/check/index、原始边界envelope、plan/receipt、更新index与finite报告到outputs新路径；不覆盖模型或旧证据。不设人工复核门槛，未完成的互补表面、角向覆盖、邻接、接触持续性和有限运动在结论说明。详情见[FINITE_CONNECTIONS](FINITE_CONNECTIONS.md)。
+
+## 0.30.0：表面采样与邻接补证
+
+当前57工具、50个独立功能skill。在已有Conda执行README更新步骤，重启OpenCode。自动验收：
+
+```powershell
+python scripts/verify_surface_engagement.py --output outputs/verify-surface-engagement-0.30
+```
+
+预期95项`passed: true`，完整证据留在新目录；五种合成装配情境不代表升降机实机结果。不要在实机使用合成目录的token、面ID或query点。
+
+实机用原finite报告、同check及最新index，所有输出使用新路径：
+
+1. `cad_analyze_surface_engagement`：`{"finite_analysis_path":"outputs/finite.json","evidence_index_path":"outputs/latest-index.json","output_path":"outputs/engagement-030.json"}`。若没有更新index可省略该参数以继承原报告；有历史不得省略绕过。核对coverage、rounds_completed、来源和缺口；离线不会启动CAD。
+2. `cad_plan_evidence_tasks`：`{"draft_check_path":"outputs/check.json","engagement_analysis_path":"outputs/engagement-030.json","output_path":"outputs/engagement-plan-030.json","max_tasks":20}`。核对algorithm_version=8、planned_capture_tasks及含保护总数；两个实例各一面时通常4capture+6guard=10调用。计划没有capture时停止，不空跑保护。
+3. `sw_execute_evidence_batch`：`{"plan_path":"outputs/engagement-plan-030.json","output_path":"outputs/engagement-batch-030-01.json","max_steps":20,"time_budget_seconds":60}`。若未完成，原样传plan_path并以execution_source续作previous_execution_path，换新output。不得重新初始化计划或删除partial/failed。
+4. 完整receipt交`cad_index_evidence`：`{"draft_check_path":"outputs/check.json","execution_path":"实际最终receipt路径","output_path":"outputs/engagement-index-030.json"}`。使用实际receipt，保护失败的capture不能变成usable。
+5. 以原finite报告+新index重算到`outputs/engagement-after-030.json`，再规划到新路径，检查已尝试的面/工具不再调用，第四轮后保持stop。
+
+逐项判断新增功能：
+
+| 项目 | 应核对的返回 | 不能据此声称 |
+| --- | --- | --- |
+| 点成员与内外侧 | 每面1–32点，原始投影与定向法向；查询距离/阈值、inner/outer或sheet_orientation_only；失败行保留 | 完整360度覆盖、接触面积、已配合 |
+| 真实邻接 | 每边两槽、同体和面身份、持久引用、空邻面/缝边；预算/读取失败为partial | 跨组件接触、止推、挡肩限位 |
+| 离线汇总 | paired_samples中双侧成员/相反材料侧、点间距离、法向；实际邻接轴向平面；来源与旧错误/遗漏 | 目标revolute/prismatic、整机DOF或行程 |
+| 效率与停止 | 批次内实际调用/各耗时、共享rounds_completed；已有完整/失败不再读 | 合成速度等于实机加速比 |
+
+记录本机SolidWorks版本、提交SHA、原envelope/receipt/index与耗时；本轮只读，不移动或保存模型。风险直接写入结论，不增加人工复核节点。

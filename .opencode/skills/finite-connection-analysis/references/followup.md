@@ -7,3 +7,5 @@ v7只选未尝试的已有圆柱候选面边界，一面一次，max_edges固定
 优先sw_execute_evidence_batch；未完成用execution_source续跑。完成且guard通过后cad_index_evidence传同check与新receipt，再cad_analyze_finite_connections传原geometry报告和最新index。失败/partial仍索引留档、自动不重采；与距离/目录/面探测共享四轮，不能重建初始链绕过。
 
 不调用reintegrate来把边界伪装成mate；不直接改旧报告。停止只说明没有预算内的新取证，不说明运动识别完成。
+
+完成边界后的表面补证交surface-engagement-analysis，使用原finite输出和最新index；其仍使用同一四轮历史，不能额外初始化。

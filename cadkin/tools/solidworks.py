@@ -74,6 +74,17 @@ TOOLS = [
           "max_cylinders": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100},
           "include_face_references": {"type": "boolean", "default": False, "description": "Capture and round-trip persistent part-face references for later live mate-face matching; adds COM reads."}},
          ["expected_document_token", "occurrence_path"]),
+    spec('sw_sample_cylinder_face', 'Read finite-face point membership and oriented normals at 1–32 explicit root-frame queries on a source-bound cylinder. Rechecks persisted identity and saved boundary; solid inner/outer orientation is sampled only. No continuous coverage, contact, fit or motion verdict.',
+         {'expected_document_token':TOKEN,'boundary_path':{'type':'string','minLength':1},
+          'query_points_root_mm':{'type':'array','minItems':1,'maxItems':32,'items':{'type':'array','minItems':3,'maxItems':3,'items':{'type':'number'}}},
+          'membership_tolerance_mm':{'type':'number','exclusiveMinimum':0,'maximum':.1}},
+         ['expected_document_token','boundary_path','query_points_root_mm','membership_tolerance_mm']),
+    spec('sw_read_face_adjacency', 'Read bounded edge adjacency of one source-bound cylinder, retaining seams and null neighbors. Checks live face/body identity and persistent reference round-trips before readback. Topological neighbors do not prove contact with another component or a motion stop.',
+         {'expected_document_token':TOKEN,'boundary_path':{'type':'string','minLength':1},
+          'max_edges':{'type':'integer','minimum':1,'maximum':256,'default':64}},['expected_document_token','boundary_path']),
+    spec('cad_analyze_surface_engagement', 'Replay finite-cylinder sources and guarded observations to report sampled inner/outer complementarity and actual adjacent axial planes. Generates bounded query seeds for missing inspections; consumes a same-target descendant index. Offline; no continuous coverage, fit, retention, joint type or motion limits.',
+         {'finite_analysis_path':{'type':'string','minLength':1},'evidence_index_path':{'type':'string','minLength':1},
+          'output_path':{'type':'string','minLength':1}},['finite_analysis_path','output_path'],False),
     spec('sw_read_face_boundary', 'Read bounded analytic line/circle edges of one persisted cylindrical face, resolving its identity and checking geometry before and after. No tessellation, selection, CAD edits or guessed extent for unsupported curves. Save the original envelope for guarded indexing.',
          {'expected_document_token':TOKEN,
           'face':{'type':'object','additionalProperties':False,'properties':{'face_inventory_path':{'type':'string','minLength':1},'body_index':{'type':'integer','minimum':0},'face_index':{'type':'integer','minimum':0}},'required':['face_inventory_path','body_index','face_index']},
@@ -255,6 +266,7 @@ TOOLS = [
          {'draft_check_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'max_tasks': {'type':'integer','minimum':3,'maximum':200,'default':20},
           'evidence_index_path': {'type':'string','minLength':1},
+          'engagement_analysis_path': {'type':'string','minLength':1,'description':'Optional surface engagement report; v8 plans missing sample/adjacency captures. Exclusive with other planning profiles; same shared four rounds.'},
           'finite_analysis_path': {'type':'string','minLength':1,'description':'Optional finite connection report; v7 plans missing cylindrical face boundaries, preserving exact index lineage. Exclusive with all other planning profiles.'},
           'geometry_analysis_path': {'type':'string','minLength':1,'description':'Optional geometry connection report. Plans only missing pair distances, preserving its exact index lineage. Mutually exclusive with constraint analysis or initial profile.'},
           'initial_capture_profile': {'type':'string','enum':['root_mates'], 'description':'Only for an empty-evidence first chain: one enhanced root-mate capture plus all guards, independent of cylinders.'},
@@ -328,6 +340,12 @@ class SolidWorksTools:
                 from cadkin.tools.matching import build_target_graph, match_templates
                 handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
                 return handler(self.root, **arguments)
+            if name == 'cad_analyze_surface_engagement':
+                from cadkin.tools.engagement import analyze_engagement
+                return analyze_engagement(self.root, **arguments)
+            if name in ('sw_sample_cylinder_face','sw_read_face_adjacency'):
+                from cadkin.tools.engagement_sources import load_engagement_boundary
+                arguments = load_engagement_boundary(self.root, **arguments)
             if name == 'cad_analyze_finite_connections':
                 from cadkin.tools.finite_connections import analyze_finite_connections
                 return analyze_finite_connections(self.root, **arguments)
