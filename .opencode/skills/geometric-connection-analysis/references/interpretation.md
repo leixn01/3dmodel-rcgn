@@ -1,0 +1,14 @@
+# 判读
+
+每对包含patterns、alternatives、distance_observations、face_observations、native_mate_context、flags、verification_gaps。target_joint_kind仍unknown、target_degrees_of_freedom仍null；候选不含置信概率、不排序成唯一机械结论。
+
+- 同轴圆柱保留cylindrical/revolute/prismatic/fixed及no_direct_joint/other_relationship。几何只能说明轴线相容，不能证明孔轴互补、有限啮合、轴向保持、防转或运动可行。
+- 重复/分割圆柱面合并同一条无限轴线，不累计投票。多条偏置平行同轴线可提出防转导向解释；对转动的冲突是“多条导向同时保持啮合”条件成立时的推论，该条件未被证明。不同来源分别保存，不拼成约束方程。
+- 相向近距离平面采样支持planar/fixed等解释，不能证明持续面接触或双向约束。只读局部样本不等于接触斑块。
+- 仅平行轴或仅组件近距离没有特定运动类型依据。已测大间隔不排除间接连接；无几何保留未知。
+
+flags包含截断、部分来源、多距离快照和装配距离/零件定义面范围差异。保留各观测与其阈值，不能取最后一份或删除竞争解释。原生配合状态单独保留，应交给对应约束分析，不能与假设混为已知约束。
+
+候选集不是穷尽；行程、螺距、装配切除、弹性、摩擦和间接传动仍可能缺失。不将此报告交给cad_solve_local_constraints或cad_solve_chain_constraints；它们只接受原生约束分析。
+
+来源同轴还须通过本报告的毫米/角度阈值；不通过时仅保留axis_alignment_outside_analysis_tolerance上下文。来源阈值不同会保留flags；放宽当前阈值不会找回原扫描未返回的轴对，也不自动将旧parallel升级为已支持同轴解释。轴线偏移不是组件表面间隙。

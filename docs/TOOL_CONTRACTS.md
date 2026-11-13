@@ -1,9 +1,10 @@
 # SolidWorks 工具接口
 
-版本：0.27.0。以下 51 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.28.0。以下 52 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
+| `cad_analyze_geometric_connections` | target_graph_path、output_path、distance_tolerance_mm、angle_tolerance_deg；可选max_pairs/evidence_index_path | 几何连接竞争解释及缺口，绑定目标/索引来源；不产生物理约束，返回摘要与文件路径 |
 | `cad_review_root_mates` | inventory_path、mate_inventory_path、output_path | 原始根配合直接关联准确实例对，schema v2来源可重放，不依赖圆柱或调用CAD |
 | `cad_solve_chain_constraints` | constraint_analysis_path、reference_occurrence_path、characteristic_length_mm、output_path；可选relative_rank_tolerance/max_constraints_per_pair | 单链同快照约束组装、闭环限制和瞬时方向；完整文件+紧凑摘要，无CAD调用 |
 | `sw_execute_evidence_batch` | plan_path、output_path；可选previous_execution_path/max_steps/time_budget_seconds | 有预算串行执行已有计划前缀，保留逐步receipt/保护/停止，返回摘要与计时 |
@@ -14,7 +15,7 @@
 | `cad_index_evidence` | draft_check_path、execution_path、output_path；可选max_contexts | 离线关联已采集观测与当前候选，供后续规划复用及停止 |
 | `cad_compare_draft_checks` | before_check_path、after_check_path、output_path | 离线比较返回候选/发现与覆盖，不声明物理问题解决 |
 | `cad_check_joint_draft` | joint_draft_path、output_path；可选max_findings | 重放原始草案，报告结构、证据冲突、竞争解释与覆盖缺口，离线新输出 |
-| `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks、evidence_index_path、constraint_analysis_path、initial_capture_profile | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
+| `cad_plan_evidence_tasks` | draft_check_path、output_path；可选max_tasks、evidence_index_path、constraint_analysis_path、geometry_analysis_path、initial_capture_profile | 规划只读调用/依赖/前后校验及原始返回路径，不执行CAD或回填 |
 | `cad_build_rigid_candidates` | target_graph_path、output_path；可选max_group_size/max_partitions/include_contact_hypotheses | 重放目标图并生成多零件刚体候选，保留不合并基线/竞争解释，不修改CAD |
 | `cad_draft_joints` | rigid_candidates_path、output_path；可选max_target_pairs、显式模板、搜索/轴线参数 | 默认不加载模板，输出目标关系证据；类型unknown/DOF=null，参考语义分开 |
 | `cad_build_target_graph` | chain_path、output_path，可选relation_paths | 重放链及来源为实例图；轴线关系自动/显式读取，保留冲突，离线新输出 |
@@ -810,3 +811,11 @@ cad_review_root_mates只读完整空间清单与原始sw_mate_inventory envelope
 cad_plan_evidence_tasks的initial_capture_profile仅可为root_mates，只适用于2–20实例的首次空证据check，不可同时传index/analysis；生成v5计划，一次增强根配合+全部2N+2保护。预算不足空任务stop，不调用CAD。CLI plan-evidence对应--initial-capture-profile root_mates。
 
 cad_create_chain_baseline接受原v1或新v5首轮计划，完整根配合无需圆柱可独立建源；报告algorithm_version=2。chain-session配置可选capture_profile=geometry_and_mates（默认）或root_mates；后者首轮增强，不自动扫描圆柱，失败/partial/无配合均保留记录和未知。详见[配合独立分析](ROOT_MATE_RELATIONS.md)。
+
+## 0.28.0 几何连接分析与v6计划
+
+cad_analyze_geometric_connections要求原target、毫米公差(0,10]、角度公差(0,5]；max_pairs默认100、范围1–200，已有历史传evidence_index_path。报告geometry_connection_schema_version=1、algorithm_version=1；分析重新计算全部来源与几何解释，目标类型/DOF保持unknown/null。返回analysis_source与coverage，完整pairs留在文件；不连接CAD或模板，MCP readOnlyHint=false仅因写新文件。
+
+cad_plan_evidence_tasks可选geometry_analysis_path，与constraint_analysis_path/initial_capture_profile互斥。报告/check同target，index须与报告完全相同（可自动继承）；新index必须先重算新报告，禁止旧缺口重采。v6只生成缺失组件对的sw_component_distance及全部保护，无圆柱/配合扫描。执行后用同check+新receipt索引，再同target+新index分析；近距离有限面验证交原v3 face planner。
+
+SOURCE_INCOMPLETE/GEOMETRY_ANALYSIS_LIMIT和原target错误保留；EVIDENCE_MISMATCH拒绝篡改/旧来源/混用历史；NO_CAPTURE_TASKS阻止空转。完整原始来源、receipt、index和新报告保留，不改变v1–v5重放，不把几何报告传给原生约束求解器。详见[几何连接分析](GEOMETRIC_CONNECTIONS.md)。

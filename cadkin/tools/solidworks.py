@@ -74,6 +74,13 @@ TOOLS = [
           "max_cylinders": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100},
           "include_face_references": {"type": "boolean", "default": False, "description": "Capture and round-trip persistent part-face references for later live mate-face matching; adds COM reads."}},
          ["expected_document_token", "occurrence_path"]),
+    spec('cad_analyze_geometric_connections', 'Explain target geometry using competing conditional connection hypotheses. Replays cylinder relations, source-bound local face samples and measured distances, optionally consuming a current observation index. No templates, CAD calls, physical joint decisions or invented constraints. Writes full details and returns a compact summary.',
+         {'target_graph_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'distance_tolerance_mm': {'type':'number','exclusiveMinimum':0,'maximum':10},
+          'angle_tolerance_deg': {'type':'number','exclusiveMinimum':0,'maximum':5},
+          'max_pairs': {'type':'integer','minimum':1,'maximum':200,'default':100},
+          'evidence_index_path': {'type':'string','minLength':1}},
+         ['target_graph_path','output_path','distance_tolerance_mm','angle_tolerance_deg'], False),
     spec('cad_review_root_mates', 'Associate exact root mate entity pairs directly with a complete spatial inventory, without cylinder scans or geometric relation files. Preserves activity, unmatched/boundary references, errors and source hashes; no joint/DOF confirmation. Original root-mate envelopes only, not cylinder-face matching outputs.',
          {k: {'type':'string','minLength':1} for k in ('inventory_path','mate_inventory_path','output_path')},
          ['inventory_path','mate_inventory_path','output_path'], False),
@@ -240,6 +247,7 @@ TOOLS = [
          {'draft_check_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'max_tasks': {'type':'integer','minimum':3,'maximum':200,'default':20},
           'evidence_index_path': {'type':'string','minLength':1},
+          'geometry_analysis_path': {'type':'string','minLength':1,'description':'Optional geometry connection report. Plans only missing pair distances, preserving its exact index lineage. Mutually exclusive with constraint analysis or initial profile.'},
           'initial_capture_profile': {'type':'string','enum':['root_mates'], 'description':'Only for an empty-evidence first chain: one enhanced root-mate capture plus all guards, independent of cylinders.'},
           'constraint_analysis_path': {'type':'string','minLength':1, 'description':'Optional source-bound constraint report. Plan only missing enhanced mate evidence, inheriting its index and four-round budget.'}},
          ['draft_check_path','output_path'], False),
@@ -311,6 +319,9 @@ class SolidWorksTools:
                 from cadkin.tools.matching import build_target_graph, match_templates
                 handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
                 return handler(self.root, **arguments)
+            if name == 'cad_analyze_geometric_connections':
+                from cadkin.tools.geometric_connections import analyze_geometric_connections
+                return analyze_geometric_connections(self.root, **arguments)
             if name == 'cad_review_root_mates':
                 from cadkin.tools.root_mates import root_mate_review
                 return root_mate_review(self.root, **arguments)

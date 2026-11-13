@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.27.0（51 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.28.0（52 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -38,6 +38,7 @@
 | 来源重放与目标实例图 | `mechanism-target-graph` |
 | 参考局部子图匹配与候选解释 | `mechanism-template-match` |
 | 多零件刚体候选分组 | `mechanism-rigid-groups` |
+| 无配合几何连接的竞争解释 | `geometric-connection-analysis` |
 | 目标局部配合约束组合分析 | `mechanism-constraint-analysis` |
 | 两实例局部瞬时约束秩与运动方向 | `mechanism-local-motion` |
 | 单链多组件瞬时约束与闭环限制 | `mechanism-chain-motion` |
@@ -129,3 +130,6 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 
 - 0.27.0 cad_review_root_mates将原始根配合与完整空间清单关联，不依赖圆柱关系。schema v2只绑定inventory/mates，逐源重放；只保留准确双实体/双实例关联，多实体或未映射保持unmatched，不被已有实例对吸收。含face_matching的输入仍走原schema v1几何关联，不删来源绕过。
 - 首次baseline可独立消费完整根配合，圆柱失败不阻塞；可选几何关系仍需两份完整圆柱envelope。成功/失败/partial全部索引，旧v1文件照原语义重放。只求原生约束时chain-session配置capture_profile=root_mates，初始v5计划一次增强采集+2N+2保护，不扫描实体；默认geometry_and_mates不变。已有history不切模式重启，无配合STEP仍未知，不自动转模板/造关节。
+
+- 0.28.0 cad_analyze_geometric_connections独立解释目标圆柱关系、局部平面采样和距离，复用同target的最新index。重复面不投票，多轴防转仅为啮合条件成立时的推论；缺啮合/保持/运动证据不选唯一类型。no_direct_joint/other_relationship保留，名称、模板、AABB不确定类型。报告不进入原生约束求解器或覆盖草案，target类型unknown/DOF=null。
+- 几何报告可交cad_plan_evidence_tasks的geometry_analysis_path分支，v6只安排缺失组件对距离与全部保护，和constraint/initial profile互斥。报告必须先绑定最新index，禁止新索引配旧缺口或替换历史。执行→同check索引→同target几何重算；不要求先有proximity来源。近距离有限面验证交原face planner，仍共享4轮和失败/partial不重试。面探测和几何分类不证明真实关节/有限运动。

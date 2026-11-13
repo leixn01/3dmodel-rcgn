@@ -1,0 +1,12 @@
+# 验证衔接
+
+完整分析的verification_gaps区分可执行采集、独立能力交接和当前能力缺口：
+
+1. COMPONENT_DISTANCE_MISSING：把报告路径和同target的check交给evidence-task-plan的geometry_analysis_path分支。v6计划只补缺失组件对距离，包含全部前后保护；不采圆柱或根配合。
+2. 执行用evidence-task-execute的批次入口；execution_source才是receipt。完整且guard通过后，用cad_index_evidence绑定同check和新receipt，然后cad_analyze_geometric_connections使用同target和新index重算。失败/partial同样索引，禁止重复尝试。
+3. FINITE_FACE_SAMPLES_MISSING：把最新check/index交face-probe-plan，显式给max_component_gap_mm、surface_tolerance_mm和预算。先缺目录则采目录、索引后续；再由原工具选择真实持久面引用和基于最近点的种子。面探测后继续索引、重算几何报告，可直接消费完整guarded probe；不需要为了本报告伪造旧face review。
+4. 若还需更新原草案，另交evidence-reintegration并遵循原review阈值/来源要求；几何报告本身不会覆盖原草案。
+
+增强后的报告继承新index轮数。stop时不执行空保护、不清历史；同一实例对距离尝试无论成败不自动重复。原4轮共用，面探测成功也不能认定物理连接或有限运动。
+
+PHYSICAL_ATTACHMENT_AND_FINITE_MOTION_UNVERIFIED是能力缺口，不能靠重复静态扫描消除。GEOMETRY_BASIS_MISSING只交接缺失来源能力。结论说明已验证的局部量、候选变化、未测范围与风险，不设置人工复核。

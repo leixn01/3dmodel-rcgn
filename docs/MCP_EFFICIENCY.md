@@ -55,3 +55,7 @@ python scripts/verify_mcp_efficiency.py --output outputs/verify-speed-0.25
 只需原生约束时，chain-session的root_mates模式首轮直接采增强根配合，无需先读基础配合及逐件扫描圆柱。N实例采集与保护调用合计2N+3，保留2N+2个前后校验；默认geometry_and_mates模式不变。三组件合成闭合链验收得到相同已建模瞬时维数，批内调用21→9、两轮→一轮；入口清单/活动文档调用另计，不是墙钟加速比。
 
 有旧采集先用root-mate-review离线关联，已有历史继续原index/check/analysis。无配合、增强partial或失败不盲目扫描；root_mates不会自动补圆柱，缺少几何依据另由相应能力按历史规划。验收命令见[原生配合独立分析](ROOT_MATE_RELATIONS.md)。
+
+## 0.28.0 只补缺失距离
+
+几何报告只返回摘要/文件路径，按需展开pairs；分析复用已有target来源和完整guarded距离/面探测，不重新调用CAD。v6只规划尚无观测且有几何线索的实例对距离；已测分离、失败和partial均不重复。两实例单距离共7个批内工具调用（6保护+1测量），一次批次可完成，软预算仍可能拆批。面目录/面探测由原独立规划器复用并继承四轮上限。没有缩减保护，也不能宣称实机耗时按调用数等比下降。

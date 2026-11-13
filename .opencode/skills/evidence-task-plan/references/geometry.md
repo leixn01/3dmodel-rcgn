@@ -1,0 +1,9 @@
+# 几何缺口规划
+
+cad_plan_evidence_tasks传draft_check_path、geometry_analysis_path、output_path，可选max_tasks；报告/check必须同target。不能同时传constraint_analysis_path或initial_capture_profile。已有index先用它重算几何报告；规划自动继承报告索引，显式传入不同索引会被拒绝，不能用旧报告的缺口覆盖新观测。
+
+生成algorithm_version=6、plan_kind=geometric_connection_gaps。仅为有几何线索且缺完整距离的实例对安排sw_component_distance，全部前后document/pose保护计预算。已有距离（包括大间隔）、失败/partial、轮数耗尽、不可用实例上下文会复用或阻止采集；预算不足可延期或stop，空任务不执行。
+
+geometry_findings和retained_geometry_flags保留原解释及风险。unresolved_findings中的next_tool=cad_plan_face_probes表示交给独立面规划器，不表示已选面或已验证。当前无运动验证工具，不能发明可执行任务。
+
+执行后优先cad_index_evidence（同check+新receipt）→cad_analyze_geometric_connections（同target+新index），再规划下一步；不要求事先存在proximity review。原草案需更新时另交回填，不能拿几何猜测当原生配合。

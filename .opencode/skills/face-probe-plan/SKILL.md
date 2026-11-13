@@ -13,3 +13,5 @@ description: 用已有组件最近点和来源绑定面目录，自动筛选平�
 4. 具体面探测完成后交接evidence-reintegration沿用原复核阈值。尚无兼容依据的组件对，将完整probe交接face-contact-review生成明确阈值的复核，再供回填使用。回填成功后独立比较，并用新check和当前receipt建立索引，才继续规划；失败时保留原有效check和诊断。
 
 解析曲面残差不检验有限面的裁剪边界；持久引用须在实际探测时解析核对。近测点、收敛或停止都不表示机械关系已确认，不设置人工复核节点。
+
+几何连接分析交来的近距离缺口同样使用本流程；完成guarded面探测并索引后，可交接geometric-connection-analysis按原target和最新index解释局部证据。仍不确认真实运动副。

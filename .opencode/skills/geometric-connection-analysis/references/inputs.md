@@ -1,0 +1,11 @@
+# 调用与来源
+
+cad_analyze_geometric_connections必填target_graph_path、output_path、distance_tolerance_mm（0到10毫米，含10）、angle_tolerance_deg（0到5度，含5）；可选max_pairs（1–200，默认100）和evidence_index_path。输出必须是outputs下新文件。
+
+目标图由mechanism-target-graph重放创建。无配合时可用空证据链加relation_paths传入已有圆柱关系，不必先造配合文件；原始空间、圆柱、关系文件均须保留。没有轴线/面/距离时明确返回insufficient_geometry，不能用名称、包围盒或模板填补。
+
+index必须经原guarded receipt生成，绑定同target的check；不能传其它链或旧target的索引。分析复用target.input_files与可用索引观测中的完整距离/面探测。失败尝试留在索引，供规划器停止重试；不会扫描outputs目录找别的历史。暂不将索引中的孤立圆柱扫描直接变为关系：需要component-relations产出绑定关系并重建目标图，保持原执行历史。
+
+完整文件geometry_connection_schema_version=1，包含parameters、target_source、evidence_index_source、input_files、pairs及coverage。原始字节/派生内容在重放时复核；EVIDENCE_MISMATCH应核对来源，不改token、hash或手改结论。OUTPUT_EXISTS换新输出；不覆盖原文件。
+
+摘要不展开所有候选；根据analysis_source.path按需读指定pair。原target的source_errors/check发现保留，补采后可能仍partial；已有原始缺口不会因局部测量就宣称全消失。

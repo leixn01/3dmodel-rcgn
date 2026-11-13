@@ -1276,3 +1276,40 @@ python -m cadkin chain-session outputs/root-mates-config.json --output outputs/r
 ### 失败标准与保存
 
 把缺配合写为自由运动、把partial写成完整、无依据重复采集/清索引、模板类型写入目标、缺少保护、覆盖原文件、歧义配合进入确定模型，都判失败。完整输出保存在outputs的新目录：配置、原始返回、plan/receipt、baseline、index/check/constraints/solution和session计时报告。结论列出已支持约束、未知、来源范围与风险；不以人工复核作为继续条件。
+
+## 0.28.0：几何连接解释与定向补采
+
+### 更新与自动检查
+
+在已有Conda环境运行git pull --ff-only和python -m pip install -e ".[solidworks,templates]"，重启OpenCode。工具目录应有52项，包括cad_analyze_geometric_connections；功能skill45个。
+
+```powershell
+python scripts/verify_geometric_connections.py --output outputs/verify-geometric-connections-0.28
+python -m unittest tests.test_geometric_connections tests.test_mcp.McpTests.test_geometry_analysis_capture_and_stop_over_stdio -v
+```
+
+验收脚本预期passed=true、44项；显式合成CAD，非SolidWorks实机或升降机识别率。输出目录必须新建。覆盖几何无配合解释、已有距离/平面复用、距离失败后停止、三轮距离/面目录/有限面探测、历史与原文件保留。协议测试把真实SDK/stdio和合成CAD分开；离线重算使用生产MCP。
+
+### 实机前置与分析
+
+复用一条显式链的target/check和最新index；source files全部可读，当前装配文档/配置/位姿与其一致。target至少有绑定的圆柱关系、距离或面探测来源，否则应返回insufficient_geometry，不能补假数据。已有history不重新运行首次chain-session绕过轮数；原root_mates模式未采圆柱，不能凭其空几何得出运动关系。
+
+调用cad_analyze_geometric_connections：target_graph_path=实际target路径，evidence_index_path=最新实际索引（没有历史才省略），distance_tolerance_mm/angle_tolerance_deg=明确的任务公差，output_path=outputs下新JSON；max_pairs默认100，可在1–200限范围。0.1 mm/0.1°仅示例，不代表升降机已标定。
+
+预期摘要含analysis_source、coverage、rounds_completed；详细pairs在文件。几何同轴可以给多种候选，但target_joint_kind必须unknown、target_degrees_of_freedom必须null；每解释保留支持与未验证条件，不加载模板或编辑配合。较宽来源公差的同轴判定仍须通过本报告阈值；放宽阈值不能补回源扫描遗漏的实例对。相向近平面不等于接触或运动副，多条轴的防转冲突是条件性的。
+
+### 定向取证与验证
+
+cad_plan_evidence_tasks传同target的draft_check_path、新geometry_analysis_path、output_path和max_tasks；与constraint_analysis_path/initial_capture_profile互斥。已有index从报告自动继承；不同显式索引应拒绝，先用最新索引重算报告再规划。
+
+有缺失距离时，预期v6计划只列sw_component_distance与全部前后保护；两实例一项测距共7次（6保护+1测量）。预算6应生成stop/空任务及延期，不省保护。已有完整距离包括大间隔不重采；失败/partial尝试保留索引并阻止自动重试。
+
+用sw_execute_evidence_batch执行，未结束按execution_source续跑。guard通过后cad_index_evidence传同check、新execution_path、新output_path；再同target+新index重算几何报告。保护失败不可索引/复用，TIMEOUT保留receipt并停止。窗口不应出现零件移动、配合编辑或保存覆盖。
+
+已有近距离而缺有限面时，交cad_plan_face_probes，显式传同check/index、max_component_gap_mm、surface_tolerance_mm及预算。缺目录先采目录、索引，随后规划真实face locator/见证点种子并探测；再索引、重算几何报告。每一步沿用当前轮数，第四轮后不自动继续。已探测面不反向/换种子重试。
+
+### 失败标准与留档
+
+把几何candidate_kind写成目标已确认类型/DOF、把同轴偏移当组件表面间隙、把局部样点当持续接触、用模板替代目标约束、删除失败历史/换报告绕过索引、忽略源公差或未测范围均判失败。将几何报告传入cad_solve_chain_constraints应报INVALID_CONSTRAINT_SOURCE，禁止混用。
+
+保存原始target/check/index、全部来源、geometry report、v6/v3 plan、原始envelope、receipt及更新index到outputs新路径。报告可因原target缺口继续partial，不能因一次成功测量清除所有风险。不要求人工复核；物理连接、接触持续性和有限运动缺能力时明确保留未知。完整说明见[GEOMETRIC_CONNECTIONS.md](GEOMETRIC_CONNECTIONS.md)。
