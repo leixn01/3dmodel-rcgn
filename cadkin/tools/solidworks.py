@@ -186,6 +186,11 @@ TOOLS = [
           'max_partitions': {'type':'integer','minimum':1,'maximum':12,'default':8},
           'include_contact_hypotheses': {'type':'boolean','default':True}},
          ['target_graph_path','output_path'], False),
+    spec('cad_create_chain_baseline', 'Initialize first relation/connection bases from a complete guarded execution of an empty-evidence 2–20-component chain. Reuses original tools, retains unsuccessful attempts in a new index, binds constraint analysis to that history, and returns compact file handoffs. Offline only. Existing evidence or history must use reintegration instead.',
+         {'execution_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
+          'distance_tolerance_mm': {'type':'number','exclusiveMinimum':0},
+          'angle_tolerance_deg': {'type':'number','exclusiveMinimum':0,'maximum':5}},
+         ['execution_path','output_path','distance_tolerance_mm','angle_tolerance_deg'], False),
     spec('cad_solve_chain_constraints', 'Assemble source-bound supported root mate equations across one explicit 2–20-component chain. Separate source snapshots, explicit relative reference, rank/nullspace and loop diagnostics; target DOF remains unknown. Saves full detail and returns a compact summary. No CAD calls.',
          {'constraint_analysis_path': {'type':'string','minLength':1}, 'output_path': {'type':'string','minLength':1},
           'reference_occurrence_path': {'type':'string','minLength':1}, 'characteristic_length_mm': {'type':'number','minimum':0.001,'maximum':1000000},
@@ -302,6 +307,9 @@ class SolidWorksTools:
                 from cadkin.tools.matching import build_target_graph, match_templates
                 handler = build_target_graph if name == 'cad_build_target_graph' else match_templates
                 return handler(self.root, **arguments)
+            if name == 'cad_create_chain_baseline':
+                from cadkin.tools.chain_baseline import create_chain_baseline
+                return create_chain_baseline(self.root, self.call, **arguments)
             if name == 'cad_solve_chain_constraints':
                 from cadkin.tools.chain_motion import solve_chain_constraints
                 return solve_chain_constraints(self.root, **arguments)

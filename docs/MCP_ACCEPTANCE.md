@@ -1217,3 +1217,25 @@ MCP为cad_solve_chain_constraints，必填constraint_analysis_path、reference_o
 | 原始模型/历史 | 0次额外编辑；源哈希、index/check与4轮不变 | 写回草案最终类型、移动组件或覆盖模型 |
 
 保存Git SHA、Python/NumPy版本、全部工具参数/响应、原始envelope、逐步receipt、批次计时和链结果。真实升降机没有配合时未知是有效结论；不需要人工复核作为继续前置。
+
+## 0.26.0：首次单链联调
+
+前置：已有Conda安装`.[solidworks,templates]`并重启OpenCode（50工具）。自动验收：
+
+```powershell
+python scripts/verify_chain_session.py --output outputs/verify-chain-session-0.26
+```
+
+预期35项检查、passed=true。案例含闭环、无配合、增强partial、TIMEOUT，使用显式合成CAD与生产CLI/工具编排；实际软件另按下表验收。命令不会把夹具放入生产启动路径，原有14套验收继续保留。
+
+| 实机步骤 | 准确入口/参数 | 预期与失败标准 |
+| --- | --- | --- |
+| 启动与范围 | 使用原sw_start_application/sw_open_document，随后sw_component_tree；从当前返回取2–20个叶实例及token | 活动文档是目标装配；不把文件名“三独立”当识别结果 |
+| 配置 | 按CHAIN_SESSION.md写outputs/chain-session-config.json；提供当前token、scope、reference、数值尺度和毫米/度公差 | 原尺度/公差记录完整；禁止不存在的路径和旧token |
+| 首次联调 | `python -m cadkin chain-session outputs/chain-session-config.json --output outputs/chain-session-0.26.json` | workflow_complete=true且退出码0；可能仍有未知。错误退出码2，报告/原始日志保留 |
+| 基线离线重放 | `cad_create_chain_baseline`：execution_path为首轮receipt，output_path为新JSON，显式distance_tolerance_mm/angle_tolerance_deg | 不调用CAD；完整保护后baseline_created=true、outputs给出check/index/constraints，首轮记1/4。已有关系/索引拒绝 |
+| 计时 | 读report_source的performance、cad_capture_tool_timings及batch_sources | 批内工具按实际调用计时，阶段包含批次不能相加；不将结果称为纯COM/API时间 |
+| 当前结论 | 读solution_summary、evidence_summary、remaining_findings_summary与stop_reason | 无配合不能称自由运动；有限运动/整机DOF/机械验证仍false/null |
+| 失败/续跑 | 原receipt、最新check/index/constraints交接独立工具 | 不改旧token/哈希、不删占用文件、不换文件名重采以绕过历史；TIMEOUT先核对软件状态 |
+
+证据保存在指定session JSON和同名-files目录。配置、原始envelope/receipt、基线、index、analysis和solution均保留，源文件不得覆盖。若用户运行被软件对话框/超时阻塞，应依据最末完整调用日志定位；不能把自动测试通过写成实机通过。窗口中模型的位姿、显隐和保存状态应保持不变；本入口不负责移动/碰撞验证。

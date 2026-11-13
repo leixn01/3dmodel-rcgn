@@ -1,6 +1,6 @@
 # SolidWorks 工具接口
 
-版本：0.25.0。以下 49 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
+版本：0.26.0。以下 50 个工具已实现并注册；测试边界与用户 SolidWorks 2025 反馈见 `VALIDATION.md`。以 `cadkin/tools/solidworks.py` 的 JSON Schema 为参数依据。
 
 | 工具 | 参数 | 作用及副作用 |
 | --- | --- | --- |
@@ -791,3 +791,11 @@ output_path是独占新建的batch report，旁边新建`<stem>-steps/step-NNN.j
 计时report为evidence_batch_schema_version=1，保存参数、源、每步receipt、逐工具时间与完整错误；不是机械证据，也没有通过计时跳过重放。工具时间含验证/STA/适配器，非纯COMAPI耗时；client_tool_round_trips=1指本批外部调用，数据不含agent思考或网络时间。错误摘要去重，但完整错误/原始返回保留。
 
 CLI：`execute-evidence-batch <plan> --output <new-report> [--previous-execution <receipt>] [--max-steps N] [--time-budget-seconds S]`；链级为`solve-chain-constraints <analysis> --reference-occurrence-path <path> --characteristic-length-mm L --output <new.json>`。效率边界与实机判读见[MCP_EFFICIENCY.md](MCP_EFFICIENCY.md)。
+
+## 0.26.0：首次单链联调
+
+新增cad_create_chain_baseline，共50工具/43功能skill。参数execution_path、output_path、distance_tolerance_mm（正数）、angle_tolerance_deg（0<值<=5）。仅重放无索引、无既有关系来源的初始计划，2–20个目标实例，要求执行完整且guards_passed；全部在线采集仍由原执行器处理。
+
+返回baseline_created、pipeline_error、outputs（chain/target/rigid/draft/check/index/constraints的path+sha256）、baseline_source、applied/unapplied_capture_ids与rounds_completed。失败时outputs为空，中间文件只诊断；原始失败/partial尝试保留在成功建立的索引中。不会读取参考模板或调用CAD。已有来源/历史拒绝BASELINE_ALREADY_EXISTS；其余来源/输出保护同原工具。
+
+CLI `python -m cadkin chain-session <config.json> --output outputs/<new>.json` 是首次流程入口，配置/失败处理见[CHAIN_SESSION.md](CHAIN_SESSION.md)。它使用同一工具服务，不是新增自由脚本MCP，也不代替原有独立工具。只对活动装配运行；启动/打开/选择范围由对应能力处理。

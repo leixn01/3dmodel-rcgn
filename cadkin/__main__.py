@@ -184,13 +184,19 @@ def main():
     index.add_argument('execution_path')
     index.add_argument('--max-contexts', type=int, default=200)
     index.add_argument('--output', required=True)
+    session = commands.add_parser('chain-session', help='Run a bounded first-chain capture, baseline and instantaneous analysis in the active assembly')
+    session.add_argument('config_path', help='Project JSON with exact scope, current token, reference and numeric tolerances')
+    session.add_argument('--output', required=True)
     args = parser.parse_args()
     try:
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence', 'plan-face-probes', 'analyze-constraints', 'solve-local-constraints', 'solve-chain-constraints', 'execute-evidence-batch'}:
+        if args.command in {'chain-session', "sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence', 'plan-face-probes', 'analyze-constraints', 'solve-local-constraints', 'solve-chain-constraints', 'execute-evidence-batch'}:
             from .tools.solidworks import SolidWorksTools
             service = SolidWorksTools()
             try:
-                if args.command == "sw":
+                if args.command == 'chain-session':
+                    from .tools.chain_session import run_chain_session
+                    result = run_chain_session(service, args.config_path, args.output)
+                elif args.command == "sw":
                     result = service.call(args.tool, json.loads(args.arguments))
                 elif args.command == 'execute-evidence':
                     from .tools.execution import run_plan
@@ -306,7 +312,7 @@ def main():
             print(str(output))
         else:
             print(payload, end="")
-        if args.command in {"sw", "spatial-export", "group", "relations", "review-connections", 'proximity', 'review-proximity', 'review-face-contacts', 'chain-evidence', 'review-chain', 'templates', 'template-extract', 'template-compare', 'target-graph', 'match-templates', 'rigid-candidates', 'draft-joints', 'check-joints', 'plan-evidence', 'execute-evidence', 'reintegrate-evidence', 'compare-checks', 'index-evidence', 'plan-face-probes'} and result["status"] == "error":
+        if isinstance(result, dict) and result.get("status") == "error":
             raise SystemExit(2)
     except (RuntimeError, OSError, ValueError, KeyError, zipfile.BadZipFile, URLError) as exc:
         parser.exit(2, f"Error: {exc}\n")

@@ -3,7 +3,7 @@
 ## 环境与范围
 
 - 正式仓库 `leixn01/3dmodel-rcgn`，直接维护仓库。用户在另一台已安装 SolidWorks 的 Windows 电脑使用 OpenCode；先确认实际执行位置。用户使用本地已有 Conda 环境；MCP 和 CLI 用激活环境的 python，不新建 .venv、不硬编码其环境名。后续只面向 Windows，不维护 Ubuntu 适配或 CI；保留错误平台的明确报错。
-- 先读 README。当前已有 MCP 0.25.0（49 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
+- 先读 README。当前已有 MCP 0.26.0（50 个工具）；用户 SolidWorks 2025 实测旧版 15 工具：11 项 API 通过、显示工具 2 项失败、组件显隐/全量空间读取 2 项部分通过。先按 0.5.0 清单复测修复，再核对分组；自动启动仍待实机验证；不重新搭建已有功能，不把远期路线图一次性实现。
 - 可直接打开的模型已在 `examples/three_servo_lift/3X Lift Assembly.STEP`，不要再要求用户解压；原始输入保持不变，需修改的工作副本和结果放 `outputs/`。
 
 ## 功能与分层
@@ -29,6 +29,8 @@
 | 指定面局部间隙/法向探测 | `face-gap-probing` |
 | 面探测文件的离线候选复核 | `face-contact-review` |
 | 指定机构链的离线证据清单 | `chain-evidence` |
+| 首次有界单链联调入口 | `chain-session` |
+| 首轮采集到关系基线/索引 | `chain-baseline` |
 | 机构参考目录检索 | `mechanism-template-search` |
 | USD参考刚体/关节图提取 | `mechanism-template-extract` |
 | 已有对应关系下的图结构评分 | `mechanism-template-compare` |
@@ -119,3 +121,7 @@ Skill 使用 `.opencode/skills/<名称>/SKILL.md`，只保留流程；工具放 
 - 0.25.0 cad_solve_chain_constraints从原analysis组装2–20个目标实例、同一源快照的约束；显式参考只是去掉整体刚体运动，不证明接地。链内跨对联系由共同未知量处理，链外/未绑定仍是缺口。不相加局部DOF，不跨快照组装；不连通/截断/冲突/敏感保留未知。硬上限每快照6000方程。
 - 常规补采优先sw_execute_evidence_batch，服务端串行复用单步执行/保护/停止/receipt，每批默认12步与30秒软预算，最多20步/60秒。不会取消已在执行的COM；批次独占本进程CAD调用，其他CAD请求BUSY，不并行排队。客户端timeout=300000ms；不是延长COM超时或重复失败调用。
 - 批次摘要的execution_source才是续跑/回填的receipt，batch_report_source仅计时诊断。未完整/保护失败不复用。计时区分CAD工具调用与编排开销，不包含agent思考/网络/UI；不能将合成时间当实机加速比。优先摘要和文件路径，需要具体证据才展开完整JSON，不重复读取会话/tool list/完整清单或已增强失败历史。
+
+- 0.26.0 chain-session仅用于首次空证据链，2–20个准确叶实例、当前token、显式参考/尺度/公差。CLI复用公开工具服务，不并行CAD；初次清单默认不取全量包围盒。原计划与保护不改，最多初始和一次增强两轮；已有历史须沿用最新check/index/analysis，不重启初始化绕过4轮。
+- cad_create_chain_baseline离线重放首轮完整guarded receipt，创建首次兼容关系/连接来源并立即索引所有成功/失败/partial尝试，报告绑定index。已有来源/索引使用reintegrate。少于两个有效圆柱envelope时不伪造关系，保留补充观测与缺口。
+- session报告的workflow_complete只表示受限流程完成；handoffs是最新文件定位，错误后中间结果只诊断。stdout摘要、详细调用独占保存，错误CLI非零退出；中断后依原receipt恢复，不删除占用文件。耗时分阶段与批内工具，不能重复相加，不能当实机加速比。
